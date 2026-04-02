@@ -1,24 +1,33 @@
-import React, { useEffect } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+// import { useSelector } from 'react-redux';
+import Loader from './components/common/Loader';
 import { useTheme } from './hooks/useTheme';
-import { Toast } from './components/common/Toast';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import Employees from './pages/Employees';
-import AddEmployee from './pages/AddEmployee';
-import Organizations from './pages/Organizations';
-import AddCompany from './pages/AddCompany';
-import Agreements from './pages/Agreements';
-import AddAgreement from './pages/AddAgreement';
-import Attendances from './pages/Attendances';
-import Leaves from './pages/Leaves';
-import Settings from './pages/Settings';
-import LeaveTypeManagement from './pages/LeaveTypeManagement';
-const PrivateRoute = ({ children }) => {
-  const { isAuthenticated } = useSelector((state) => state.auth);
-  return isAuthenticated ? children : <Navigate to="/login" />;
-};
+
+// Lazy load pages for better performance
+const Login = lazy(() => import('./pages/Login'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Employees = lazy(() => import('./pages/Employees'));
+const AddEmployee = lazy(() => import('./pages/AddEmployee'));
+const Organizations = lazy(() => import('./pages/Organizations'));
+const AddCompany = lazy(() => import('./pages/AddCompany'));
+const Agreements = lazy(() => import('./pages/Agreements'));
+const AddAgreement = lazy(() => import('./pages/AddAgreement'));
+const Attendances = lazy(() => import('./pages/Attendances'));
+const Leaves = lazy(() => import('./pages/Leaves'));
+const LeaveTypeManagement = lazy(() => import('./pages/LeaveTypeManagement'));
+// const Reports = lazy(() => import('./pages/Reports'));
+const Settings = lazy(() => import('./pages/Settings'));
+
+// const PrivateRoute = ({ children }) => {
+//   const { isAuthenticated, loading } = useSelector((state) => state.auth);
+  
+//   if (loading) {
+//     return <Loader fullScreen />;
+//   }
+  
+//   return isAuthenticated ? children : <Navigate to="/login" />;
+// };
 
 function App() {
   const { theme } = useTheme();
@@ -32,23 +41,108 @@ function App() {
   }, [theme]);
 
   return (
-    <>
+    <Suspense fallback={<Loader fullScreen />}>
       <Routes>
         <Route path="/" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/employees" element={<Employees />} />
-        <Route path="/employees/add-employee" element={<AddEmployee />} />
-        <Route path="/organizations" element={<Organizations />} />
-        <Route path="/organizations/add-company" element={<AddCompany />} />
-        <Route path="/agreements" element={<Agreements />} />
-        <Route path="/agreements/add-agreement" element={<AddAgreement />} />
-        <Route path="/attendances" element={<Attendances />} />
-        <Route path="/leaves" element={<Leaves />} />
-        <Route path="/leaves/leave-types" element={<LeaveTypeManagement />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route path="/login" element={<Login />} />
+        <Route
+          path="/dashboard"
+          element={
+            // <PrivateRoute>
+              <Dashboard />
+            // </PrivateRoute>
+          }
+        />
+        <Route
+          path="/employees"
+          element={
+            // <PrivateRoute>
+              <Employees />
+            // </PrivateRoute>
+          }
+        />
+        <Route
+          path="/employees/add-employee"
+          element={
+            // <PrivateRoute>
+              <AddEmployee />
+            // </PrivateRoute>
+          }
+        />
+        <Route
+          path="/organizations"
+          element={
+            // <PrivateRoute>
+              <Organizations />
+            // </PrivateRoute>
+          }
+        />
+        <Route
+          path="/organizations/add-company"
+          element={
+            // <PrivateRoute>
+              <AddCompany />
+            // </PrivateRoute>
+          }
+        />
+        <Route
+          path="/agreements"
+          element={
+            // <PrivateRoute>
+              <Agreements />
+            // </PrivateRoute>
+          }
+        />
+        <Route
+          path="/agreements/add-agreement"
+          element={
+            // <PrivateRoute>
+              <AddAgreement />
+            // </PrivateRoute>
+          }
+        />
+        <Route
+          path="/attendances"
+          element={
+            // <PrivateRoute>
+              <Attendances />
+            // </PrivateRoute>
+          }
+        />
+        <Route
+          path="/leaves"
+          element={
+            // <PrivateRoute>
+              <Leaves />
+            // </PrivateRoute>
+          }
+        />
+        <Route
+          path="/leaves/leave-types"
+          element={
+            // <PrivateRoute>
+              <LeaveTypeManagement />
+            // </PrivateRoute>
+          }
+        />
+        {/* <Route
+          path="/reports"
+          element={
+            <PrivateRoute>
+              <Reports />
+            </PrivateRoute>
+          }
+        /> */}
+        <Route
+          path="/settings"
+          element={
+            // <PrivateRoute>
+              <Settings />
+            // </PrivateRoute>
+          }
+        />
       </Routes>
-      <Toast />
-    </>
+    </Suspense>
   );
 }
 
