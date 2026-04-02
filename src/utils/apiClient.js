@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://violet-leopard-500489.hostingersite.com/hr/public/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/hr/public/api';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

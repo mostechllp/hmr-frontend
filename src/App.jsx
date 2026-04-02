@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { useTheme } from './hooks/useTheme';
 import { Toast } from './components/common/Toast';
 import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
 const PrivateRoute = ({ children }) => {
   const { isAuthenticated } = useSelector((state) => state.auth);
   return isAuthenticated ? children : <Navigate to="/login" />;
@@ -24,6 +25,9 @@ function App() {
     <>
       <Routes>
         <Route path="/" element={<Login />} />
+      </Routes>
+      <Routes>
+        <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
       <Toast />
     </>
