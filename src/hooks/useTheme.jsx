@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 
 export const useTheme = () => {
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('hr-theme') || 'light';
+    const savedTheme = localStorage.getItem('hr-theme');
+    if (savedTheme) return savedTheme;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
 
   useEffect(() => {
@@ -14,8 +16,8 @@ export const useTheme = () => {
     }
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  const toggleTheme = (newTheme) => {
+    setTheme(newTheme);
   };
 
   return { theme, toggleTheme, setTheme };

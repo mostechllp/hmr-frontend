@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { NavLink } from 'react-router-dom';
 import { markAsRead, markAllRead } from '../../store/slices/notificationSlice';
 import { logoutUser } from '../../store/slices/authSlice';
+import { useTheme } from '../../hooks/useTheme';
 
 const Header = () => {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -13,6 +14,7 @@ const Header = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const { notifications, unreadCount } = useSelector((state) => state.notifications);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const updateDate = () => {
@@ -53,6 +55,10 @@ const Header = () => {
     dispatch(logoutUser());
   };
 
+  const handleViewAllNotifications = () => {
+    alert('All notifications: ' + notifications.map(n => n.title).join('\n'));
+  };
+
   return (
     <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 md:px-6 py-3 sticky top-0 z-40">
       <div className="flex items-center justify-between">
@@ -73,7 +79,31 @@ const Header = () => {
             <span>{currentDate}</span>
           </div>
 
-          {/* Theme Toggle will be added separately */}
+          {/* Theme Toggle */}
+          <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full p-1">
+            <button
+              onClick={() => toggleTheme('light')}
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                theme === 'light' 
+                  ? 'bg-white dark:bg-gray-800 shadow-md text-green-500' 
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+              title="Light Mode"
+            >
+              <i className="fas fa-sun text-sm"></i>
+            </button>
+            <button
+              onClick={() => toggleTheme('dark')}
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                theme === 'dark' 
+                  ? 'bg-white dark:bg-gray-800 shadow-md text-green-500' 
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+              title="Dark Mode"
+            >
+              <i className="fas fa-moon text-sm"></i>
+            </button>
+          </div>
 
           {/* Notification Bell */}
           <div className="relative" ref={notificationRef}>
@@ -125,7 +155,10 @@ const Header = () => {
                   )}
                 </div>
                 <div className="p-3 border-t border-gray-200 dark:border-gray-700 text-center bg-gray-50 dark:bg-gray-700/50">
-                  <button className="text-xs text-green-500 hover:text-green-600">
+                  <button 
+                    onClick={handleViewAllNotifications}
+                    className="text-xs text-green-500 hover:text-green-600"
+                  >
                     View all notifications
                   </button>
                 </div>
