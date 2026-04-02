@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import Sidebar from '../components/common/Sidebar';
@@ -11,6 +11,17 @@ const AddEmployee = () => {
   const dispatch = useDispatch();
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   
   const [formData, setFormData] = useState({
     // Step 1: Basic Info
@@ -73,12 +84,14 @@ const AddEmployee = () => {
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   const handlePrevious = () => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -139,13 +152,13 @@ const AddEmployee = () => {
       case 0:
         return (
           <div>
-            <div className="form-section-title mb-6">
+            <div className="form-section-title mb-4 md:mb-6">
               <i className="fas fa-user-circle text-green-500 mr-2"></i>
-              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Basic Information</h3>
+              <h3 className="text-base md:text-lg font-bold text-gray-800 dark:text-gray-200">Basic Information</h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-user text-green-500 mr-1"></i> Full Name *
                 </label>
                 <input
@@ -153,12 +166,12 @@ const AddEmployee = () => {
                   id="fullName"
                   value={formData.fullName}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                   placeholder="Enter full name"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-building text-green-500 mr-1"></i> Organization
                 </label>
                 <input
@@ -166,12 +179,12 @@ const AddEmployee = () => {
                   id="organization"
                   value={formData.organization}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                   placeholder="Enter organization name"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-briefcase text-green-500 mr-1"></i> Designation
                 </label>
                 <input
@@ -179,19 +192,19 @@ const AddEmployee = () => {
                   id="designation"
                   value={formData.designation}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                   placeholder="Enter designation"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-venus-mars text-green-500 mr-1"></i> Gender
                 </label>
                 <select
                   id="gender"
                   value={formData.gender}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                 >
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
@@ -199,7 +212,7 @@ const AddEmployee = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-gift text-green-500 mr-1"></i> Special Days
                 </label>
                 <input
@@ -207,19 +220,19 @@ const AddEmployee = () => {
                   id="specialDays"
                   value={formData.specialDays}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                   placeholder="e.g. Birthday / Anniversary"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-building text-green-500 mr-1"></i> Company *
                 </label>
                 <select
                   id="company"
                   value={formData.company}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                 >
                   <option value="THESAY">THESAY</option>
                   <option value="Tech Corp">Tech Corp</option>
@@ -227,14 +240,14 @@ const AddEmployee = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-diagram-project text-green-500 mr-1"></i> Department
                 </label>
                 <select
                   id="department"
                   value={formData.department}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                 >
                   <option value="IT">IT</option>
                   <option value="HR">HR</option>
@@ -243,7 +256,7 @@ const AddEmployee = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-id-card text-green-500 mr-1"></i> Employee ID
                 </label>
                 <input
@@ -251,12 +264,12 @@ const AddEmployee = () => {
                   id="employeeId"
                   value={formData.employeeId}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                   placeholder="Enter employee ID"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-calendar text-green-500 mr-1"></i> Date of Birth
                 </label>
                 <input
@@ -264,11 +277,11 @@ const AddEmployee = () => {
                   id="dob"
                   value={formData.dob}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-calendar-week text-green-500 mr-1"></i> Leave Allocation (Days)
                 </label>
                 <input
@@ -276,11 +289,11 @@ const AddEmployee = () => {
                   id="leaveAllocation"
                   value={formData.leaveAllocation}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-calendar-alt text-green-500 mr-1"></i> Joining Date
                 </label>
                 <input
@@ -288,7 +301,7 @@ const AddEmployee = () => {
                   id="joiningDate"
                   value={formData.joiningDate}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                 />
               </div>
             </div>
@@ -298,13 +311,13 @@ const AddEmployee = () => {
       case 1:
         return (
           <div>
-            <div className="form-section-title mb-6">
+            <div className="form-section-title mb-4 md:mb-6">
               <i className="fas fa-passport text-green-500 mr-2"></i>
-              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Passport Information</h3>
+              <h3 className="text-base md:text-lg font-bold text-gray-800 dark:text-gray-200">Passport Information</h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-user-tag text-green-500 mr-1"></i> Passport Full Name
                 </label>
                 <input
@@ -312,12 +325,12 @@ const AddEmployee = () => {
                   id="passportFullName"
                   value={formData.passportFullName}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                   placeholder="Enter name as per passport"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-hashtag text-green-500 mr-1"></i> Passport Number
                 </label>
                 <input
@@ -325,12 +338,12 @@ const AddEmployee = () => {
                   id="passportNumber"
                   value={formData.passportNumber}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                   placeholder="Enter passport number"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-calendar-plus text-green-500 mr-1"></i> Issued Date
                 </label>
                 <input
@@ -338,11 +351,11 @@ const AddEmployee = () => {
                   id="passportIssued"
                   value={formData.passportIssued}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-calendar-times text-green-500 mr-1"></i> Expiry Date
                 </label>
                 <input
@@ -350,11 +363,11 @@ const AddEmployee = () => {
                   id="passportExpiry"
                   value={formData.passportExpiry}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-father text-green-500 mr-1"></i> Father's Name
                 </label>
                 <input
@@ -362,12 +375,12 @@ const AddEmployee = () => {
                   id="fatherName"
                   value={formData.fatherName}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                   placeholder="Enter father's name"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-mother text-green-500 mr-1"></i> Mother's Name
                 </label>
                 <input
@@ -375,12 +388,12 @@ const AddEmployee = () => {
                   id="motherName"
                   value={formData.motherName}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                   placeholder="Enter mother's name"
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-map-marker-alt text-green-500 mr-1"></i> Address
                 </label>
                 <textarea
@@ -388,12 +401,12 @@ const AddEmployee = () => {
                   value={formData.address}
                   onChange={handleChange}
                   rows="2"
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                   placeholder="Enter full address"
                 ></textarea>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-globe text-green-500 mr-1"></i> Issued From
                 </label>
                 <input
@@ -401,12 +414,12 @@ const AddEmployee = () => {
                   id="issuedFrom"
                   value={formData.issuedFrom}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                   placeholder="Enter issuing country/city"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-map-pin text-green-500 mr-1"></i> Place of Birth
                 </label>
                 <input
@@ -414,7 +427,7 @@ const AddEmployee = () => {
                   id="placeOfBirth"
                   value={formData.placeOfBirth}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                   placeholder="Enter place of birth"
                 />
               </div>
@@ -425,13 +438,13 @@ const AddEmployee = () => {
       case 2:
         return (
           <div>
-            <div className="form-section-title mb-6">
+            <div className="form-section-title mb-4 md:mb-6">
               <i className="fas fa-file-contract text-green-500 mr-2"></i>
-              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Visa & Labor Details</h3>
+              <h3 className="text-base md:text-lg font-bold text-gray-800 dark:text-gray-200">Visa & Labor Details</h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-id-card text-green-500 mr-1"></i> Visa Number
                 </label>
                 <input
@@ -439,12 +452,12 @@ const AddEmployee = () => {
                   id="visaNumber"
                   value={formData.visaNumber}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                   placeholder="Enter Visa Number"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-calendar-plus text-green-500 mr-1"></i> Visa Issued Date
                 </label>
                 <input
@@ -452,11 +465,11 @@ const AddEmployee = () => {
                   id="visaIssued"
                   value={formData.visaIssued}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-calendar-times text-green-500 mr-1"></i> Visa Expiry Date
                 </label>
                 <input
@@ -464,11 +477,11 @@ const AddEmployee = () => {
                   id="visaExpiry"
                   value={formData.visaExpiry}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-briefcase text-green-500 mr-1"></i> Labor Number
                 </label>
                 <input
@@ -476,12 +489,12 @@ const AddEmployee = () => {
                   id="laborNumber"
                   value={formData.laborNumber}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                   placeholder="Enter Labor Number"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-calendar-plus text-green-500 mr-1"></i> Labor Issued Date
                 </label>
                 <input
@@ -489,11 +502,11 @@ const AddEmployee = () => {
                   id="laborIssued"
                   value={formData.laborIssued}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-calendar-times text-green-500 mr-1"></i> Labor Expiry Date
                 </label>
                 <input
@@ -501,7 +514,7 @@ const AddEmployee = () => {
                   id="laborExpiry"
                   value={formData.laborExpiry}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                 />
               </div>
             </div>
@@ -511,13 +524,13 @@ const AddEmployee = () => {
       case 3:
         return (
           <div>
-            <div className="form-section-title mb-6">
+            <div className="form-section-title mb-4 md:mb-6">
               <i className="fas fa-id-card text-green-500 mr-2"></i>
-              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Emirates ID (EID)</h3>
+              <h3 className="text-base md:text-lg font-bold text-gray-800 dark:text-gray-200">Emirates ID (EID)</h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-qrcode text-green-500 mr-1"></i> EID Number
                 </label>
                 <input
@@ -525,12 +538,12 @@ const AddEmployee = () => {
                   id="eidNumber"
                   value={formData.eidNumber}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                   placeholder="Enter EID number"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-calendar-plus text-green-500 mr-1"></i> Issued Date
                 </label>
                 <input
@@ -538,11 +551,11 @@ const AddEmployee = () => {
                   id="eidIssued"
                   value={formData.eidIssued}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-calendar-times text-green-500 mr-1"></i> Expiry Date
                 </label>
                 <input
@@ -550,7 +563,7 @@ const AddEmployee = () => {
                   id="eidExpiry"
                   value={formData.eidExpiry}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                 />
               </div>
             </div>
@@ -560,20 +573,20 @@ const AddEmployee = () => {
       case 4:
         return (
           <div>
-            <div className="form-section-title mb-6">
+            <div className="form-section-title mb-4 md:mb-6">
               <i className="fas fa-address-card text-green-500 mr-2"></i>
-              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Contact Information & Others</h3>
+              <h3 className="text-base md:text-lg font-bold text-gray-800 dark:text-gray-200">Contact Information & Others</h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-users text-green-500 mr-1"></i> Dependents
                 </label>
                 <select
                   id="dependents"
                   value={formData.dependents}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                 >
                   <option value="0">0</option>
                   <option value="1">1</option>
@@ -582,7 +595,7 @@ const AddEmployee = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-envelope text-green-500 mr-1"></i> Company Email
                 </label>
                 <input
@@ -590,12 +603,12 @@ const AddEmployee = () => {
                   id="companyEmail"
                   value={formData.companyEmail}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                   placeholder="name@company.com"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-phone text-green-500 mr-1"></i> Personal Number
                 </label>
                 <input
@@ -603,12 +616,12 @@ const AddEmployee = () => {
                   id="personalNumber"
                   value={formData.personalNumber}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                   placeholder="Enter personal phone number"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-envelope text-green-500 mr-1"></i> Personal Email
                 </label>
                 <input
@@ -616,12 +629,12 @@ const AddEmployee = () => {
                   id="personalEmail"
                   value={formData.personalEmail}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                   placeholder="name@gmail.com"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                   <i className="fas fa-phone-alt text-green-500 mr-1"></i> Other Number
                 </label>
                 <input
@@ -629,7 +642,7 @@ const AddEmployee = () => {
                   id="otherNumber"
                   value={formData.otherNumber}
                   onChange={handleChange}
-                  className="form-input"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                   placeholder="Enter alternate number"
                 />
               </div>
@@ -643,85 +656,92 @@ const AddEmployee = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Sidebar />
-      <div className="flex-1 ml-[72px] md:ml-[72px]">
-        <Header />
-        <main className="p-4 md:p-6 max-w-5xl mx-auto">
-          {/* Breadcrumbs */}
-          <div className="flex items-center gap-2 text-sm mb-6">
-            <Link to="/employees" className="text-green-500 hover:text-green-600 font-medium">Employees</Link>
-            <i className="fas fa-chevron-right text-gray-400 text-xs"></i>
-            <span className="text-gray-500 dark:text-gray-400">Add Employee</span>
-          </div>
+    <div className="app flex min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
+      <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+      <div className={`flex-1 min-w-0 w-full overflow-x-hidden ${!isMobile ? 'md:ml-[72px]' : ''}`}>
+        <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+        <main className="content px-4 py-4 md:px-6 md:py-6 w-full overflow-x-hidden">
+          <div className="max-w-5xl mx-auto w-full">
+            {/* Breadcrumbs - Responsive */}
+            <div className="flex items-center gap-2 text-xs md:text-sm mb-4 md:mb-6 flex-wrap">
+              <Link to="/employees" className="text-green-500 hover:text-green-600 font-medium">Employees</Link>
+              <i className="fas fa-chevron-right text-gray-400 text-[10px] md:text-xs"></i>
+              <span className="text-gray-500 dark:text-gray-400">Add Employee</span>
+            </div>
 
-          {/* Page Header */}
-          <div className="mb-6">
-            <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-800 to-green-600 dark:from-gray-200 dark:to-green-400 bg-clip-text text-transparent">
-              <i className="fas fa-user-plus mr-2"></i> Add New Employee
-            </h2>
-          </div>
+            {/* Page Header */}
+            <div className="mb-4 md:mb-6">
+              <h2 className="text-xl md:text-3xl font-bold bg-gradient-to-r from-gray-800 to-green-600 dark:from-gray-200 dark:to-green-400 bg-clip-text text-transparent">
+                <i className="fas fa-user-plus mr-2"></i> Add New Employee
+              </h2>
+            </div>
 
-          {/* Step Indicator */}
-          <div className="flex flex-wrap gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full p-2 mb-8">
-            {steps.map((step, index) => (
-              <button
-                key={step.number}
-                onClick={() => setCurrentStep(index)}
-                className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-                  currentStep === index
-                    ? 'bg-green-500 text-white shadow-md'
-                    : index < currentStep
-                    ? 'text-green-500'
-                    : 'text-gray-500 dark:text-gray-400'
-                }`}
-              >
-                <i className={`${step.icon} mr-1`}></i>
-                {step.number}. {step.title}
-              </button>
-            ))}
-          </div>
-
-          {/* Form Container */}
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 md:p-8 shadow-soft">
-            <form onSubmit={handleSubmit}>
-              {renderStepContent()}
-
-              {/* Navigation Buttons */}
-              <div className="flex justify-between mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-                {currentStep > 0 && (
+            {/* Step Indicator - Horizontal scroll on mobile */}
+            <div className="overflow-x-auto pb-2 mb-4 md:mb-8 -mx-4 px-4">
+              <div className="flex gap-2 min-w-max">
+                {steps.map((step, index) => (
                   <button
-                    type="button"
-                    onClick={handlePrevious}
-                    className="px-6 py-2.5 rounded-full font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all flex items-center gap-2"
+                    key={step.number}
+                    onClick={() => setCurrentStep(index)}
+                    className={`px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-semibold transition-all whitespace-nowrap ${
+                      currentStep === index
+                        ? 'bg-green-500 text-white shadow-md'
+                        : index < currentStep
+                        ? 'text-green-500'
+                        : 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800'
+                    }`}
                   >
-                    <i className="fas fa-arrow-left"></i> Previous
+                    <i className={`${step.icon} mr-1 text-xs md:text-sm`}></i>
+                    <span className="hidden sm:inline">{step.number}. {step.title}</span>
+                    <span className="sm:hidden">{step.number}</span>
                   </button>
-                )}
-                
-                {currentStep < steps.length - 1 ? (
-                  <button
-                    type="button"
-                    onClick={handleNext}
-                    className="px-6 py-2.5 rounded-full font-semibold bg-green-500 text-white hover:bg-green-600 transition-all flex items-center gap-2 ml-auto"
-                  >
-                    Next <i className="fas fa-arrow-right"></i>
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="px-6 py-2.5 rounded-full font-semibold bg-green-500 text-white hover:bg-green-600 transition-all flex items-center gap-2 ml-auto disabled:opacity-70"
-                  >
-                    {loading ? (
-                      <><i className="fas fa-spinner fa-spin"></i> Saving...</>
-                    ) : (
-                      <><i className="fas fa-save"></i> Save Employee</>
-                    )}
-                  </button>
-                )}
+                ))}
               </div>
-            </form>
+            </div>
+
+            {/* Form Container */}
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 md:p-6 lg:p-8 shadow-soft">
+              <form onSubmit={handleSubmit}>
+                {renderStepContent()}
+
+                {/* Navigation Buttons - Responsive */}
+                <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-200 dark:border-gray-700">
+                  {currentStep > 0 && (
+                    <button
+                      type="button"
+                      onClick={handlePrevious}
+                      className="px-4 md:px-6 py-2 md:py-2.5 rounded-full font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all flex items-center justify-center gap-2 text-sm md:text-base"
+                    >
+                      <i className="fas fa-arrow-left text-xs md:text-sm"></i>
+                      <span>Previous</span>
+                    </button>
+                  )}
+                  
+                  {currentStep < steps.length - 1 ? (
+                    <button
+                      type="button"
+                      onClick={handleNext}
+                      className="px-4 md:px-6 py-2 md:py-2.5 rounded-full font-semibold bg-green-500 text-white hover:bg-green-600 transition-all flex items-center justify-center gap-2 text-sm md:text-base"
+                    >
+                      <span>Next</span>
+                      <i className="fas fa-arrow-right text-xs md:text-sm"></i>
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="px-4 md:px-6 py-2 md:py-2.5 rounded-full font-semibold bg-green-500 text-white hover:bg-green-600 transition-all flex items-center justify-center gap-2 text-sm md:text-base disabled:opacity-70"
+                    >
+                      {loading ? (
+                        <><i className="fas fa-spinner fa-spin"></i> <span>Saving...</span></>
+                      ) : (
+                        <><i className="fas fa-save text-xs md:text-sm"></i> <span>Save Employee</span></>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
           </div>
         </main>
       </div>

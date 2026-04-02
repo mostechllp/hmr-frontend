@@ -1,5 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
-@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap");
+@import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css");
 
 @tailwind base;
 @tailwind components;
@@ -81,4 +81,241 @@
   .animate-slideUp {
     animation: slideUp 0.2s ease;
   }
+}
+
+/* Mobile-first responsive styles */
+@media (max-width: 768px) {
+  /* Adjust main content padding */
+  main {
+    padding: 12px !important;
+  }
+
+  /* Make charts responsive */
+  canvas {
+    max-height: 200px !important;
+  }
+
+  /* Adjust font sizes */
+  h1,
+  h2,
+  h3 {
+    word-break: break-word;
+  }
+
+  /* Improve touch targets */
+  button,
+  [role="button"],
+  .clickable {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Better scrolling for tables */
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Tablet styles */
+@media (min-width: 769px) and (max-width: 1024px) {
+  main {
+    padding: 20px !important;
+  }
+
+  .stats-card .stat-number {
+    font-size: 28px !important;
+  }
+}
+
+/* Prevent zoom on input focus for mobile */
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Improve mobile sidebar animation */
+@media (max-width: 768px) {
+  .sidebar-transition {
+    transition: transform 0.3s ease-in-out;
+  }
+}
+
+/* Add to index.css or your main CSS file */
+
+/* Global overflow fixes */
+html, body, #root, .app {
+  overflow-x: hidden !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  position: relative;
+}
+
+/* Main content wrapper - desktop margin */
+@media (min-width: 768px) {
+  .main-with-sidebar {
+    margin-left: 72px !important;
+  }
+}
+
+/* Mobile fixes */
+@media (max-width: 767px) {
+  /* Remove any margins */
+  .main, .flex-1 {
+    margin-left: 0 !important;
+  }
+  
+  /* Stats grid - 2 columns with proper spacing */
+  .stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+  
+  /* Charts grid - single column with full width */
+  .charts-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  
+  /* Chart containers - ensure no overflow */
+  .charts-grid > div {
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+  
+  /* Chart canvas - responsive sizing */
+  canvas {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+  
+  /* Content padding */
+  .content {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  
+  /* Welcome banner */
+  .welcome-banner {
+    padding: 16px !important;
+  }
+  
+  /* Stats card adjustments */
+  .stat-card {
+    padding: 12px !important;
+  }
+  
+  .stat-number {
+    font-size: 20px !important;
+  }
+  
+  /* Section titles */
+  .section-title {
+    font-size: 16px !important;
+  }
+  
+  /* Folder tabs */
+  .folder-tabs {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  
+  .folder-tab {
+    padding: 6px 12px !important;
+    font-size: 11px !important;
+  }
+  
+  /* Files section actions */
+  .files-actions {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+  
+  .search-wrapper {
+    width: 100% !important;
+  }
+  
+  .search-box {
+    width: 100% !important;
+  }
+  
+  .search-box input {
+    width: 100% !important;
+  }
+  
+  .add-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  
+  /* Table wrapper */
+  .table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Pagination */
+  .pagination {
+    flex-direction: column !important;
+    gap: 12px !important;
+    align-items: center !important;
+  }
+  
+  /* Entries selector */
+  .entries-select {
+    justify-content: space-between !important;
+    width: 100% !important;
+  }
+}
+
+/* Tablet styles */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+  }
+  
+  .charts-grid {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+  
+  .content {
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+  }
+}
+
+/* Desktop styles */
+@media (min-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+  
+  .charts-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Fix for charts overflowing */
+.chart-container, 
+.chart-card > div:last-child {
+  width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Ensure all containers respect parent width */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+img, video, canvas {
+  max-width: 100%;
+  height: auto;
 }

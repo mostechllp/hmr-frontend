@@ -35,8 +35,8 @@ const AttendanceChart = () => {
         tension: 0.4,
         pointBackgroundColor: '#fff',
         pointBorderColor: '#2ecc71',
-        pointRadius: 5,
-        pointHoverRadius: 7,
+        pointRadius: 4,
+        pointHoverRadius: 6,
       },
     ],
   };
@@ -59,16 +59,16 @@ const AttendanceChart = () => {
         },
         ticks: {
           font: {
-            size: 11,
+            size: 10,
           },
         },
       },
       y: {
         beginAtZero: true,
         ticks: {
-          stepSize: 2,
+          stepSize: 5,
           font: {
-            size: 11,
+            size: 10,
           },
         },
         grid: {
@@ -79,17 +79,17 @@ const AttendanceChart = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
-      <div className="flex justify-between items-start mb-4">
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 md:p-5 w-full">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
         <div>
-          <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Attendance Analytics</h3>
+          <h3 className="text-base md:text-lg font-bold text-gray-800 dark:text-gray-200">Attendance Analytics</h3>
           <p className="text-xs text-gray-500 dark:text-gray-400">Daily presence trend for the last 7 days</p>
         </div>
-        <select className="bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1 text-xs text-gray-600 dark:text-gray-300">
+        <select className="bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-xs text-gray-600 dark:text-gray-300">
           <option>Last 7 Days</option>
         </select>
       </div>
-      <div className="h-[280px]">
+      <div className="h-[240px] md:h-[280px] w-full">
         <Line data={data} options={options} />
       </div>
     </div>

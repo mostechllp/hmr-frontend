@@ -20,6 +20,17 @@ const Organizations = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   useEffect(() => {
     dispatch(fetchOrganizations());
@@ -67,53 +78,56 @@ const Organizations = () => {
   ).length;
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Sidebar />
-      <div className="flex-1 ml-[72px] md:ml-[72px]">
-        <Header />
-        <main className="p-4 md:p-6">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 transition-all hover:-translate-y-0.5 hover:shadow-soft">
-              <div className="flex justify-between items-start mb-3">
-                <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
-                  <i className="fas fa-building text-green-600 dark:text-green-400 text-xl"></i>
+    <div className="app flex min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
+      <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+      <div className={`flex-1 min-w-0 w-full overflow-x-hidden ${!isMobile ? 'md:ml-[72px]' : ''}`}>
+        <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+        <main className="content px-4 py-4 md:px-6 md:py-6 w-full overflow-x-hidden">
+          
+          {/* Stats Cards - Responsive Grid */}
+          <div className="stats-grid grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-5 mb-6">
+            {/* Total Organizations Card */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-3 md:p-5 border border-gray-200 dark:border-gray-700 transition-all hover:-translate-y-0.5 hover:shadow-soft">
+              <div className="flex justify-between items-start mb-2 md:mb-3">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
+                  <i className="fas fa-building text-green-600 dark:text-green-400 text-base md:text-xl"></i>
                 </div>
               </div>
-              <div className="text-3xl font-extrabold text-green-600 dark:text-green-400">
+              <div className="text-2xl md:text-3xl font-extrabold text-green-600 dark:text-green-400">
                 {totalOrgs}
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
+              <div className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
                 Total Organizations
               </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 transition-all hover:-translate-y-0.5 hover:shadow-soft">
-              <div className="flex justify-between items-start mb-3">
-                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
-                  <i className="fas fa-sitemap text-blue-600 dark:text-blue-400 text-xl"></i>
+            {/* Multi-Company Enabled Card */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-3 md:p-5 border border-gray-200 dark:border-gray-700 transition-all hover:-translate-y-0.5 hover:shadow-soft">
+              <div className="flex justify-between items-start mb-2 md:mb-3">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+                  <i className="fas fa-sitemap text-blue-600 dark:text-blue-400 text-base md:text-xl"></i>
                 </div>
               </div>
-              <div className="text-3xl font-extrabold text-blue-600 dark:text-blue-400">
+              <div className="text-2xl md:text-3xl font-extrabold text-blue-600 dark:text-blue-400">
                 {multiCompanyCount}
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
+              <div className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
                 Multi-Company Enabled
               </div>
             </div>
           </div>
 
           {/* Header */}
-          <div className="flex flex-wrap justify-between items-center mb-6">
-            <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-gray-800 to-green-600 dark:from-gray-200 dark:to-green-400 bg-clip-text text-transparent">
+          <div className="flex flex-wrap justify-between items-center mb-4 md:mb-6">
+            <h2 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-gray-800 to-green-600 dark:from-gray-200 dark:to-green-400 bg-clip-text text-transparent">
               Organization Directory
             </h2>
           </div>
 
-          {/* Actions Bar */}
-          <div className="flex flex-wrap justify-between items-center gap-4 mb-5">
+          {/* Actions Bar - Fully Responsive */}
+          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 mb-5">
             <EntriesSelector value={perPage} onChange={setPerPage} />
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <SearchBar
                 value={searchTerm}
                 onChange={setSearchTerm}
@@ -121,113 +135,118 @@ const Organizations = () => {
               />
               <Link
                 to="/organizations/add-company"
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg w-full sm:w-auto"
               >
                 <i className="fas fa-plus-circle"></i> Add Company
               </Link>
             </div>
           </div>
 
-          {/* Organizations Table */}
+          {/* Organizations Table - Horizontal Scroll on Mobile */}
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto shadow-soft">
-            <table className="w-full border-collapse min-w-[900px]">
-              <thead>
-                <tr className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">
-                    Logo
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">
-                    Org Name
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">
-                    Phone
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">
-                    Email
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">
-                    Multi-Company
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">
-                    Created At
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {pageOrgs.map((org) => (
-                  <tr
-                    key={org.id}
-                    className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                  >
-                    <td className="px-4 py-3">
-                      <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white">
-                        <i className="fas fa-briefcase text-lg"></i>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm font-semibold text-gray-800 dark:text-gray-200">
-                      {org.name}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                      {org.phone}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                      {org.email}
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => handleViewSubsidiaries(org.name)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                          org.multiCompany === "Yes"
-                            ? "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50"
-                            : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
-                        }`}
-                      >
-                        <i
-                          className={`fas ${org.multiCompany === "Yes" ? "fa-sitemap" : "fa-building"} text-xs`}
-                        ></i>
-                        {org.multiCompany === "Yes"
-                          ? "Manage Companies"
-                          : "Single Entity"}
-                      </button>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                      {org.createdAt}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
-                        <Link
-                          to={`/edit-company/${org.id}`}
-                          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-amber-500 transition-colors"
-                          title="Edit"
-                        >
-                          <i className="fas fa-edit"></i>
-                        </Link>
-                        <button
-                          onClick={() => handleDelete(org.id, org.name)}
-                          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500 transition-colors"
-                          title="Delete"
-                        >
-                          <i className="fas fa-trash"></i>
-                        </button>
-                      </div>
-                    </td>
+            <div className="min-w-[800px] md:min-w-0">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+                    <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
+                      Logo
+                    </th>
+                    <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
+                      Org Name
+                    </th>
+                    <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
+                      Phone
+                    </th>
+                    <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
+                      Email
+                    </th>
+                    <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
+                      Multi-Company
+                    </th>
+                    <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
+                      Created At
+                    </th>
+                    <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-                {pageOrgs.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan="7"
-                      className="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
+                </thead>
+                <tbody>
+                  {pageOrgs.map((org) => (
+                    <tr
+                      key={org.id}
+                      className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                     >
-                      No organizations found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                      <td className="px-3 md:px-4 py-2 md:py-3">
+                        <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white">
+                          <i className="fas fa-briefcase text-sm md:text-lg"></i>
+                        </div>
+                       </td>
+                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold text-gray-800 dark:text-gray-200">
+                        {org.name}
+                       </td>
+                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                        {org.phone}
+                       </td>
+                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                        {org.email}
+                       </td>
+                      <td className="px-3 md:px-4 py-2 md:py-3">
+                        <button
+                          onClick={() => handleViewSubsidiaries(org.name)}
+                          className={`inline-flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-1 md:py-1.5 rounded-full text-[10px] md:text-xs font-semibold transition-all whitespace-nowrap ${
+                            org.multiCompany === "Yes"
+                              ? "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50"
+                              : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                          }`}
+                        >
+                          <i
+                            className={`fas ${org.multiCompany === "Yes" ? "fa-sitemap" : "fa-building"} text-[10px] md:text-xs`}
+                          ></i>
+                          <span className="hidden sm:inline">
+                            {org.multiCompany === "Yes" ? "Manage Companies" : "Single Entity"}
+                          </span>
+                          <span className="sm:hidden">
+                            {org.multiCompany === "Yes" ? "Manage" : "Single"}
+                          </span>
+                        </button>
+                       </td>
+                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                        {org.createdAt}
+                       </td>
+                      <td className="px-3 md:px-4 py-2 md:py-3">
+                        <div className="flex gap-1 md:gap-2">
+                          <Link
+                            to={`/edit-company/${org.id}`}
+                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-amber-500 transition-colors"
+                            title="Edit"
+                          >
+                            <i className="fas fa-edit text-xs md:text-sm"></i>
+                          </Link>
+                          <button
+                            onClick={() => handleDelete(org.id, org.name)}
+                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500 transition-colors"
+                            title="Delete"
+                          >
+                            <i className="fas fa-trash text-xs md:text-sm"></i>
+                          </button>
+                        </div>
+                       </td>
+                    </tr>
+                  ))}
+                  {pageOrgs.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan="7"
+                        className="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
+                      >
+                        No organizations found
+                       </td>
+                    </tr>
+                  )}
+                </tbody>
+               </table>
+            </div>
           </div>
 
           <Pagination

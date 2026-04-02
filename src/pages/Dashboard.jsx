@@ -19,21 +19,31 @@ const Dashboard = () => {
     lateArrivals: 0,
     absentToday: 33,
   });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     dispatch(fetchEmployees());
+    
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, [dispatch]);
 
-
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Sidebar />
-      <div className="flex-1 ml-[72px] md:ml-[72px]">
-        <Header />
-        <main className="p-4 md:p-6 max-w-[1600px] mx-auto">
+    <div className="app flex min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
+      <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+      {/* Main content - add margin-left on desktop only */}
+      <div className={`flex-1 min-w-0 w-full overflow-x-hidden ${!isMobile ? 'md:ml-[72px]' : ''}`}>
+        <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+        <main className="content px-4 py-4 md:px-6 md:py-6 max-w-[1600px] mx-auto w-full overflow-x-hidden">
           <WelcomeBanner stats={stats} />
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+          {/* Stats Grid - 2 columns on mobile, 4 on desktop */}
+          <div className="stats-grid grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5 mb-6">
             <StatsCard
               title="Total Employees"
               value={stats.totalEmployees}
@@ -60,9 +70,14 @@ const Dashboard = () => {
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
-            <AttendanceChart />
-            <PunchChart />
+          {/* Charts Grid - 1 column on mobile/tablet, 2 on desktop */}
+          <div className="charts-grid grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5 mb-6">
+            <div className="w-full min-w-0 overflow-hidden">
+              <AttendanceChart />
+            </div>
+            <div className="w-full min-w-0 overflow-hidden">
+              <PunchChart />
+            </div>
           </div>
 
           <RecentFiles />
