@@ -5,6 +5,16 @@ import { useTheme } from './hooks/useTheme';
 import { Toast } from './components/common/Toast';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Employees from './pages/Employees';
+import AddEmployee from './pages/AddEmployee';
+import Organizations from './pages/Organizations';
+import AddCompany from './pages/AddCompany';
+import Agreements from './pages/Agreements';
+import AddAgreement from './pages/AddAgreement';
+import Attendances from './pages/Attendances';
+import Leaves from './pages/Leaves';
+import Settings from './pages/Settings';
+import LeaveTypeManagement from './pages/LeaveTypeManagement';
 const PrivateRoute = ({ children }) => {
   const { isAuthenticated } = useSelector((state) => state.auth);
   return isAuthenticated ? children : <Navigate to="/login" />;
@@ -25,9 +35,17 @@ function App() {
     <>
       <Routes>
         <Route path="/" element={<Login />} />
-      </Routes>
-      <Routes>
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/employees" element={<Employees />} />
+        <Route path="/employees/add-employee" element={<AddEmployee />} />
+        <Route path="/organizations" element={<Organizations />} />
+        <Route path="/organizations/add-company" element={<AddCompany />} />
+        <Route path="/agreements" element={<Agreements />} />
+        <Route path="/agreements/add-agreement" element={<AddAgreement />} />
+        <Route path="/attendances" element={<Attendances />} />
+        <Route path="/leaves" element={<Leaves />} />
+        <Route path="/leaves/leave-types" element={<LeaveTypeManagement />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
       <Toast />
     </>

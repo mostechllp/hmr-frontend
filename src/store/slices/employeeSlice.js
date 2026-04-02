@@ -1,52 +1,73 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import apiClient from '../../utils/apiClient';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import apiClient from "../../utils/apiClient";
 
 export const fetchEmployees = createAsyncThunk(
-  'employees/fetchAll',
+  "employees/fetchAll",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await apiClient.get('/employees');
+      const response = await apiClient.get("/employees");
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch employees');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch employees",
+      );
     }
-  }
+  },
 );
 
 export const addEmployee = createAsyncThunk(
-  'employees/add',
+  "employees/add",
   async (employeeData, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post('/employees', employeeData);
+      const response = await apiClient.post("/employees", employeeData);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to add employee');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to add employee",
+      );
     }
-  }
+  },
 );
 
 export const updateEmployee = createAsyncThunk(
-  'employees/update',
+  "employees/update",
   async ({ id, data }, { rejectWithValue }) => {
     try {
       const response = await apiClient.put(`/employees/${id}`, data);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to update employee');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update employee",
+      );
     }
-  }
+  },
 );
 
 export const deleteEmployee = createAsyncThunk(
-  'employees/delete',
+  "employees/delete",
   async (id, { rejectWithValue }) => {
     try {
       await apiClient.delete(`/employees/${id}`);
       return id;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to delete employee');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete employee",
+      );
     }
-  }
+  },
+);
+
+export const updateEmployeeStatus = createAsyncThunk(
+  "employees/updateStatus",
+  async ({ id, status }, { rejectWithValue }) => {
+    try {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      return { id, status };
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
 );
 
 const initialState = {
@@ -57,15 +78,15 @@ const initialState = {
   currentPage: 1,
   perPage: 10,
   filters: {
-    status: 'all',
-    search: '',
-    company: 'all',
-    department: 'all',
+    status: "all",
+    search: "",
+    company: "all",
+    department: "all",
   },
 };
 
 const employeeSlice = createSlice({
-  name: 'employees',
+  name: "employees",
   initialState,
   reducers: {
     setCurrentPage: (state, action) => {
@@ -104,17 +125,30 @@ const employeeSlice = createSlice({
         state.totalCount += 1;
       })
       .addCase(updateEmployee.fulfilled, (state, action) => {
-        const index = state.employees.findIndex(emp => emp.id === action.payload.id);
+        const index = state.employees.findIndex(
+          (emp) => emp.id === action.payload.id,
+        );
         if (index !== -1) {
           state.employees[index] = action.payload;
         }
       })
       .addCase(deleteEmployee.fulfilled, (state, action) => {
-        state.employees = state.employees.filter(emp => emp.id !== action.payload);
+        state.employees = state.employees.filter(
+          (emp) => emp.id !== action.payload,
+        );
         state.totalCount -= 1;
+      })
+      .addCase(updateEmployeeStatus.fulfilled, (state, action) => {
+        const index = state.employees.findIndex(
+          (emp) => emp.id === action.payload.id,
+        );
+        if (index !== -1) {
+          state.employees[index].status = action.payload.status;
+        }
       });
   },
 });
 
-export const { setCurrentPage, setPerPage, setFilters, resetFilters } = employeeSlice.actions;
+export const { setCurrentPage, setPerPage, setFilters, resetFilters } =
+  employeeSlice.actions;
 export default employeeSlice.reducer;
