@@ -4,7 +4,6 @@ import Sidebar from '../components/common/Sidebar';
 import Header from '../components/common/Header';
 import SearchBar from '../components/common/SearchBar';
 import EntriesSelector from '../components/common/EntriesSelector';
-import Loader from '../components/common/Loader';
 import UploadAttendanceModal from '../components/attendance/UploadAttendanceModal';
 import { showToast } from '../components/common/Toast';
 import Pagination from '../components/common/Paginations';
@@ -12,7 +11,7 @@ import { fetchAttendanceRecords, uploadAttendanceFile } from '../store/slices/at
 
 const Attendances = () => {
   const dispatch = useDispatch();
-  const { records, loading } = useSelector((state) => state.attendance);
+  const { records } = useSelector((state) => state.attendance);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [companyFilter, setCompanyFilter] = useState('all');
   const [nameFilter, setNameFilter] = useState('');
@@ -74,8 +73,6 @@ const Attendances = () => {
     showToast('Attendance file uploaded successfully!', 'success');
     setShowUploadModal(false);
   };
-
-  if (loading) return <Loader fullScreen />;
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">

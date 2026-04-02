@@ -5,7 +5,6 @@ import Sidebar from '../components/common/Sidebar';
 import Header from '../components/common/Header';
 import SearchBar from '../components/common/SearchBar';
 import EntriesSelector from '../components/common/EntriesSelector';
-import Loader from '../components/common/Loader';
 import LeaveModal from '../components/leaves/LeaveModal';
 import { showToast } from '../components/common/Toast';
 import { fetchLeaves, updateLeaveStatus } from '../store/slices/leaveSlice';
@@ -13,7 +12,7 @@ import Pagination from '../components/common/Paginations';
 
 const Leaves = () => {
   const dispatch = useDispatch();
-  const { leaves, loading } = useSelector((state) => state.leaves);
+  const { leaves } = useSelector((state) => state.leaves);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -83,8 +82,6 @@ const Leaves = () => {
       default: return 'bg-gray-100 text-gray-600';
     }
   };
-
-  if (loading) return <Loader fullScreen />;
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">

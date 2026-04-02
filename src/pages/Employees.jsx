@@ -5,7 +5,6 @@ import Sidebar from '../components/common/Sidebar';
 import Header from '../components/common/Header';
 import SearchBar from '../components/common/SearchBar';
 import EntriesSelector from '../components/common/EntriesSelector';
-import Loader from '../components/common/Loader';
 import { showToast } from '../components/common/Toast';
 import { 
   fetchEmployees, 
@@ -19,7 +18,7 @@ import Pagination from '../components/common/Paginations';
 
 const Employees = () => {
   const dispatch = useDispatch();
-  const { employees, loading, currentPage, perPage, filters } = useSelector((state) => state.employees);
+  const { employees, currentPage, perPage, filters } = useSelector((state) => state.employees);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -78,9 +77,6 @@ const Employees = () => {
 
   const activeCount = employees.filter(e => e.status === 'Active').length;
   const inactiveCount = employees.filter(e => e.status === 'Inactive').length;
-
-  if (loading) return <Loader fullScreen />;
-
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar />

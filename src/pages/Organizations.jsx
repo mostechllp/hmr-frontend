@@ -5,7 +5,6 @@ import Sidebar from "../components/common/Sidebar";
 import Header from "../components/common/Header";
 import SearchBar from "../components/common/SearchBar";
 import EntriesSelector from "../components/common/EntriesSelector";
-import Loader from "../components/common/Loader";
 import { showToast } from "../components/common/Toast";
 import {
   fetchOrganizations,
@@ -15,7 +14,7 @@ import Pagination from "../components/common/Paginations";
 
 const Organizations = () => {
   const dispatch = useDispatch();
-  const { organizations = [], loading } = useSelector(
+  const { organizations = [] } = useSelector(
     (state) => state.organizations || {},
   );
   const [searchTerm, setSearchTerm] = useState("");
@@ -66,8 +65,6 @@ const Organizations = () => {
   const multiCompanyCount = organizations.filter(
     (o) => o.multiCompany === "Yes",
   ).length;
-
-  if (loading) return <Loader fullScreen />;
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">

@@ -9,11 +9,10 @@ import StatsCard from '../components/dashboard/StatsCard';
 import AttendanceChart from '../components/dashboard/AttendanceChart';
 import PunchChart from '../components/dashboard/PunchChart';
 import RecentFiles from '../components/dashboard/RecentFiles';
-import Loader from '../components/common/Loader';
 
 const Dashboard = () => {
   const dispatch = useDispatch();
-  const { employees, loading } = useSelector((state) => state.employees);
+  const { employees } = useSelector((state) => state.employees);
   const [stats, setStats] = useState({
     totalEmployees: 33,
     punchedInToday: 0,
@@ -25,7 +24,6 @@ const Dashboard = () => {
     dispatch(fetchEmployees());
   }, [dispatch]);
 
-  if (loading) return <Loader fullScreen />;
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">

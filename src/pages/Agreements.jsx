@@ -5,14 +5,13 @@ import Sidebar from '../components/common/Sidebar';
 import Header from '../components/common/Header';
 import SearchBar from '../components/common/SearchBar';
 import EntriesSelector from '../components/common/EntriesSelector';
-import Loader from '../components/common/Loader';
 import { showToast } from '../components/common/Toast';
 import Pagination from '../components/common/Paginations';
 import { deleteAgreement, fetchAgreements } from '../store/slices/agreementsSlice';
 
 const Agreements = () => {
   const dispatch = useDispatch();
- const { agreements = [], loading } = useSelector(
+ const { agreements = [] } = useSelector(
      (state) => state.agreements || {},
    );
   const [currentFolder, setCurrentFolder] = useState('all');
@@ -119,8 +118,6 @@ const Agreements = () => {
       }
     }
   });
-
-  if (loading) return <Loader fullScreen />;
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">

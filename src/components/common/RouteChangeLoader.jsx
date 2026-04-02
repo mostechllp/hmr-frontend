@@ -14,7 +14,7 @@ const RouteChangeLoader = ({ children }) => {
       return;
     }
     
-    showLoader('Loading page...');
+    showLoader('Loading...');
     const timer = setTimeout(() => {
       hideLoader();
     }, 300);
