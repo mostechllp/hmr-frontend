@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 // import { useSelector } from 'react-redux';
 import { useTheme } from "./hooks/useTheme";
 import RouteChangeLoader from "./components/common/RouteChangeLoader";
+import AddOrganization from "./pages/AddOrganization";
 
 // Lazy load pages for better performance
 const Login = lazy(() => import("./pages/Login"));
@@ -74,6 +75,14 @@ function App() {
             element={
               // <PrivateRoute>
               <Organizations />
+              // </PrivateRoute>
+            }
+          />
+          <Route
+            path="/organizations/add-organization"
+            element={
+              // <PrivateRoute>
+              <AddOrganization />
               // </PrivateRoute>
             }
           />

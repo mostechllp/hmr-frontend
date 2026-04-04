@@ -32,6 +32,8 @@ const Header = ({ onMenuClick }) => {
       return "Organizations";
     } else if (path === "/organizations/add-company") {
       return "Add Company";
+    } else if (path === "/organizations/add-organization") {
+      return "Add Organization";
     } else if (path === "/agreements") {
       return "Agreements";
     } else if (path === "/agreements/add-agreement") {
