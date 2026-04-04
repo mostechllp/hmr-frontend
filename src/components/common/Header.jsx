@@ -23,7 +23,7 @@ const Header = ({ onMenuClick }) => {
   // Get page title based on current route
   const getPageTitle = () => {
     const path = location.pathname;
-    
+
     if (path === "/dashboard" || path === "/") {
       return "Dashboard";
     } else if (path === "/employees") {
@@ -42,6 +42,10 @@ const Header = ({ onMenuClick }) => {
       return "Attendance";
     } else if (path === "/leaves/leave-types") {
       return "Add Leave Types";
+    } else if (path === "/designations") {
+      return "Designations";
+    } else if (path === "/task-reports") {
+      return "Task Reports";
     } else if (path === "/reports") {
       return "Reports";
     } else if (path === "/settings") {
@@ -57,7 +61,7 @@ const Header = ({ onMenuClick }) => {
 
   const getPageSubtitle = () => {
     const path = location.pathname;
-    
+
     if (path === "/dashboard" || path === "/") {
       return "Command Center";
     } else if (path === "/employees") {
@@ -135,7 +139,7 @@ const Header = ({ onMenuClick }) => {
           >
             <i className="fas fa-bars text-gray-600 dark:text-gray-300 text-lg"></i>
           </button>
-          
+
           <div>
             <h1 className="text-base md:text-lg font-bold text-gray-800 dark:text-gray-200">
               {getPageTitle()}
@@ -231,7 +235,12 @@ const Header = ({ onMenuClick }) => {
                 </div>
                 <div className="p-3 border-t border-gray-200 dark:border-gray-700 text-center bg-gray-50 dark:bg-gray-700/50">
                   <button
-                    onClick={() => alert("All notifications: " + notifications.map(n => n.title).join("\n"))}
+                    onClick={() =>
+                      alert(
+                        "All notifications: " +
+                          notifications.map((n) => n.title).join("\n"),
+                      )
+                    }
                     className="text-xs text-green-500 hover:text-green-600"
                   >
                     View all notifications

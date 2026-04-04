@@ -4,6 +4,8 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useTheme } from "./hooks/useTheme";
 import RouteChangeLoader from "./components/common/RouteChangeLoader";
 import AddOrganization from "./pages/AddOrganization";
+import Designations from "./pages/Designations";
+import TaskReports from "./pages/TaskReports";
 
 // Lazy load pages for better performance
 const Login = lazy(() => import("./pages/Login"));
@@ -115,6 +117,22 @@ function App() {
             element={
               // <PrivateRoute>
               <Attendances />
+              // </PrivateRoute>
+            }
+          />
+          <Route
+            path="/designations"
+            element={
+              // <PrivateRoute>
+              <Designations />
+              // </PrivateRoute>
+            }
+          />
+          <Route
+            path="/task-reports"
+            element={
+              // <PrivateRoute>
+              <TaskReports />
               // </PrivateRoute>
             }
           />
