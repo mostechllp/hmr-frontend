@@ -1,36 +1,43 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import apiClient from "../../utils/apiClient"
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import apiClient from "../../utils/apiClient";
 
 export const loginUser = createAsyncThunk(
-  'auth/login',
+  "auth/login",
   async ({ email, password }, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post('/login', { email, password });
-      localStorage.setItem('hr-token', response.data.token);
-      localStorage.setItem('hr-user', JSON.stringify(response.data.user));
-      return response.data;
+      const response = await apiClient.post("/auth/login", {
+        username: email,
+        password,
+      });
+
+      const data = response.data.data;
+
+      localStorage.setItem("hr-token", data.access_token);
+      localStorage.setItem("hr-user", JSON.stringify(data.user));
+
+      return data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Login failed');
+      return rejectWithValue(error.response?.data?.message || "Login failed");
     }
-  }
+  },
 );
 
-export const logoutUser = createAsyncThunk('auth/logout', async () => {
-  localStorage.removeItem('hr-token');
-  localStorage.removeItem('hr-user');
+export const logoutUser = createAsyncThunk("auth/logout", async () => {
+  localStorage.removeItem("hr-token");
+  localStorage.removeItem("hr-user");
   return null;
 });
 
 const initialState = {
-  user: JSON.parse(localStorage.getItem('hr-user')) || null,
-  token: localStorage.getItem('hr-token') || null,
-  isAuthenticated: !!localStorage.getItem('hr-token'),
+  user: JSON.parse(localStorage.getItem("hr-user")) || null,
+  token: localStorage.getItem("hr-token") || null,
+  isAuthenticated: !!localStorage.getItem("hr-token"),
   loading: false,
   error: null,
 };
 
 const authSlice = createSlice({
-  name: 'auth',
+  name: "auth",
   initialState,
   reducers: {
     clearError: (state) => {
@@ -46,7 +53,7 @@ const authSlice = createSlice({
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.user;
-        state.token = action.payload.token;
+        state.token = action.payload.access_token;
         state.isAuthenticated = true;
       })
       .addCase(loginUser.rejected, (state, action) => {

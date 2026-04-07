@@ -1,70 +1,70 @@
-import React, { useState } from "react";
-// import { useDispatch } from "react-redux";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-// import { clearError, loginUser } from "../store/slices/authSlice";
+import { clearError, loginUser } from "../store/slices/authSlice";
 import { showToast } from "../components/common/Toast";
 
 const Login = () => {
-  const [email, setEmail] = useState("hr@thesay.ae");
-  const [password, setPassword] = useState("HR@th3$4y2026");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-//   const dispatch = useDispatch();
+  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false); // remove this once API is set
-  //   const { loading, error, isAuthenticated } = useSelector(
-  //     (state) => state.auth,
-  //   );
+  // const [loading, setLoading] = useState(false); // remove this once API is set
+    const { loading, error, isAuthenticated } = useSelector(
+      (state) => state.auth,
+    );
 
-  //   useEffect(() => {
-  //     if (isAuthenticated) {
-  //       navigate("/dashboard");
-  //     }
-  //   }, [isAuthenticated, navigate]);
+    useEffect(() => {
+      if (isAuthenticated) {
+        navigate("/dashboard");
+      }
+    }, [isAuthenticated, navigate]);
 
-  //   useEffect(() => {
-  //     if (error) {
-  //       showToast(error, "error");
-  //       dispatch(clearError());
-  //     }
-  //   }, [error, dispatch]);
+    useEffect(() => {
+      if (error) {
+        showToast(error, "error");
+        dispatch(clearError());
+      }
+    }, [error, dispatch]);
 
   //   Once API is set uncomment
 
-  //   const handleSubmit = async (e) => {
-  //     e.preventDefault();
-  //     if (!email || !password) {
-  //       showToast('Please fill in all fields', 'error');
-  //       return;
-  //     }
-  //     const result = await dispatch(loginUser({ email, password }));
-  //     if (loginUser.fulfilled.match(result)) {
-  //       showToast('Login successful! Redirecting...', 'success');
-  //       setTimeout(() => navigate('/dashboard'), 1000);
-  //     }
-  //   };
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      if (!email || !password) {
+        showToast('Please fill in all fields', 'error');
+        return;
+      }
+      const result = await dispatch(loginUser({ email, password }));
+      if (loginUser.fulfilled.match(result)) {
+        showToast('Login successful! Redirecting...', 'success');
+        setTimeout(() => navigate('/dashboard'), 1000);
+      }
+    };
 
   // remove this once API is set
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
 
-    if (!email || !password) {
-      showToast("Please fill in all fields", "error");
-      return;
-    }
+  //   if (!email || !password) {
+  //     showToast("Please fill in all fields", "error");
+  //     return;
+  //   }
 
-    setLoading(true);
+  //   setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
-      if (email === "hr@thesay.ae" && password === "HR@th3$4y2026") {
-        showToast("Login successful!", "success");
-        navigate("/dashboard");
-      } else {
-        showToast("Invalid credentials", "error");
-      }
-    }, 1000);
-  };
+  //   setTimeout(() => {
+  //     setLoading(false);
+  //     if (email === "hr@thesay.ae" && password === "HR@th3$4y2026") {
+  //       showToast("Login successful!", "success");
+  //       navigate("/dashboard");
+  //     } else {
+  //       showToast("Invalid credentials", "error");
+  //     }
+  //   }, 1000);
+  // };
 
   return (
     <div className="min-h-screen flex">
@@ -127,7 +127,7 @@ const Login = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-                  placeholder="hr@thesay.ae"
+                  placeholder="your email"
                 />
               </div>
             </div>
@@ -169,12 +169,12 @@ const Login = () => {
                   Remember me
                 </span>
               </label>
-              <button
+              {/* <button
                 type="button"
                 className="text-sm text-green-500 hover:text-green-600"
               >
                 Forgot Password?
-              </button>
+              </button> */}
             </div>
 
             <button
@@ -193,20 +193,6 @@ const Login = () => {
               )}
             </button>
           </form>
-
-          <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700 text-center">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-              Demo Credentials
-            </p>
-            <div className="flex flex-wrap justify-center gap-2">
-              <span className="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs font-mono text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
-                hr@thesay.ae
-              </span>
-              <span className="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs font-mono text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
-                HR@th3$4y2026
-              </span>
-            </div>
-          </div>
         </div>
       </div>
     </div>

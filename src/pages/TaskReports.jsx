@@ -5,8 +5,7 @@ import Header from "../components/common/Header";
 import SearchBar from "../components/common/SearchBar";
 import EntriesSelector from "../components/common/EntriesSelector";
 import Pagination from "../components/common/Paginations";
-import { showToast } from "../components/common/Toast";
-import { fetchTaskReports, deleteTaskReport } from "../store/slices/taskReportSlice";
+import { fetchTaskReports } from "../store/slices/taskReportSlice";
 import TaskReportModal from "../components/taskReports/TaskReportModal";
 
 const TaskReports = () => {
@@ -17,8 +16,6 @@ const TaskReports = () => {
   const [perPage, setPerPage] = useState(10);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingReport, setEditingReport] = useState(null);
   const [selectedReport, setSelectedReport] = useState(null);
   const [viewModalOpen, setViewModalOpen] = useState(false);
 
@@ -41,9 +38,13 @@ const TaskReports = () => {
       filtered = filtered.filter(
         (report) =>
           report.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          report.tasksCompleted.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          report.planForTomorrow.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          report.remarks.toLowerCase().includes(searchTerm.toLowerCase())
+          report.tasksCompleted
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          report.planForTomorrow
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          report.remarks.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
     return filtered;
@@ -55,35 +56,9 @@ const TaskReports = () => {
   const start = (currentPage - 1) * perPage;
   const pageReports = filteredReports.slice(start, start + perPage);
 
-  const handleDelete = async (id, employee) => {
-    if (window.confirm(`Are you sure you want to delete task report for ${employee}?`)) {
-      const result = await dispatch(deleteTaskReport(id));
-      if (deleteTaskReport.fulfilled.match(result)) {
-        showToast(`Task report for ${employee} deleted successfully`, "success");
-      } else {
-        showToast("Failed to delete task report", "error");
-      }
-    }
-  };
-
-  const handleEdit = (report) => {
-    setEditingReport(report);
-    setModalOpen(true);
-  };
-
-  const handleAdd = () => {
-    setEditingReport(null);
-    setModalOpen(true);
-  };
-
   const handleView = (report) => {
     setSelectedReport(report);
     setViewModalOpen(true);
-  };
-
-  const handleModalClose = () => {
-    setModalOpen(false);
-    setEditingReport(null);
   };
 
   const handleViewModalClose = () => {
@@ -93,24 +68,19 @@ const TaskReports = () => {
 
   // Calculate stats
   const totalReports = taskReports.length;
-  const uniqueEmployees = [...new Set(taskReports.map(r => r.employee))].length;
-  const today = new Date().toLocaleDateString('en-GB');
-  const todayReports = taskReports.filter(r => r.date === today).length;
+  const uniqueEmployees = [...new Set(taskReports.map((r) => r.employee))]
+    .length;
+  const today = new Date().toLocaleDateString("en-GB");
+  const todayReports = taskReports.filter((r) => r.date === today).length;
 
   return (
     <div className="app flex min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
-      <div className={`flex-1 min-w-0 w-full overflow-x-hidden ${!isMobile ? 'md:ml-[72px]' : ''}`}>
+      <div
+        className={`flex-1 min-w-0 w-full overflow-x-hidden ${!isMobile ? "md:ml-[72px]" : ""}`}
+      >
         <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
         <main className="content px-4 py-4 md:px-6 md:py-6 w-full overflow-x-hidden">
-          
-          {/* Header */}
-          <div className="flex flex-wrap justify-between items-center mb-4 md:mb-6">
-            <h2 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-gray-800 to-green-600 dark:from-gray-200 dark:to-green-400 bg-clip-text text-transparent">
-              Task Reports
-            </h2>
-          </div>
-
           {/* Stats Cards */}
           <div className="stats-grid grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-5 mb-6">
             <div className="bg-white dark:bg-gray-800 rounded-xl p-3 md:p-5 border border-gray-200 dark:border-gray-700 transition-all hover:-translate-y-0.5 hover:shadow-soft">
@@ -156,6 +126,12 @@ const TaskReports = () => {
             </div>
           </div>
 
+          {/* Header */}
+          <div className="flex flex-wrap justify-between items-center mb-4 md:mb-6">
+            <h2 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-gray-800 to-green-600 dark:from-gray-200 dark:to-green-400 bg-clip-text text-transparent">
+              Task Reports
+            </h2>
+          </div>
           {/* Actions Bar */}
           <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 mb-5">
             <EntriesSelector value={perPage} onChange={setPerPage} />
@@ -165,12 +141,6 @@ const TaskReports = () => {
                 onChange={setSearchTerm}
                 placeholder="Search by employee, tasks..."
               />
-              <button
-                onClick={handleAdd}
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg w-full sm:w-auto"
-              >
-                <i className="fas fa-plus-circle"></i> Add Task Report
-              </button>
             </div>
           </div>
 
@@ -218,14 +188,29 @@ const TaskReports = () => {
                       <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold text-gray-800 dark:text-gray-200">
                         {report.employee}
                       </td>
-                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400 max-w-[200px] truncate" title={report.tasksCompleted}>
-                        {report.tasksCompleted.length > 40 ? report.tasksCompleted.substring(0, 40) + '...' : report.tasksCompleted}
+                      <td
+                        className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400 max-w-[200px] truncate"
+                        title={report.tasksCompleted}
+                      >
+                        {report.tasksCompleted.length > 40
+                          ? report.tasksCompleted.substring(0, 40) + "..."
+                          : report.tasksCompleted}
                       </td>
-                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400 max-w-[200px] truncate" title={report.planForTomorrow}>
-                        {report.planForTomorrow.length > 40 ? report.planForTomorrow.substring(0, 40) + '...' : report.planForTomorrow}
+                      <td
+                        className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400 max-w-[200px] truncate"
+                        title={report.planForTomorrow}
+                      >
+                        {report.planForTomorrow.length > 40
+                          ? report.planForTomorrow.substring(0, 40) + "..."
+                          : report.planForTomorrow}
                       </td>
-                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400 max-w-[150px] truncate" title={report.remarks}>
-                        {report.remarks.length > 30 ? report.remarks.substring(0, 30) + '...' : report.remarks || '-'}
+                      <td
+                        className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400 max-w-[150px] truncate"
+                        title={report.remarks}
+                      >
+                        {report.remarks.length > 30
+                          ? report.remarks.substring(0, 30) + "..."
+                          : report.remarks || "-"}
                       </td>
                       <td className="px-3 md:px-4 py-2 md:py-3">
                         <div className="flex gap-1 md:gap-2">
@@ -236,41 +221,10 @@ const TaskReports = () => {
                           >
                             <i className="fas fa-eye text-xs md:text-sm"></i>
                           </button>
-                          <button
-                            onClick={() => handleEdit(report)}
-                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-amber-500 transition-colors"
-                            title="Edit"
-                          >
-                            <i className="fas fa-edit text-xs md:text-sm"></i>
-                          </button>
-                          <button
-                            onClick={() => handleDelete(report.id, report.employee)}
-                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500 transition-colors"
-                            title="Delete"
-                          >
-                            <i className="fas fa-trash text-xs md:text-sm"></i>
-                          </button>
                         </div>
                       </td>
                     </tr>
                   ))}
-                  {pageReports.length === 0 && (
-                    <tr>
-                      <td colSpan="7" className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                        <div className="flex flex-col items-center justify-center gap-2">
-                          <i className="fas fa-tasks text-4xl text-gray-300 dark:text-gray-600"></i>
-                          <p>No task reports found</p>
-                          <button
-                            onClick={handleAdd}
-                            className="mt-2 text-green-500 hover:text-green-600 text-sm font-medium flex items-center gap-1"
-                          >
-                            <i className="fas fa-plus-circle"></i>
-                            Add your first task report
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
             </div>
@@ -285,13 +239,6 @@ const TaskReports = () => {
           />
         </main>
       </div>
-
-      {/* Add/Edit Task Report Modal */}
-      <TaskReportModal
-        isOpen={modalOpen}
-        onClose={handleModalClose}
-        editingReport={editingReport}
-      />
 
       {/* View Task Report Modal */}
       {viewModalOpen && selectedReport && (
@@ -313,17 +260,27 @@ const TaskReports = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">Date</label>
-                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mt-1">{selectedReport.date}</p>
+                  <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                    Date
+                  </label>
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mt-1">
+                    {selectedReport.date}
+                  </p>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">Employee</label>
-                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mt-1">{selectedReport.employee}</p>
+                  <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                    Employee
+                  </label>
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mt-1">
+                    {selectedReport.employee}
+                  </p>
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">Tasks Completed</label>
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                  Tasks Completed
+                </label>
                 <div className="mt-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                   <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                     {selectedReport.tasksCompleted}
@@ -332,7 +289,9 @@ const TaskReports = () => {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">Plan for Tomorrow</label>
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                  Plan for Tomorrow
+                </label>
                 <div className="mt-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                   <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                     {selectedReport.planForTomorrow}
@@ -342,7 +301,9 @@ const TaskReports = () => {
 
               {selectedReport.remarks && (
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">Remarks</label>
+                  <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                    Remarks
+                  </label>
                   <div className="mt-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                       {selectedReport.remarks}
@@ -362,7 +323,6 @@ const TaskReports = () => {
               <button
                 onClick={() => {
                   handleViewModalClose();
-                  handleEdit(selectedReport);
                 }}
                 className="px-4 py-2 rounded-full font-semibold bg-amber-500 text-white hover:bg-amber-600 transition-all flex items-center gap-2 text-sm"
               >

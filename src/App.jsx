@@ -6,6 +6,7 @@ import RouteChangeLoader from "./components/common/RouteChangeLoader";
 import AddOrganization from "./pages/AddOrganization";
 import Designations from "./pages/Designations";
 import TaskReports from "./pages/TaskReports";
+import Reports from "./pages/Reports";
 
 // Lazy load pages for better performance
 const Login = lazy(() => import("./pages/Login"));
@@ -133,6 +134,14 @@ function App() {
             element={
               // <PrivateRoute>
               <TaskReports />
+              // </PrivateRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              // <PrivateRoute>
+              <Reports />
               // </PrivateRoute>
             }
           />
