@@ -2,12 +2,14 @@ import React, { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logoutUser } from "../../store/slices/authSlice";
+import { useNavigate } from "react-router-dom";
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const [isMobile, setIsMobile] = useState(false);
   const location = useLocation();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const checkMobile = () => {
@@ -31,18 +33,29 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   const navItems = [
     { path: "/dashboard", icon: "fas fa-chart-line", label: "Dashboard" },
     { path: "/employees", icon: "fas fa-users", label: "Employees" },
-    { path: "/organizations", icon: "fas fa-briefcase", label: "Organizations" },
+    {
+      path: "/organizations",
+      icon: "fas fa-briefcase",
+      label: "Organizations",
+    },
     { path: "/agreements", icon: "fas fa-file-signature", label: "Agreements" },
     { path: "/attendances", icon: "fas fa-fingerprint", label: "Attendance" },
     { path: "/leaves", icon: "fas fa-calendar-check", label: "Leaves" },
-    { path: '/designations', icon: 'fas fa-tags', label: 'Designations' },
-    { path: '/task-reports', icon: 'fas fa-tasks', label: 'Task Reports' },
+    { path: "/designations", icon: "fas fa-tags", label: "Designations" },
+    { path: "/task-reports", icon: "fas fa-tasks", label: "Task Reports" },
     { path: "/reports", icon: "fas fa-chart-line", label: "Reports" },
     { path: "/settings", icon: "fas fa-gear", label: "Settings" },
   ];
 
-  const handleLogout = () => {
-    dispatch(logoutUser());
+
+  const handleLogout = async () => {
+
+    try {
+      await dispatch(logoutUser()).unwrap();
+      navigate("/login");
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
   };
 
   return (
@@ -60,9 +73,10 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         className={`
           fixed top-0 left-0 h-full bg-gray-900 z-50 transition-all duration-300
           flex flex-col
-          ${isMobile 
-            ? `${isOpen ? 'translate-x-0' : '-translate-x-full'} w-64`
-            : 'w-[72px] hover:w-64 group'
+          ${
+            isMobile
+              ? `${isOpen ? "translate-x-0" : "-translate-x-full"} w-64`
+              : "w-[72px] hover:w-64 group"
           }
         `}
         onMouseEnter={() => !isMobile && setIsOpen(true)}
@@ -74,7 +88,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             src="https://violet-leopard-500489.hostingersite.com/hr/public/assets/images/hr-logo2.jpg"
             alt="HMR Logo"
             className={`object-contain rounded-lg bg-white p-1 transition-all duration-300 ${
-              !isMobile && !isOpen ? 'w-10 h-10' : 'w-12 h-12'
+              !isMobile && !isOpen ? "w-10 h-10" : "w-12 h-12"
             }`}
           />
         </div>
@@ -88,16 +102,20 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               onClick={() => isMobile && setIsOpen(false)}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-5 py-3 mx-2 rounded-xl transition-all duration-200 cursor-pointer whitespace-nowrap overflow-hidden ${
-                  isActive 
-                    ? 'bg-green-500/20 text-white' 
-                    : 'text-gray-400 hover:text-white hover:bg-white/10'
+                  isActive
+                    ? "bg-green-500/20 text-white"
+                    : "text-gray-400 hover:text-white hover:bg-white/10"
                 }`
               }
             >
               <i className={`${item.icon} w-6 text-lg flex-shrink-0`}></i>
-              <span className={`transition-opacity duration-200 ${
-                !isMobile && !isOpen ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'
-              }`}>
+              <span
+                className={`transition-opacity duration-200 ${
+                  !isMobile && !isOpen
+                    ? "opacity-0 group-hover:opacity-100"
+                    : "opacity-100"
+                }`}
+              >
                 {item.label}
               </span>
             </NavLink>
@@ -110,9 +128,13 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             <div className="w-9 h-9 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center font-bold text-white flex-shrink-0">
               {user?.name?.charAt(0) || "HR"}
             </div>
-            <div className={`transition-opacity duration-200 flex-1 min-w-0 ${
-              !isMobile && !isOpen ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'
-            }`}>
+            <div
+              className={`transition-opacity duration-200 flex-1 min-w-0 ${
+                !isMobile && !isOpen
+                  ? "opacity-0 group-hover:opacity-100"
+                  : "opacity-100"
+              }`}
+            >
               <h4 className="text-sm font-semibold text-white truncate">
                 {user?.name || "HR Admin"}
               </h4>

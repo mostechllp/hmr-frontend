@@ -1,10 +1,11 @@
 // Header.js - Updated with dynamic title
 import React, { useState, useRef, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { markAsRead, markAllRead } from "../../store/slices/notificationSlice";
 import { logoutUser } from "../../store/slices/authSlice";
 import { useTheme } from "../../hooks/useTheme";
+import { fetchNotifications } from "../../store/slices/notificationSlice";
 
 const Header = ({ onMenuClick }) => {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -14,6 +15,7 @@ const Header = ({ onMenuClick }) => {
   const profileRef = useRef(null);
   const dispatch = useDispatch();
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const { notifications, unreadCount } = useSelector(
     (state) => state.notifications,
@@ -84,6 +86,10 @@ const Header = ({ onMenuClick }) => {
   };
 
   useEffect(() => {
+    dispatch(fetchNotifications());
+  }, [dispatch]);
+
+  useEffect(() => {
     const updateDate = () => {
       setCurrentDate(
         new Date().toLocaleDateString("en-US", {
@@ -123,8 +129,13 @@ const Header = ({ onMenuClick }) => {
     dispatch(markAllRead());
   };
 
-  const handleLogout = () => {
-    dispatch(logoutUser());
+  const handleLogout = async () => {
+    try {
+      await dispatch(logoutUser()).unwrap();
+      navigate("/login");
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
   };
 
   return (
@@ -227,7 +238,7 @@ const Header = ({ onMenuClick }) => {
                           {notification.title}
                         </div>
                         <small className="text-xs text-gray-500 dark:text-gray-400 block mt-1">
-                          {notification.time}
+                          {notification.time || "Just now"}
                         </small>
                       </div>
                     ))

@@ -1,12 +1,12 @@
 import React, { Suspense, lazy, useEffect } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
-// import { useSelector } from 'react-redux';
+import { Routes, Route, Navigate } from "react-router-dom";   
 import { useTheme } from "./hooks/useTheme";
 import RouteChangeLoader from "./components/common/RouteChangeLoader";
 import AddOrganization from "./pages/AddOrganization";
 import Designations from "./pages/Designations";
 import TaskReports from "./pages/TaskReports";
 import Reports from "./pages/Reports";
+import { useSelector } from "react-redux";
 
 // Lazy load pages for better performance
 const Login = lazy(() => import("./pages/Login"));
@@ -23,15 +23,15 @@ const LeaveTypeManagement = lazy(() => import("./pages/LeaveTypeManagement"));
 // const Reports = lazy(() => import('./pages/Reports'));
 const Settings = lazy(() => import("./pages/Settings"));
 
-// const PrivateRoute = ({ children }) => {
-//   const { isAuthenticated, loading } = useSelector((state) => state.auth);
+const PrivateRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useSelector((state) => state.auth);
 
-//   if (loading) {
-//     return <Loader fullScreen />;
-//   }
+  if (loading) {
+    return <Loader fullScreen />;
+  }
 
-//   return isAuthenticated ? children : <Navigate to="/login" />;
-// };
+  return isAuthenticated ? children : <Navigate to="/login" />;
+};
 
 function App() {
   const { theme } = useTheme();
@@ -45,123 +45,123 @@ function App() {
   }, [theme]);
 
   return (
-      <RouteChangeLoader>
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/dashboard"
-            element={
-              // <PrivateRoute>
+    <RouteChangeLoader>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
               <Dashboard />
-              // </PrivateRoute>
-            }
-          />
-          <Route
-            path="/employees"
-            element={
-              // <PrivateRoute>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/employees"
+          element={
+            <PrivateRoute>
               <Employees />
-              // </PrivateRoute>
-            }
-          />
-          <Route
-            path="/employees/add-employee"
-            element={
-              // <PrivateRoute>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/employees/add-employee"
+          element={
+            <PrivateRoute>
               <AddEmployee />
-              // </PrivateRoute>
-            }
-          />
-          <Route
-            path="/organizations"
-            element={
-              // <PrivateRoute>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/organizations"
+          element={
+            <PrivateRoute>
               <Organizations />
-              // </PrivateRoute>
-            }
-          />
-          <Route
-            path="/organizations/add-organization"
-            element={
-              // <PrivateRoute>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/organizations/add-organization"
+          element={
+            <PrivateRoute>
               <AddOrganization />
-              // </PrivateRoute>
-            }
-          />
-          <Route
-            path="/organizations/add-company"
-            element={
-              // <PrivateRoute>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/organizations/add-company"
+          element={
+            <PrivateRoute>
               <AddCompany />
-              // </PrivateRoute>
-            }
-          />
-          <Route
-            path="/agreements"
-            element={
-              // <PrivateRoute>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/agreements"
+          element={
+            <PrivateRoute>
               <Agreements />
-              // </PrivateRoute>
-            }
-          />
-          <Route
-            path="/agreements/add-agreement"
-            element={
-              // <PrivateRoute>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/agreements/add-agreement"
+          element={
+            <PrivateRoute>
               <AddAgreement />
-              // </PrivateRoute>
-            }
-          />
-          <Route
-            path="/attendances"
-            element={
-              // <PrivateRoute>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/attendances"
+          element={
+            <PrivateRoute>
               <Attendances />
-              // </PrivateRoute>
-            }
-          />
-          <Route
-            path="/designations"
-            element={
-              // <PrivateRoute>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/designations"
+          element={
+            <PrivateRoute>
               <Designations />
-              // </PrivateRoute>
-            }
-          />
-          <Route
-            path="/task-reports"
-            element={
-              // <PrivateRoute>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/task-reports"
+          element={
+            <PrivateRoute>
               <TaskReports />
-              // </PrivateRoute>
-            }
-          />
-          <Route
-            path="/reports"
-            element={
-              // <PrivateRoute>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <PrivateRoute>
               <Reports />
-              // </PrivateRoute>
-            }
-          />
-          <Route
-            path="/leaves"
-            element={
-              // <PrivateRoute>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/leaves"
+          element={
+            <PrivateRoute>
               <Leaves />
-              // </PrivateRoute>
-            }
-          />
-          <Route
-            path="/leaves/leave-types"
-            element={
-              // <PrivateRoute>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/leaves/leave-types"
+          element={
+            <PrivateRoute>
               <LeaveTypeManagement />
-              // </PrivateRoute>
-            }
-          />
-          {/* <Route
+            </PrivateRoute>
+          }
+        />
+        {/* <Route
           path="/reports"
           element={
             <PrivateRoute>
@@ -169,16 +169,16 @@ function App() {
             </PrivateRoute>
           }
         /> */}
-          <Route
-            path="/settings"
-            element={
-              // <PrivateRoute>
+        <Route
+          path="/settings"
+          element={
+            <PrivateRoute>
               <Settings />
-              // </PrivateRoute>
-            }
-          />
-        </Routes>
-      </RouteChangeLoader>
+            </PrivateRoute>
+          }
+        />
+      </Routes>
+    </RouteChangeLoader>
   );
 }
 

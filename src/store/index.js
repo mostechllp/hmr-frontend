@@ -8,6 +8,7 @@ import attendanceReducer from "./slices/attendanceSlice"
 import leaveReducer from "./slices/leaveSlice"
 import designationReducer from "./slices/designationSlice"
 import taskReportReducer from './slices/taskReportSlice';
+import dashboardReducer from "./slices/dashboardSlice";
 
 export const store = configureStore({
     reducer: {
@@ -20,6 +21,7 @@ export const store = configureStore({
         leaves: leaveReducer,
         designations: designationReducer,
         taskReports: taskReportReducer,
+        dashboard: dashboardReducer,
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({

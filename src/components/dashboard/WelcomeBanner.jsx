@@ -1,4 +1,5 @@
 const WelcomeBanner = ({ stats }) => {
+  if (!stats) return null;
   const currentHour = new Date().getHours();
   const greeting = currentHour < 12 ? 'Good morning' : currentHour < 18 ? 'Good afternoon' : 'Good evening';
 
