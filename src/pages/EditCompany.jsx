@@ -4,30 +4,30 @@ import { useDispatch, useSelector } from "react-redux";
 import Sidebar from "../components/common/Sidebar";
 import Header from "../components/common/Header";
 import { showToast } from "../components/common/Toast";
-import { fetchCompanies, updateCompany } from "../store/slices/companySlice";
+import { fetchCompanyById, updateCompany, clearError } from "../store/slices/companySlice";
+import { fetchOrganizations } from "../store/slices/organizationSlice";
 
 const EditCompany = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { organizationId, id } = useParams();
-  const {
-    companies,
-    loading: fetchLoading,
-    currentOrganizationName,
-  } = useSelector((state) => state.companies || {});
-
+  const { currentCompany, loading: companyLoading, error } = useSelector((state) => state.companies || {});
+  const { organizations = [] } = useSelector((state) => state.organizations || {});
+  
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [logoPreview, setLogoPreview] = useState(null);
-  const [, setOriginalLogo] = useState(null);
+  const [, setLogoFile] = useState(null);
+  const [currentOrganization, setCurrentOrganization] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
   const [formData, setFormData] = useState({
-    name: "",
+    company_name: "",
     phone: "",
     email: "",
     address: "",
+    organization_id: "",
   });
 
   useEffect(() => {
@@ -39,40 +39,55 @@ const EditCompany = () => {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Fetch companies if not already loaded
+  // Fetch organizations
   useEffect(() => {
-    if (!companies || companies.length === 0) {
-      dispatch(fetchCompanies(parseInt(organizationId))).then(() => {
+    if (organizations.length === 0) {
+      dispatch(fetchOrganizations());
+    }
+  }, [dispatch, organizations.length]);
+
+  // Find current organization
+  useEffect(() => {
+    if (organizations.length > 0 && organizationId) {
+      const org = organizations.find(o => o.id === parseInt(organizationId));
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCurrentOrganization(org);
+    }
+  }, [organizations, organizationId]);
+
+  // Fetch company data
+  useEffect(() => {
+    if (organizationId && id) {
+      dispatch(fetchCompanyById({ organizationId, companyId: id })).finally(() => {
         setInitialLoading(false);
       });
-    } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setInitialLoading(false);
     }
-  }, [dispatch, organizationId, companies]);
+  }, [dispatch, organizationId, id]);
 
-  // Load company data when available
+  // Set form data when company is loaded
   useEffect(() => {
-    if (companies && companies.length > 0 && id) {
-      const company = companies.find((comp) => comp.id === parseInt(id));
-      if (company) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setFormData({
-          name: company.name || "",
-          phone: company.phone || "",
-          email: company.email || "",
-          address: company.address || "",
-        });
-        if (company.logo) {
-          setOriginalLogo(company.logo);
-          setLogoPreview(company.logo);
-        }
-      } else {
-        showToast("Company not found", "error");
-        navigate(`/organizations/${organizationId}/companies`);
+    if (currentCompany) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFormData({
+        company_name: currentCompany.company_name || currentCompany.name || "",
+        phone: currentCompany.phone || "",
+        email: currentCompany.email || "",
+        address: currentCompany.address || "",
+        organization_id: currentCompany.organization_id || organizationId,
+      });
+      if (currentCompany.logo) {
+        setLogoPreview(currentCompany.logo);
       }
     }
-  }, [companies, id, navigate, organizationId]);
+  }, [currentCompany, organizationId]);
+
+  // Handle errors
+  useEffect(() => {
+    if (error) {
+      showToast(error, "error");
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -85,6 +100,12 @@ const EditCompany = () => {
         showToast("Logo size must be less than 2MB", "error");
         return;
       }
+      const allowedTypes = ["image/jpeg", "image/png", "image/svg+xml"];
+      if (!allowedTypes.includes(file.type)) {
+        showToast("Only JPG, PNG, and SVG files are allowed", "error");
+        return;
+      }
+      setLogoFile(file);
       const reader = new FileReader();
       reader.onload = (event) => {
         setLogoPreview(event.target.result);
@@ -95,33 +116,25 @@ const EditCompany = () => {
 
   const handleRemoveLogo = () => {
     setLogoPreview(null);
-    setOriginalLogo(null);
+    setLogoFile(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.name) {
+    if (!formData.company_name) {
       showToast("Company name is required", "error");
-      return;
-    }
-    if (!formData.phone) {
-      showToast("Phone number is required", "error");
-      return;
-    }
-    if (!formData.email) {
-      showToast("Email address is required", "error");
       return;
     }
 
     setLoading(true);
 
     const companyData = {
-      name: formData.name,
+      company_name: formData.company_name,
       phone: formData.phone,
       email: formData.email,
       address: formData.address,
-      logo: logoPreview,
+      organization_id: parseInt(organizationId),
     };
 
     const result = await dispatch(
@@ -131,7 +144,7 @@ const EditCompany = () => {
 
     if (updateCompany.fulfilled.match(result)) {
       showToast(
-        `✓ Company "${formData.name}" updated successfully!`,
+        `✓ Company "${formData.company_name}" updated successfully!`,
         "success",
       );
       setTimeout(() => {
@@ -143,7 +156,7 @@ const EditCompany = () => {
     }
   };
 
-  if (initialLoading || fetchLoading) {
+  if (initialLoading || companyLoading) {
     return (
       <div className="app flex min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
         <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
@@ -181,10 +194,9 @@ const EditCompany = () => {
               <i className="fas fa-chevron-right text-gray-400 text-[10px] md:text-xs"></i>
               <Link
                 to={`/organizations/${organizationId}/companies`}
-                state={{ organizationName: currentOrganizationName }}
                 className="text-green-500 hover:text-green-600 font-medium"
               >
-                {currentOrganizationName || "Companies"}
+                {currentOrganization?.name || "Companies"}
               </Link>
               <i className="fas fa-chevron-right text-gray-400 text-[10px] md:text-xs"></i>
               <span className="text-gray-500 dark:text-gray-400">
@@ -223,7 +235,7 @@ const EditCompany = () => {
                       </label>
                       <input
                         type="text"
-                        value={currentOrganizationName || "Loading..."}
+                        value={currentOrganization?.name || "Loading..."}
                         disabled
                         className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm md:text-base text-gray-600 dark:text-gray-400 cursor-not-allowed"
                       />
@@ -237,8 +249,8 @@ const EditCompany = () => {
                       </label>
                       <input
                         type="text"
-                        name="name"
-                        value={formData.name}
+                        name="company_name"
+                        value={formData.company_name}
                         onChange={handleChange}
                         className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                         placeholder="Enter company name"
@@ -250,7 +262,7 @@ const EditCompany = () => {
                     <div>
                       <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                         <i className="fas fa-phone text-green-500 mr-1"></i>{" "}
-                        Phone <span className="text-red-500">*</span>
+                        Phone
                       </label>
                       <input
                         type="tel"
@@ -259,7 +271,6 @@ const EditCompany = () => {
                         onChange={handleChange}
                         className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                         placeholder="Enter phone number"
-                        required
                       />
                     </div>
 
@@ -267,7 +278,7 @@ const EditCompany = () => {
                     <div>
                       <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                         <i className="fas fa-envelope text-green-500 mr-1"></i>{" "}
-                        Email <span className="text-red-500">*</span>
+                        Email
                       </label>
                       <input
                         type="email"
@@ -276,7 +287,6 @@ const EditCompany = () => {
                         onChange={handleChange}
                         className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                         placeholder="Enter email address"
-                        required
                       />
                     </div>
 

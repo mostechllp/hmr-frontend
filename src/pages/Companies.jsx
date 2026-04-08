@@ -13,6 +13,7 @@ import {
   setCurrentOrganization,
 } from "../store/slices/companySlice";
 import Pagination from "../components/common/Paginations";
+import ConfirmModal from "../components/common/ConfirmModal";
 
 const Companies = () => {
   const dispatch = useDispatch();
@@ -21,6 +22,7 @@ const Companies = () => {
   const { companies, loading, currentOrganizationName } = useSelector(
     (state) => state.companies || {},
   );
+  console.log("Companies: ", companies)
 
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -28,6 +30,10 @@ const Companies = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [organization] = useState(location.state?.organization || null);
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -80,15 +86,26 @@ const Companies = () => {
   const start = (currentPage - 1) * perPage;
   const pageCompanies = filteredCompanies.slice(start, start + perPage);
 
-  const handleDelete = async (id, name) => {
-    if (window.confirm(`Are you sure you want to delete ${name}?`)) {
-      const result = await dispatch(deleteCompany(id));
-      if (deleteCompany.fulfilled.match(result)) {
-        showToast(`${name} deleted successfully`, "success");
-      } else {
-        showToast("Failed to delete company", "error");
-      }
+  const handleDeleteClick = (company) => {
+    setSelectedCompany(company);
+    setConfirmOpen(true);
+  };
+  const handleConfirmDelete = async () => {
+    if (!selectedCompany) return;
+
+    setDeleteLoading(true);
+
+    const result = await dispatch(deleteCompany(selectedCompany.id));
+
+    if (deleteCompany.fulfilled.match(result)) {
+      showToast(`${selectedCompany.name} deleted successfully`, "success");
+      setConfirmOpen(false);
+      setSelectedCompany(null);
+    } else {
+      showToast("Failed to delete company", "error");
     }
+
+    setDeleteLoading(false);
   };
 
   const totalCompanies = companies?.length || 0;
@@ -270,9 +287,7 @@ const Companies = () => {
                               <i className="fas fa-edit text-xs md:text-sm"></i>
                             </Link>
                             <button
-                              onClick={() =>
-                                handleDelete(company.id, company.name)
-                              }
+                              onClick={() => handleDeleteClick(company)}
                               className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500 transition-colors"
                               title="Delete"
                             >
@@ -307,6 +322,18 @@ const Companies = () => {
               itemsPerPage={perPage}
             />
           )}
+          <ConfirmModal
+            isOpen={confirmOpen}
+            onClose={() => {
+              setConfirmOpen(false);
+              setSelectedCompany(null);
+            }}
+            onConfirm={handleConfirmDelete}
+            title="Delete Company"
+            message={`Are you sure you want to delete "${selectedCompany?.name}"? This action cannot be undone.`}
+            confirmText="Delete"
+            loading={deleteLoading}
+          />
         </main>
       </div>
     </div>

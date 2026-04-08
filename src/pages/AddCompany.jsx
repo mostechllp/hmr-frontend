@@ -1,30 +1,29 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation, useParams } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { addCompany, clearError } from "../store/slices/companySlice";
+import { fetchOrganizations } from "../store/slices/organizationSlice";
+import { showToast } from "../components/common/Toast";
 import Sidebar from "../components/common/Sidebar";
 import Header from "../components/common/Header";
-import { showToast } from "../components/common/Toast";
-import { addCompany } from "../store/slices/companySlice";
 
 const AddCompany = () => {
-  const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { organizationId } = useParams();
-  const location = useLocation();
-  const [loading, setLoading] = useState(false);
-  const [logoPreview, setLogoPreview] = useState(null);
+  const navigate = useNavigate();
+  const { organizations = [], loading: orgLoading } = useSelector((state) => state.organizations || {});
+  const { loading: companyLoading, error: companyError } = useSelector((state) => state.companies || {});
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  
-  const organizationName = location.state?.organizationName || "";
-
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    parent_organization_id: organizationId || "",
-    name: "",
+    organization_id: "",
+    company_name: "",
     phone: "",
     email: "",
     address: "",
+    logo: null,
   });
+  const [previewLogo, setPreviewLogo] = useState(null);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -35,20 +34,52 @@ const AddCompany = () => {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  useEffect(() => {
+    if (!organizations || organizations.length === 0) {
+      dispatch(fetchOrganizations());
+    }
+  }, [dispatch, organizations]);
+
+  // Handle company error
+  useEffect(() => {
+    if (companyError) {
+      if (typeof companyError === 'object') {
+        const errorMessages = Object.values(companyError).flat();
+        showToast(errorMessages[0] || "Validation error", "error");
+      } else {
+        showToast(companyError, "error");
+      }
+      dispatch(clearError());
+    }
+  }, [companyError, dispatch]);
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
   };
 
-  const handleLogoChange = (e) => {
+  const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        showToast("Logo size must be less than 2MB", "error");
+        showToast("File size must be less than 2MB", "error");
         return;
       }
+      
+      const allowedTypes = ["image/jpeg", "image/png", "image/svg+xml"];
+      if (!allowedTypes.includes(file.type)) {
+        showToast("Only JPG, PNG, and SVG files are allowed", "error");
+        return;
+      }
+      
+      setFormData({ ...formData, logo: file });
+      
       const reader = new FileReader();
-      reader.onload = (event) => {
-        setLogoPreview(event.target.result);
+      reader.onloadend = () => {
+        setPreviewLogo(reader.result);
       };
       reader.readAsDataURL(file);
     }
@@ -56,256 +87,247 @@ const AddCompany = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!formData.organization_id) {
+      showToast("Organization is required", "error");
+      return;
+    }
 
-    if (!formData.name) {
+    if (!formData.company_name.trim()) {
       showToast("Company name is required", "error");
-      return;
-    }
-    if (!formData.phone) {
-      showToast("Phone number is required", "error");
-      return;
-    }
-    if (!formData.email) {
-      showToast("Email address is required", "error");
-      return;
-    }
-    if (!formData.parent_organization_id) {
-      showToast("Parent organization is required", "error");
       return;
     }
 
     setLoading(true);
-
-    const companyData = {
-      name: formData.name,
-      phone: formData.phone,
-      email: formData.email,
-      address: formData.address,
-      parent_organization_id: parseInt(formData.parent_organization_id),
-      logo: logoPreview,
-    };
     
-    const result = await dispatch(addCompany(companyData));
-    setLoading(false);
+    try {
+      const submitData = {
+        organization_id: parseInt(formData.organization_id),
+        company_name: formData.company_name.trim(),
+        phone: formData.phone || "",
+        email: formData.email || "",
+        address: formData.address || "",
+      };
 
-    if (addCompany.fulfilled.match(result)) {
-      showToast(`✓ Company "${formData.name}" added successfully!`, "success");
-      setTimeout(() => {
-        navigate(`/organizations/${organizationId}/companies`);
-      }, 1200);
-    } else {
-      showToast("Failed to add company", "error");
+      console.log("Submitting company with data:", submitData);
+
+      const result = await dispatch(addCompany(submitData));
+      
+      if (addCompany.fulfilled.match(result)) {
+        showToast(`Company "${formData.company_name}" created successfully!`, "success");
+        // Navigate to the companies list page for this organization
+        setTimeout(() => {
+          navigate(`/organizations/${formData.organization_id}/companies`);
+        }, 1500);
+      } else {
+        const errorMsg = result.payload;
+        if (typeof errorMsg === 'object') {
+          const firstError = Object.values(errorMsg)[0];
+          showToast(Array.isArray(firstError) ? firstError[0] : firstError, "error");
+        } else {
+          showToast(errorMsg || "Failed to create company", "error");
+        }
+      }
+    } catch (error) {
+      console.error("Submit error:", error);
+      showToast("An unexpected error occurred", "error");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="app flex min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
+    <div className="app flex min-h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
       <div
-        className={`flex-1 min-w-0 w-full overflow-x-hidden ${!isMobile ? "md:ml-[72px]" : ""}`}
+        className={`flex-1 min-w-0 w-full ${!isMobile ? "md:ml-[72px]" : ""}`}
       >
         <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-        <main className="content px-4 py-4 md:px-6 md:py-6 w-full overflow-x-hidden">
-          <div className="max-w-4xl mx-auto w-full">
-            {/* Breadcrumbs */}
-            <div className="flex items-center gap-2 text-xs md:text-sm mb-4 md:mb-6 flex-wrap">
-              <Link
-                to="/organizations"
-                className="text-green-500 hover:text-green-600 font-medium"
-              >
-                Organizations
-              </Link>
-              <i className="fas fa-chevron-right text-gray-400 text-[10px] md:text-xs"></i>
-              <Link
-                to={`/organizations/${organizationId}/companies`}
-                state={{ organizationName }}
-                className="text-green-500 hover:text-green-600 font-medium"
-              >
-                {organizationName || "Companies"}
-              </Link>
-              <i className="fas fa-chevron-right text-gray-400 text-[10px] md:text-xs"></i>
-              <span className="text-gray-500 dark:text-gray-400">
-                Add Company
-              </span>
-            </div>
-
-            {/* Page Header */}
-            <div className="mb-4 md:mb-6">
-              <h2 className="text-xl md:text-3xl font-bold bg-gradient-to-r from-gray-800 to-green-600 dark:from-gray-200 dark:to-green-400 bg-clip-text text-transparent">
-                <i className="fas fa-building mr-2"></i> Add New Company
+        <main className="content px-4 py-4 md:px-6 md:py-6">
+          <div className="max-w-3xl mx-auto">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-green-600 dark:from-gray-200 dark:to-green-400 bg-clip-text text-transparent">
+                Add New Company
               </h2>
-              <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Add a new company under {organizationName || "this organization"}
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
+                Add a company under your organization
               </p>
             </div>
 
-            {/* Form Container */}
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 md:p-6 lg:p-8 shadow-soft">
-              <form onSubmit={handleSubmit}>
-                {/* Company Details Section */}
-                <div className="mb-6 md:mb-8">
-                  <div className="flex items-center gap-2 pb-3 border-b-2 border-green-100 dark:border-green-900/30 mb-4 md:mb-6">
-                    <i className="fas fa-info-circle text-green-500 text-base md:text-lg"></i>
-                    <h3 className="text-base md:text-lg font-bold text-gray-800 dark:text-gray-200">
-                      Company Details
-                    </h3>
-                  </div>
+            {(orgLoading || companyLoading) && (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+              </div>
+            )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-                    <div className="md:col-span-2">
-                      <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
-                        <i className="fas fa-sitemap text-green-500 mr-1"></i>{" "}
-                        Parent Organization <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={organizationName}
-                        disabled
-                        className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm md:text-base text-gray-600 dark:text-gray-400 cursor-not-allowed"
-                      />
-                      <input
-                        type="hidden"
-                        name="parent_organization_id"
-                        value={formData.parent_organization_id}
-                      />
-                    </div>
-                    
-                    <div className="md:col-span-2">
-                      <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
-                        <i className="fas fa-building text-green-500 mr-1"></i>{" "}
-                        Company Name <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-                        placeholder="Enter company name"
-                        required
-                      />
-                    </div>
+            <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-xl shadow-soft border border-gray-200 dark:border-gray-700 p-6">
+              {/* Organization */}
+              <div className="mb-5">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Organization *
+                </label>
+                <select
+                  name="organization_id"
+                  value={formData.organization_id}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  required
+                >
+                  <option value="">Select Organization</option>
+                  {organizations && organizations.map((org) => (
+                    <option key={org.id} value={org.id}>
+                      {org.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Select the organization this company belongs to
+                </p>
+              </div>
 
-                    <div>
-                      <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
-                        <i className="fas fa-phone text-green-500 mr-1"></i>{" "}
-                        Phone <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-                        placeholder="Enter phone number"
-                        required
-                      />
-                    </div>
+              {/* Company Name */}
+              <div className="mb-5">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Company Name *
+                </label>
+                <input
+                  type="text"
+                  name="company_name"
+                  value={formData.company_name}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  placeholder="Enter company name"
+                  required
+                />
+              </div>
 
-                    <div>
-                      <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
-                        <i className="fas fa-envelope text-green-500 mr-1"></i>{" "}
-                        Email <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-                        placeholder="Enter email address"
-                        required
-                      />
-                    </div>
+              {/* Phone */}
+              <div className="mb-5">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Phone
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  placeholder="Enter phone number"
+                />
+              </div>
 
-                    <div className="md:col-span-2">
-                      <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
-                        <i className="fas fa-map-marker-alt text-green-500 mr-1"></i>{" "}
-                        Address
-                      </label>
-                      <textarea
-                        name="address"
-                        value={formData.address}
-                        onChange={handleChange}
-                        rows="3"
-                        className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 resize-vertical"
-                        placeholder="Enter full address"
-                      ></textarea>
-                    </div>
-                  </div>
-                </div>
+              {/* Email */}
+              <div className="mb-5">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  placeholder="Enter email address"
+                />
+              </div>
 
-                {/* Company Logo Section */}
-                <div className="mb-6 md:mb-8">
-                  <div className="flex items-center gap-2 pb-3 border-b-2 border-green-100 dark:border-green-900/30 mb-4 md:mb-6">
-                    <i className="fas fa-image text-green-500 text-base md:text-lg"></i>
-                    <h3 className="text-base md:text-lg font-bold text-gray-800 dark:text-gray-200">
-                      Company Logo
-                    </h3>
-                  </div>
+              {/* Address */}
+              <div className="mb-5">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Address
+                </label>
+                <textarea
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  rows="3"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  placeholder="Enter company address"
+                />
+              </div>
 
-                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 md:p-8 text-center cursor-pointer hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all">
-                    <input
-                      type="file"
-                      id="logoInput"
-                      accept="image/jpeg,image/png,image/svg+xml"
-                      onChange={handleLogoChange}
-                      className="hidden"
-                    />
-                    <label htmlFor="logoInput" className="cursor-pointer block">
-                      <div className="upload-icon mb-2 md:mb-3">
-                        <i className="fas fa-cloud-upload-alt text-3xl md:text-5xl text-green-500"></i>
+              {/* Company Logo */}
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Company Logo (Optional)
+                </label>
+                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg hover:border-green-500 transition-colors">
+                  <div className="space-y-1 text-center">
+                    {previewLogo ? (
+                      <div className="mb-3">
+                        <img
+                          src={previewLogo}
+                          alt="Preview"
+                          className="mx-auto h-24 w-24 object-cover rounded-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData({ ...formData, logo: null });
+                            setPreviewLogo(null);
+                          }}
+                          className="mt-2 text-sm text-red-600 hover:text-red-700"
+                        >
+                          Remove
+                        </button>
                       </div>
-                      <div className="text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Click to upload logo
-                      </div>
-                      <div className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 mt-1 md:mt-2">
-                        Max size: 2MB. Format: JPG, PNG, SVG
-                      </div>
-                    </label>
-                  </div>
-
-                  {logoPreview && (
-                    <div className="mt-4 flex justify-center">
-                      <img
-                        src={logoPreview}
-                        alt="Logo Preview"
-                        className="max-w-[80px] md:max-w-[120px] max-h-[80px] md:max-h-[120px] rounded-xl border-2 border-gray-200 dark:border-gray-700 p-1 bg-white dark:bg-gray-800 object-contain"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Form Actions */}
-                <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 md:pt-6 border-t border-gray-200 dark:border-gray-700">
-                  <Link
-                    to={`/organizations/${organizationId}/companies`}
-                    state={{ organizationName }}
-                    className="px-4 md:px-6 py-2 md:py-2.5 rounded-full font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all flex items-center justify-center gap-2 text-sm md:text-base"
-                  >
-                    <i className="fas fa-times text-xs md:text-sm"></i>
-                    <span>Cancel</span>
-                  </Link>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="px-4 md:px-6 py-2 md:py-2.5 rounded-full font-semibold bg-green-500 text-white hover:bg-green-600 transition-all flex items-center justify-center gap-2 text-sm md:text-base disabled:opacity-70"
-                  >
-                    {loading ? (
-                      <>
-                        <i className="fas fa-spinner fa-spin"></i>{" "}
-                        <span>Saving...</span>
-                      </>
                     ) : (
                       <>
-                        <i className="fas fa-save text-xs md:text-sm"></i>{" "}
-                        <span>Save Company</span>
+                        <i className="fas fa-cloud-upload-alt text-3xl text-gray-400"></i>
+                        <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                          <label
+                            htmlFor="logo-upload"
+                            className="relative cursor-pointer bg-white dark:bg-gray-700 rounded-md font-medium text-green-600 hover:text-green-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-green-500"
+                          >
+                            <span>Upload a file</span>
+                            <input
+                              id="logo-upload"
+                              name="logo"
+                              type="file"
+                              className="sr-only"
+                              onChange={handleFileChange}
+                              accept="image/jpeg,image/png,image/svg+xml"
+                            />
+                          </label>
+                          <p className="pl-1">or drag and drop</p>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          PNG, JPG, SVG up to 2MB
+                        </p>
                       </>
                     )}
-                  </button>
+                  </div>
                 </div>
-              </form>
-            </div>
+              </div>
+
+              {/* Form Actions */}
+              <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  type="button"
+                  onClick={() => navigate(-1)} // Go back to previous page
+                  className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin"></i>
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-save"></i>
+                      Create Company
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </main>
       </div>
