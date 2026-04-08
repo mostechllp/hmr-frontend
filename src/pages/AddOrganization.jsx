@@ -19,7 +19,7 @@ const AddOrganization = () => {
     phone: '',
     email: '',
     address: '',
-    multiCompany: 'Yes',
+    multi_company: 'Yes',
   });
 
   useEffect(() => {
@@ -73,14 +73,8 @@ const AddOrganization = () => {
       phone: formData.phone,
       email: formData.email,
       address: formData.address,
-      multiCompany: formData.multiCompany,
+      multi_company: formData.multi_company,
       logo: logoPreview,
-      parentOrganization: formData.name, // Self as parent
-      createdAt: new Date().toLocaleDateString('en-GB', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric'
-      }),
     };
     
     const result = await dispatch(addOrganization(organizationData));
@@ -104,7 +98,7 @@ const AddOrganization = () => {
         <main className="content px-4 py-4 md:px-6 md:py-6 w-full overflow-x-hidden">
           <div className="max-w-4xl mx-auto w-full">
             
-            {/* Breadcrumbs - Responsive */}
+            {/* Breadcrumbs */}
             <div className="flex items-center gap-2 text-xs md:text-sm mb-4 md:mb-6 flex-wrap">
               <Link to="/organizations" className="text-green-500 hover:text-green-600 font-medium">Organizations</Link>
               <i className="fas fa-chevron-right text-gray-400 text-[10px] md:text-xs"></i>
@@ -196,7 +190,7 @@ const AddOrganization = () => {
                       ></textarea>
                     </div>
                     
-                    {/* Has Multiple Companies? - Full Width */}
+                    {/* Has Multiple Companies? */}
                     <div className="md:col-span-2">
                       <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                         <i className="fas fa-sitemap text-green-500 mr-1"></i> Has Multiple Companies?
@@ -205,9 +199,9 @@ const AddOrganization = () => {
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input
                             type="radio"
-                            name="multiCompany"
+                            name="multi_company"
                             value="Yes"
-                            checked={formData.multiCompany === 'Yes'}
+                            checked={formData.multi_company === 'Yes'}
                             onChange={handleChange}
                             className="w-4 h-4 accent-green-500"
                           />
@@ -216,9 +210,9 @@ const AddOrganization = () => {
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input
                             type="radio"
-                            name="multiCompany"
+                            name="multi_company"
                             value="No"
-                            checked={formData.multiCompany === 'No'}
+                            checked={formData.multi_company === 'No'}
                             onChange={handleChange}
                             className="w-4 h-4 accent-green-500"
                           />
@@ -267,7 +261,7 @@ const AddOrganization = () => {
                   )}
                 </div>
 
-                {/* Form Actions - Responsive Buttons */}
+                {/* Form Actions */}
                 <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 md:pt-6 border-t border-gray-200 dark:border-gray-700">
                   <Link
                     to="/organizations"

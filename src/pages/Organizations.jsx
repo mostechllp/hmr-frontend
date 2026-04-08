@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Sidebar from "../components/common/Sidebar";
 import Header from "../components/common/Header";
 import SearchBar from "../components/common/SearchBar";
@@ -8,26 +8,27 @@ import EntriesSelector from "../components/common/EntriesSelector";
 import { showToast } from "../components/common/Toast";
 import {
   fetchOrganizations,
-  fetchCompanies,
-  deleteCompany,
-  setCurrentOrganization,
+  deleteOrganization,
 } from "../store/slices/organizationSlice";
 import Pagination from "../components/common/Paginations";
+import ConfirmModal from "../components/common/ConfirmModal";
 
 const Organizations = () => {
   const dispatch = useDispatch();
-  const { 
-    organizations, 
-    companies, 
-    currentOrganization, 
-    companiesLoading 
-  } = useSelector((state) => state.organizations || {});
-  
+  const navigate = useNavigate();
+  const { organizations, loading } = useSelector(
+    (state) => state.organizations || {},
+  );
+
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedOrg, setSelectedOrg] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -42,48 +43,54 @@ const Organizations = () => {
     dispatch(fetchOrganizations());
   }, [dispatch]);
 
-  // Set first organization as current when organizations are loaded
-  useEffect(() => {
-    if (organizations && organizations.length > 0 && !currentOrganization) {
-      const firstOrg = organizations[0];
-      dispatch(setCurrentOrganization(firstOrg));
-      dispatch(fetchCompanies(firstOrg.id));
-    }
-  }, [organizations, currentOrganization, dispatch]);
-
   const hasOrganization = organizations && organizations.length > 0;
 
-  const getFilteredCompanies = () => {
-    let filtered = companies || [];
+  const getFilteredOrganizations = () => {
+    let filtered = organizations || [];
     if (searchTerm) {
       filtered = filtered.filter(
-        (company) =>
-          (company.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (company.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (company.phone || "").includes(searchTerm)
+        (org) =>
+          (org.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (org.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (org.phone || "").includes(searchTerm),
       );
     }
     return filtered;
   };
 
-  const filteredCompanies = getFilteredCompanies();
-  const totalFiltered = filteredCompanies.length;
+  const filteredOrganizations = getFilteredOrganizations();
+  const totalFiltered = filteredOrganizations.length;
   const totalPages = Math.ceil(totalFiltered / perPage);
   const start = (currentPage - 1) * perPage;
-  const pageCompanies = filteredCompanies.slice(start, start + perPage);
+  const pageOrganizations = filteredOrganizations.slice(start, start + perPage);
 
-  const handleDelete = async (id, name) => {
-    if (window.confirm(`Are you sure you want to delete ${name}?`)) {
-      const result = await dispatch(deleteCompany(id));
-      if (deleteCompany.fulfilled.match(result)) {
-        showToast(`${name} deleted successfully`, "success");
-      } else {
-        showToast("Failed to delete company", "error");
-      }
-    }
+  const handleDeleteClick = (org) => {
+    setSelectedOrg(org);
+    setConfirmOpen(true);
   };
 
-  const totalCompanies = companies?.length || 0;
+  const handleConfirmDelete = async () => {
+    if (!selectedOrg) return;
+
+    setDeleteLoading(true);
+    const result = await dispatch(deleteOrganization(selectedOrg.id));
+
+    if (deleteOrganization.fulfilled.match(result)) {
+      showToast(`${selectedOrg.name} deleted successfully`, "success");
+    } else {
+      showToast("Failed to delete organization", "error");
+    }
+
+    setDeleteLoading(false);
+    setConfirmOpen(false);
+    setSelectedOrg(null);
+  };
+
+  const handleManageCompanies = (org) => {
+    navigate(`/organizations/${org.id}/companies`, {
+      state: { organization: org },
+    });
+  };
 
   return (
     <div className="app flex min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
@@ -96,7 +103,7 @@ const Organizations = () => {
           {/* Header */}
           <div className="flex flex-wrap justify-between items-center mb-4 md:mb-6">
             <h2 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-gray-800 to-green-600 dark:from-gray-200 dark:to-green-400 bg-clip-text text-transparent">
-              {hasOrganization ? "Company Management" : "Organization Directory"}
+              Organization Directory
             </h2>
           </div>
 
@@ -123,31 +130,8 @@ const Organizations = () => {
             </div>
           ) : (
             <>
-              {/* Current Organization Info */}
-              <div className="mb-6 bg-gradient-to-r from-green-50 to-blue-50 dark:from-gray-800 dark:to-gray-800 rounded-xl p-4 border border-green-200 dark:border-green-800">
-                <div className="flex items-center gap-3">
-                  {currentOrganization?.logo ? (
-                    <img
-                      src={currentOrganization.logo}
-                      alt={currentOrganization.name}
-                      className="w-12 h-12 rounded-xl object-cover"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white">
-                      <i className="fas fa-building text-xl"></i>
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Current Organization</p>
-                    <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200">
-                      {currentOrganization?.name}
-                    </h3>
-                  </div>
-                </div>
-              </div>
-
               {/* Stats Cards */}
-              <div className="stats-grid grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-5 mb-6">
+              <div className="stats-grid grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-5 mb-6">
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-3 md:p-5 border border-gray-200 dark:border-gray-700 transition-all hover:-translate-y-0.5 hover:shadow-soft">
                   <div className="flex justify-between items-start mb-2 md:mb-3">
                     <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
@@ -155,10 +139,10 @@ const Organizations = () => {
                     </div>
                   </div>
                   <div className="text-2xl md:text-3xl font-extrabold text-green-600 dark:text-green-400">
-                    {totalCompanies}
+                    {organizations?.length || 0}
                   </div>
                   <div className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
-                    Total Companies
+                    Total Organizations
                   </div>
                 </div>
 
@@ -172,7 +156,21 @@ const Organizations = () => {
                     Active
                   </div>
                   <div className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
-                    Company Status
+                    Organization Status
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-3 md:p-5 border border-gray-200 dark:border-gray-700 transition-all hover:-translate-y-0.5 hover:shadow-soft">
+                  <div className="flex justify-between items-start mb-2 md:mb-3">
+                    <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
+                      <i className="fas fa-users text-purple-600 dark:text-purple-400 text-base md:text-xl"></i>
+                    </div>
+                  </div>
+                  <div className="text-2xl md:text-3xl font-extrabold text-purple-600 dark:text-purple-400">
+                    Multi-Company
+                  </div>
+                  <div className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
+                    Supporting Subsidiaries
                   </div>
                 </div>
               </div>
@@ -186,18 +184,12 @@ const Organizations = () => {
                     onChange={setSearchTerm}
                     placeholder="Search by name, email..."
                   />
-                  <Link
-                    to="/organizations/add-company"
-                    className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg w-full sm:w-auto"
-                  >
-                    <i className="fas fa-plus-circle"></i> Add Company
-                  </Link>
                 </div>
               </div>
 
-              {/* Companies Table */}
+              {/* Organizations Table */}
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto shadow-soft">
-                {companiesLoading ? (
+                {loading ? (
                   <div className="flex justify-center items-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
                   </div>
@@ -210,7 +202,7 @@ const Organizations = () => {
                             Logo
                           </th>
                           <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
-                            Company Name
+                            Organization Name
                           </th>
                           <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
                             Phone
@@ -219,7 +211,7 @@ const Organizations = () => {
                             Email
                           </th>
                           <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
-                            Parent Organization
+                            Address
                           </th>
                           <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
                             Created At
@@ -230,16 +222,16 @@ const Organizations = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {pageCompanies.map((company) => (
+                        {pageOrganizations.map((org) => (
                           <tr
-                            key={company.id}
+                            key={org.id}
                             className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                           >
                             <td className="px-3 md:px-4 py-2 md:py-3">
-                              {company.logo ? (
+                              {org.logo ? (
                                 <img
-                                  src={company.logo}
-                                  alt={company.name}
+                                  src={org.logo}
+                                  alt={org.name}
                                   className="w-8 h-8 md:w-10 md:h-10 rounded-xl object-cover"
                                 />
                               ) : (
@@ -249,31 +241,38 @@ const Organizations = () => {
                               )}
                             </td>
                             <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold text-gray-800 dark:text-gray-200">
-                              {company.name}
+                              {org.name}
                             </td>
                             <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                              {company.phone}
+                              {org.phone}
                             </td>
                             <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                              {company.email}
+                              {org.email}
                             </td>
                             <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                              {currentOrganization?.name || "-"}
+                              {org.address}
                             </td>
                             <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                              {company.createdAt}
+                              {org.createdAt}
                             </td>
                             <td className="px-3 md:px-4 py-2 md:py-3">
                               <div className="flex gap-1 md:gap-2">
+                                <button
+                                  onClick={() => handleManageCompanies(org)}
+                                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-blue-500 transition-colors"
+                                  title="Manage Companies"
+                                >
+                                  <i className="fas fa-building text-xs md:text-sm"></i>
+                                </button>
                                 <Link
-                                  to={`/edit-company/${company.id}`}
+                                  to={`/edit-organization/${org.id}`}
                                   className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-amber-500 transition-colors"
                                   title="Edit"
                                 >
                                   <i className="fas fa-edit text-xs md:text-sm"></i>
                                 </Link>
                                 <button
-                                  onClick={() => handleDelete(company.id, company.name)}
+                                  onClick={() => handleDeleteClick(org)}
                                   className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500 transition-colors"
                                   title="Delete"
                                 >
@@ -283,13 +282,13 @@ const Organizations = () => {
                             </td>
                           </tr>
                         ))}
-                        {pageCompanies.length === 0 && (
+                        {pageOrganizations.length === 0 && (
                           <tr>
                             <td
                               colSpan="7"
                               className="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
                             >
-                              No companies found
+                              No organizations found
                             </td>
                           </tr>
                         )}
@@ -299,7 +298,7 @@ const Organizations = () => {
                 )}
               </div>
 
-              {totalCompanies > 0 && (
+              {organizations?.length > 0 && (
                 <Pagination
                   currentPage={currentPage}
                   totalPages={totalPages}
@@ -312,6 +311,16 @@ const Organizations = () => {
           )}
         </main>
       </div>
+      <ConfirmModal
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Organization"
+        message={`Are you sure you want to delete ${selectedOrg?.name}? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        loading={deleteLoading}
+      />
     </div>
   );
 };

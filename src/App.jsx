@@ -14,6 +14,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Employees = lazy(() => import("./pages/Employees"));
 const AddEmployee = lazy(() => import("./pages/AddEmployee"));
 const Organizations = lazy(() => import("./pages/Organizations"));
+const Companies = lazy(() => import("./pages/Companies"));
 const AddCompany = lazy(() => import("./pages/AddCompany"));
 const Agreements = lazy(() => import("./pages/Agreements"));
 const AddAgreement = lazy(() => import("./pages/AddAgreement"));
@@ -89,8 +90,16 @@ function App() {
             </PrivateRoute>
           }
         />
+          <Route
+            path="/organizations/:organizationId/companies"
+            element={
+              <PrivateRoute>
+                <Companies />
+              </PrivateRoute>
+            }
+          />
         <Route
-          path="/organizations/add-company"
+          path="/organizations/:organizationId/add-company"
           element={
             <PrivateRoute>
               <AddCompany />

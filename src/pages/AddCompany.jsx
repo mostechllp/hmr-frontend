@@ -1,34 +1,30 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
+import { Link, useNavigate, useLocation, useParams } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import Sidebar from "../components/common/Sidebar";
 import Header from "../components/common/Header";
 import { showToast } from "../components/common/Toast";
-import {
-  addOrganization,
-  fetchOrganizations,
-} from "../store/slices/organizationSlice";
+import { addCompany } from "../store/slices/companySlice";
 
 const AddCompany = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { organizationId } = useParams();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [logoPreview, setLogoPreview] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const { organizations } = useSelector((state) => state.organizations);
+  
+  const organizationName = location.state?.organizationName || "";
 
   const [formData, setFormData] = useState({
-    parent_organization_id: "",
+    parent_organization_id: organizationId || "",
     name: "",
     phone: "",
     email: "",
     address: "",
   });
-
-  useEffect(() => {
-    dispatch(fetchOrganizations());
-  }, [dispatch]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -62,7 +58,7 @@ const AddCompany = () => {
     e.preventDefault();
 
     if (!formData.name) {
-      showToast("Organization name is required", "error");
+      showToast("Company name is required", "error");
       return;
     }
     if (!formData.phone) {
@@ -73,29 +69,32 @@ const AddCompany = () => {
       showToast("Email address is required", "error");
       return;
     }
+    if (!formData.parent_organization_id) {
+      showToast("Parent organization is required", "error");
+      return;
+    }
 
     setLoading(true);
 
-    const organizationData = {
+    const companyData = {
       name: formData.name,
       phone: formData.phone,
       email: formData.email,
       address: formData.address,
-      parent_organization_id: formData.parent_organization_id || null,
+      parent_organization_id: parseInt(formData.parent_organization_id),
+      logo: logoPreview,
     };
-    const result = await dispatch(addOrganization(organizationData));
+    
+    const result = await dispatch(addCompany(companyData));
     setLoading(false);
 
-    if (addOrganization.fulfilled.match(result)) {
-      showToast(
-        `✓ Organization "${formData.name}" added successfully!`,
-        "success",
-      );
+    if (addCompany.fulfilled.match(result)) {
+      showToast(`✓ Company "${formData.name}" added successfully!`, "success");
       setTimeout(() => {
-        navigate("/organizations");
+        navigate(`/organizations/${organizationId}/companies`);
       }, 1200);
     } else {
-      showToast("Failed to add organization", "error");
+      showToast("Failed to add company", "error");
     }
   };
 
@@ -108,13 +107,21 @@ const AddCompany = () => {
         <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
         <main className="content px-4 py-4 md:px-6 md:py-6 w-full overflow-x-hidden">
           <div className="max-w-4xl mx-auto w-full">
-            {/* Breadcrumbs - Responsive */}
+            {/* Breadcrumbs */}
             <div className="flex items-center gap-2 text-xs md:text-sm mb-4 md:mb-6 flex-wrap">
               <Link
                 to="/organizations"
                 className="text-green-500 hover:text-green-600 font-medium"
               >
                 Organizations
+              </Link>
+              <i className="fas fa-chevron-right text-gray-400 text-[10px] md:text-xs"></i>
+              <Link
+                to={`/organizations/${organizationId}/companies`}
+                state={{ organizationName }}
+                className="text-green-500 hover:text-green-600 font-medium"
+              >
+                {organizationName || "Companies"}
               </Link>
               <i className="fas fa-chevron-right text-gray-400 text-[10px] md:text-xs"></i>
               <span className="text-gray-500 dark:text-gray-400">
@@ -127,6 +134,9 @@ const AddCompany = () => {
               <h2 className="text-xl md:text-3xl font-bold bg-gradient-to-r from-gray-800 to-green-600 dark:from-gray-200 dark:to-green-400 bg-clip-text text-transparent">
                 <i className="fas fa-building mr-2"></i> Add New Company
               </h2>
+              <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Add a new company under {organizationName || "this organization"}
+              </p>
             </div>
 
             {/* Form Container */}
@@ -145,24 +155,21 @@ const AddCompany = () => {
                     <div className="md:col-span-2">
                       <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                         <i className="fas fa-sitemap text-green-500 mr-1"></i>{" "}
-                        Parent Organization
+                        Parent Organization <span className="text-red-500">*</span>
                       </label>
-
-                      <select
+                      <input
+                        type="text"
+                        value={organizationName}
+                        disabled
+                        className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm md:text-base text-gray-600 dark:text-gray-400 cursor-not-allowed"
+                      />
+                      <input
+                        type="hidden"
                         name="parent_organization_id"
                         value={formData.parent_organization_id}
-                        onChange={handleChange}
-                        className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-                      >
-                        <option value="">Select Parent Organization</option>
-
-                        {organizations.map((org) => (
-                          <option key={org.id} value={org.id}>
-                            {org.name}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     </div>
+                    
                     <div className="md:col-span-2">
                       <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                         <i className="fas fa-building text-green-500 mr-1"></i>{" "}
@@ -174,7 +181,7 @@ const AddCompany = () => {
                         value={formData.name}
                         onChange={handleChange}
                         className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-                        placeholder="Enter organization name"
+                        placeholder="Enter company name"
                         required
                       />
                     </div>
@@ -269,10 +276,11 @@ const AddCompany = () => {
                   )}
                 </div>
 
-                {/* Form Actions - Responsive Buttons */}
+                {/* Form Actions */}
                 <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 md:pt-6 border-t border-gray-200 dark:border-gray-700">
                   <Link
-                    to="/organizations"
+                    to={`/organizations/${organizationId}/companies`}
+                    state={{ organizationName }}
                     className="px-4 md:px-6 py-2 md:py-2.5 rounded-full font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all flex items-center justify-center gap-2 text-sm md:text-base"
                   >
                     <i className="fas fa-times text-xs md:text-sm"></i>
@@ -291,7 +299,7 @@ const AddCompany = () => {
                     ) : (
                       <>
                         <i className="fas fa-save text-xs md:text-sm"></i>{" "}
-                        <span>Save Organization</span>
+                        <span>Save Company</span>
                       </>
                     )}
                   </button>

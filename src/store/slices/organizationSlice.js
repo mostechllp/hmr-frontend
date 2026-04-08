@@ -7,7 +7,7 @@ export const fetchOrganizations = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await apiClient.get("/admin/organizations");
-      console.log("res: ", response.data);
+      console.log("Organizations response: ", response.data);
       return response.data.data;
     } catch (error) {
       return rejectWithValue(
@@ -60,88 +60,18 @@ export const deleteOrganization = createAsyncThunk(
   },
 );
 
-// Fetch companies
-export const fetchCompanies = createAsyncThunk(
-  "organizations/fetchCompanies",
-  async (organizationId, { rejectWithValue }) => {
-    try {
-      const response = await apiClient.get("/admin/companies");
-      // Filter companies by parent organization if organizationId is provided
-      let companies = response.data.data || [];
-      if (organizationId) {
-        companies = companies.filter(
-          (company) => company.parent_organization_id === organizationId
-        );
-      }
-      return companies;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch companies",
-      );
-    }
-  },
-);
-
-// Add company
-export const addCompany = createAsyncThunk(
-  "organizations/addCompany",
-  async (companyData, { rejectWithValue }) => {
-    try {
-      const response = await apiClient.post("/admin/companies", companyData);
-      return response.data.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to add company",
-      );
-    }
-  },
-);
-
-// Update company
-export const updateCompany = createAsyncThunk(
-  "organizations/updateCompany",
-  async ({ id, data }, { rejectWithValue }) => {
-    try {
-      const response = await apiClient.post(`/admin/companies/${id}`, data);
-      return response.data.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to update company",
-      );
-    }
-  },
-);
-
-// Delete company
-export const deleteCompany = createAsyncThunk(
-  "organizations/deleteCompany",
-  async (id, { rejectWithValue }) => {
-    try {
-      await apiClient.delete(`/admin/companies/${id}`);
-      return id;
-    } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Delete failed");
-    }
-  },
-);
-
 const organizationSlice = createSlice({
   name: "organizations",
   initialState: {
     organizations: [],
-    companies: [],
     currentOrganization: null,
     loading: false,
     error: null,
     totalCount: 0,
-    companiesLoading: false,
   },
   reducers: {
     setCurrentOrganization: (state, action) => {
       state.currentOrganization = action.payload;
-    },
-    clearCompanies: (state) => {
-      state.companies = [];
     },
   },
   extraReducers: (builder) => {
@@ -149,6 +79,7 @@ const organizationSlice = createSlice({
       // Fetch Organizations
       .addCase(fetchOrganizations.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(fetchOrganizations.fulfilled, (state, action) => {
         state.loading = false;
@@ -158,10 +89,15 @@ const organizationSlice = createSlice({
           name: org.name,
           phone: org.phone || "-",
           email: org.email || "-",
-          parentOrganization: org.parent_organization?.name || "—",
+          address: org.address || "-",
           logo: org.logo || null,
+          multiCompany: org.multi_company || "Yes",
           createdAt: org.created_at
-            ? new Date(org.created_at).toLocaleDateString()
+            ? new Date(org.created_at).toLocaleDateString('en-GB', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+              })
             : "-",
           raw: org,
         }));
@@ -172,21 +108,38 @@ const organizationSlice = createSlice({
         state.error = action.payload || action.error.message;
       })
       // Add Organization
+      .addCase(addOrganization.pending, (state) => {
+        state.loading = true;
+      })
       .addCase(addOrganization.fulfilled, (state, action) => {
+        state.loading = false;
         const newOrg = {
           id: action.payload.id,
           name: action.payload.name,
           phone: action.payload.phone || "-",
           email: action.payload.email || "-",
-          parentOrganization: action.payload.parent_organization?.name || "—",
+          address: action.payload.address || "-",
           logo: action.payload.logo || null,
+          multiCompany: action.payload.multi_company || "Yes",
           createdAt: action.payload.created_at
-            ? new Date(action.payload.created_at).toLocaleDateString()
-            : new Date().toLocaleDateString(),
+            ? new Date(action.payload.created_at).toLocaleDateString('en-GB', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+              })
+            : new Date().toLocaleDateString('en-GB', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+              }),
           raw: action.payload,
         };
         state.organizations.unshift(newOrg);
         state.totalCount += 1;
+      })
+      .addCase(addOrganization.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || action.error.message;
       })
       // Update Organization
       .addCase(updateOrganization.fulfilled, (state, action) => {
@@ -199,6 +152,7 @@ const organizationSlice = createSlice({
             name: action.payload.name,
             phone: action.payload.phone || "-",
             email: action.payload.email || "-",
+            address: action.payload.address || "-",
             raw: action.payload,
           };
         }
@@ -209,69 +163,9 @@ const organizationSlice = createSlice({
           (org) => org.id !== action.payload,
         );
         state.totalCount -= 1;
-      })
-      // Fetch Companies
-      .addCase(fetchCompanies.pending, (state) => {
-        state.companiesLoading = true;
-      })
-      .addCase(fetchCompanies.fulfilled, (state, action) => {
-        state.companiesLoading = false;
-        state.companies = action.payload.map((company) => ({
-          id: company.id,
-          name: company.name,
-          phone: company.phone || "-",
-          email: company.email || "-",
-          parentOrganization: company.parent_organization?.name || state.currentOrganization?.name || "-",
-          logo: company.logo || null,
-          createdAt: company.created_at
-            ? new Date(company.created_at).toLocaleDateString()
-            : "-",
-          raw: company,
-        }));
-      })
-      .addCase(fetchCompanies.rejected, (state, action) => {
-        state.companiesLoading = false;
-        state.error = action.payload || action.error.message;
-      })
-      // Add Company
-      .addCase(addCompany.fulfilled, (state, action) => {
-        const newCompany = {
-          id: action.payload.id,
-          name: action.payload.name,
-          phone: action.payload.phone || "-",
-          email: action.payload.email || "-",
-          parentOrganization: state.currentOrganization?.name || "-",
-          logo: action.payload.logo || null,
-          createdAt: action.payload.created_at
-            ? new Date(action.payload.created_at).toLocaleDateString()
-            : new Date().toLocaleDateString(),
-          raw: action.payload,
-        };
-        state.companies.unshift(newCompany);
-      })
-      // Update Company
-      .addCase(updateCompany.fulfilled, (state, action) => {
-        const index = state.companies.findIndex(
-          (company) => company.id === action.payload.id,
-        );
-        if (index !== -1) {
-          state.companies[index] = {
-            ...state.companies[index],
-            name: action.payload.name,
-            phone: action.payload.phone || "-",
-            email: action.payload.email || "-",
-            raw: action.payload,
-          };
-        }
-      })
-      // Delete Company
-      .addCase(deleteCompany.fulfilled, (state, action) => {
-        state.companies = state.companies.filter(
-          (company) => company.id !== action.payload,
-        );
       });
   },
 });
 
-export const { setCurrentOrganization, clearCompanies } = organizationSlice.actions;
+export const { setCurrentOrganization } = organizationSlice.actions;
 export default organizationSlice.reducer;
