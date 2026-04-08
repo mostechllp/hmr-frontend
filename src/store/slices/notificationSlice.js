@@ -6,7 +6,19 @@ export const fetchNotifications = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await apiClient.get("/admin/notifications");
-      return res.data.data; // 👈 array
+      return res.data.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || "Error");
+    }
+  },
+);
+
+export const markNotificationAsRead = createAsyncThunk(
+  "notifications/markNotificationAsRead",
+  async (id, { rejectWithValue }) => {
+    try {
+      await apiClient.post(`/admin/notifications/${id}/mark-as-read`);
+      return id; // return ID so reducer can update state
     } catch (err) {
       return rejectWithValue(err.response?.data || "Error");
     }
@@ -54,10 +66,20 @@ const notificationSlice = createSlice({
       })
       .addCase(fetchNotifications.rejected, (state) => {
         state.loading = false;
+      })
+      .addCase(markNotificationAsRead.fulfilled, (state, action) => {
+        const notification = state.notifications.find(
+          (n) => n.id === action.payload,
+        );
+
+        if (notification && !notification.read) {
+          notification.read = true;
+          state.unreadCount -= 1;
+        }
       });
   },
 });
 
-export const { markAsRead, markAllRead, addNotification } =
+export const { markAsRead, markAllRead } =
   notificationSlice.actions;
 export default notificationSlice.reducer;

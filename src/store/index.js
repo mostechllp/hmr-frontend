@@ -5,7 +5,7 @@ import notificationReducer from "./slices/notificationSlice"
 import organizationReducer from "./slices/organizationSlice"
 import agreementReducer from "./slices/agreementsSlice"
 import attendanceReducer from "./slices/attendanceSlice"
-import leaveReducer from "./slices/leaveSlice"
+import leaveReducer from "./slices/LeaveSlice"
 import designationReducer from "./slices/designationSlice"
 import taskReportReducer from './slices/taskReportSlice';
 import dashboardReducer from "./slices/dashboardSlice";

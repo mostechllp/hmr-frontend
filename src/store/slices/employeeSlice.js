@@ -5,7 +5,7 @@ export const fetchEmployees = createAsyncThunk(
   "employees/fetchAll",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await apiClient.get("/employees");
+      const response = await apiClient.get("/admin/employees");
       return response.data;
     } catch (error) {
       return rejectWithValue(
@@ -19,7 +19,7 @@ export const addEmployee = createAsyncThunk(
   "employees/add",
   async (employeeData, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post("/employees", employeeData);
+      const response = await apiClient.post("/admin/employees", employeeData);
       return response.data;
     } catch (error) {
       return rejectWithValue(
@@ -33,7 +33,7 @@ export const updateEmployee = createAsyncThunk(
   "employees/update",
   async ({ id, data }, { rejectWithValue }) => {
     try {
-      const response = await apiClient.put(`/employees/${id}`, data);
+      const response = await apiClient.put(`/admin/employees/${id}`, data);
       return response.data;
     } catch (error) {
       return rejectWithValue(
@@ -47,7 +47,7 @@ export const deleteEmployee = createAsyncThunk(
   "employees/delete",
   async (id, { rejectWithValue }) => {
     try {
-      await apiClient.delete(`/employees/${id}`);
+      await apiClient.delete(`/admin/employees/${id}`);
       return id;
     } catch (error) {
       return rejectWithValue(
@@ -61,8 +61,7 @@ export const updateEmployeeStatus = createAsyncThunk(
   "employees/updateStatus",
   async ({ id, status }, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await apiClient.post(`/admin/employees/${id}/update-status`, { status });
       return { id, status };
     } catch (error) {
       return rejectWithValue(error.message);
@@ -113,7 +112,28 @@ const employeeSlice = createSlice({
       })
       .addCase(fetchEmployees.fulfilled, (state, action) => {
         state.loading = false;
-        state.employees = action.payload.data || action.payload;
+        state.loading = false;
+
+        const apiData = action.payload.data?.data || [];
+
+        state.employees = apiData.map((emp) => ({
+          id: emp.id,
+
+          name: [emp.first_name, emp.last_name].filter(Boolean).join(" "),
+
+          status: emp.user?.status === "active" ? "Active" : "Inactive",
+
+          designation: emp.user?.designation?.name || "-",
+          department: emp.user?.department?.name || "-",
+          company: emp.user?.company?.name || "-",
+
+          raw: emp,
+        }));
+
+        // pagination
+        state.totalCount = action.payload.data?.total || 0;
+        state.currentPage = action.payload.data?.current_page || 1;
+        state.perPage = action.payload.data?.per_page || 10;
         state.totalCount = action.payload.total || action.payload.length;
       })
       .addCase(fetchEmployees.rejected, (state, action) => {

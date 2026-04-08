@@ -6,7 +6,7 @@ import { showToast } from "../components/common/Toast";
 import { fetchEmployees } from "../store/slices/employeeSlice";
 import { fetchOrganizations } from "../store/slices/organizationSlice";
 import { fetchAttendanceRecords } from "../store/slices/attendanceSlice";
-import { fetchLeaves } from "../store/slices/leaveSlice";
+import { fetchLeaves } from "../store/slices/LeaveSlice";
 
 const Reports = () => {
   const dispatch = useDispatch();

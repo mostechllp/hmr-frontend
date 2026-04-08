@@ -10,7 +10,7 @@ import {
   fetchDesignations,
   deleteDesignation,
 } from "../store/slices/designationSlice";
-import DesignationModal from "../components/designations/DesignationModal";
+import DesignationModal from "../components/designations/designationModal"
 
 const Designations = () => {
   const dispatch = useDispatch();

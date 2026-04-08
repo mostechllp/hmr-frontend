@@ -7,7 +7,7 @@ import SearchBar from '../components/common/SearchBar';
 import EntriesSelector from '../components/common/EntriesSelector';
 import LeaveModal from '../components/leaves/LeaveModal';
 import { showToast } from '../components/common/Toast';
-import { fetchLeaves, updateLeaveStatus } from '../store/slices/leaveSlice';
+import { fetchLeaves, updateLeaveStatus } from '../store/slices/LeaveSlice';
 import Pagination from '../components/common/Paginations';
 
 const Leaves = () => {

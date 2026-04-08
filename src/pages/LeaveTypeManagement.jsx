@@ -8,7 +8,7 @@ import EntriesSelector from '../components/common/EntriesSelector';
 import Loader from '../components/common/Loader';
 import LeaveTypeModal from '../components/leaves/LeaveTypeModal';
 import { showToast } from '../components/common/Toast';
-import { fetchLeaveTypes, deleteLeaveType } from '../store/slices/leaveSlice';
+import { fetchLeaveTypes, deleteLeaveType } from '../store/slices/LeaveSlice';
 import Pagination from '../components/common/Paginations';
 
 const LeaveTypeManagement = () => {

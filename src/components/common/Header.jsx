@@ -268,7 +268,7 @@ const Header = ({ onMenuClick }) => {
               className="w-9 h-9 md:w-10 md:h-10 rounded-xl overflow-hidden shadow-md"
             >
               <img
-                src="https://violet-leopard-500489.hostingersite.com/hr/public/storage/avatars/jnBiWzD1Lt4YMtHS4hK2CS0Pcbo3vSOZw7Xd6px4.jpg"
+                src={user?.avatar}
                 alt="Profile"
                 className="w-full h-full object-cover"
               />
@@ -278,16 +278,16 @@ const Header = ({ onMenuClick }) => {
               <div className="absolute top-12 right-0 w-64 bg-white dark:bg-gray-800 rounded-2xl shadow-soft-lg border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
                 <div className="p-4 flex gap-3 border-b border-gray-200 dark:border-gray-700">
                   <img
-                    src="https://violet-leopard-500489.hostingersite.com/hr/public/storage/avatars/jnBiWzD1Lt4YMtHS4hK2CS0Pcbo3vSOZw7Xd6px4.jpg"
+                    src={user?.avatar}
                     alt="Profile"
                     className="w-12 h-12 rounded-xl object-cover"
                   />
                   <div>
                     <h4 className="font-semibold text-gray-800 dark:text-gray-200">
-                      {user?.name || "HR Admin"}
+                      {user?.employee?.name || "HR Admin"}
                     </h4>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {user?.email || "hr@thesay.ae"}
+                      {user?.email}
                     </p>
                   </div>
                 </div>
