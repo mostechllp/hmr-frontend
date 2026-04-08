@@ -43,11 +43,29 @@ const AddCompany = () => {
   // Handle company error
   useEffect(() => {
     if (companyError) {
-      if (typeof companyError === 'object') {
-        const errorMessages = Object.values(companyError).flat();
-        showToast(errorMessages[0] || "Validation error", "error");
-      } else {
+      console.log("Company error received:", companyError);
+      
+      // Handle validation errors
+      if (companyError && typeof companyError === 'object') {
+        if (companyError.errors) {
+          // Display specific field errors
+          Object.keys(companyError.errors).forEach(field => {
+            const messages = companyError.errors[field];
+            if (Array.isArray(messages)) {
+              messages.forEach(msg => showToast(`${field}: ${msg}`, "error"));
+            } else {
+              showToast(`${field}: ${messages}`, "error");
+            }
+          });
+        } else if (companyError.message) {
+          showToast(companyError.message, "error");
+        } else {
+          showToast("Validation error", "error");
+        }
+      } else if (typeof companyError === 'string') {
         showToast(companyError, "error");
+      } else {
+        showToast("Failed to create company", "error");
       }
       dispatch(clearError());
     }
@@ -64,19 +82,28 @@ const AddCompany = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file size (2MB)
       if (file.size > 2 * 1024 * 1024) {
         showToast("File size must be less than 2MB", "error");
         return;
       }
       
-      const allowedTypes = ["image/jpeg", "image/png", "image/svg+xml"];
+      // Validate file type
+      const allowedTypes = ["image/jpeg", "image/png", "image/jpg", "image/gif", "image/svg+xml"];
       if (!allowedTypes.includes(file.type)) {
-        showToast("Only JPG, PNG, and SVG files are allowed", "error");
+        showToast("Only JPG, PNG, GIF, and SVG files are allowed", "error");
         return;
       }
       
+      console.log("Selected file:", {
+        name: file.name,
+        type: file.type,
+        size: file.size
+      });
+      
       setFormData({ ...formData, logo: file });
       
+      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewLogo(reader.result);
@@ -101,31 +128,46 @@ const AddCompany = () => {
     setLoading(true);
     
     try {
-      const submitData = {
-        organization_id: parseInt(formData.organization_id),
-        company_name: formData.company_name.trim(),
-        phone: formData.phone || "",
-        email: formData.email || "",
-        address: formData.address || "",
-      };
+      // Create FormData for file upload - matching Postman exactly
+      const submitData = new FormData();
+      submitData.append("organization_id", formData.organization_id); // Send as string, not parseInt
+      submitData.append("company_name", formData.company_name.trim());
+      
+      if (formData.phone) submitData.append("phone", formData.phone);
+      if (formData.email) submitData.append("email", formData.email);
+      if (formData.address) submitData.append("address", formData.address);
+      
+      // Only append logo if it exists
+      if (formData.logo) {
+        // Make sure we're sending the actual file object
+        submitData.append("logo", formData.logo);
+      }
 
-      console.log("Submitting company with data:", submitData);
+      // Log FormData contents for debugging
+      console.log("Submitting company with FormData:");
+      for (let pair of submitData.entries()) {
+        if (pair[0] === 'logo') {
+          console.log(`logo: File - ${pair[1].name} (${pair[1].size} bytes, ${pair[1].type})`);
+        } else {
+          console.log(`${pair[0]}: ${pair[1]}`);
+        }
+      }
 
       const result = await dispatch(addCompany(submitData));
       
       if (addCompany.fulfilled.match(result)) {
         showToast(`Company "${formData.company_name}" created successfully!`, "success");
-        // Navigate to the companies list page for this organization
         setTimeout(() => {
           navigate(`/organizations/${formData.organization_id}/companies`);
         }, 1500);
       } else {
-        const errorMsg = result.payload;
-        if (typeof errorMsg === 'object') {
-          const firstError = Object.values(errorMsg)[0];
-          showToast(Array.isArray(firstError) ? firstError[0] : firstError, "error");
+        console.error("Failed result:", result);
+        if (result.payload && result.payload.message) {
+          showToast(result.payload.message, "error");
+        } else if (typeof result.payload === 'string') {
+          showToast(result.payload, "error");
         } else {
-          showToast(errorMsg || "Failed to create company", "error");
+          showToast("Failed to create company", "error");
         }
       }
     } catch (error) {
@@ -286,13 +328,13 @@ const AddCompany = () => {
                               type="file"
                               className="sr-only"
                               onChange={handleFileChange}
-                              accept="image/jpeg,image/png,image/svg+xml"
+                              accept="image/jpeg,image/png,image/jpg,image/gif,image/svg+xml"
                             />
                           </label>
                           <p className="pl-1">or drag and drop</p>
                         </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          PNG, JPG, SVG up to 2MB
+                          JPG, PNG, GIF, SVG up to 2MB
                         </p>
                       </>
                     )}
@@ -304,7 +346,7 @@ const AddCompany = () => {
               <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button
                   type="button"
-                  onClick={() => navigate(-1)} // Go back to previous page
+                  onClick={() => navigate(-1)}
                   className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   Cancel

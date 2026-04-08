@@ -22,7 +22,6 @@ const Companies = () => {
   const { companies, loading, currentOrganizationName } = useSelector(
     (state) => state.companies || {},
   );
-  console.log("Companies: ", companies)
 
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -34,6 +33,51 @@ const Companies = () => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [failedImages, setFailedImages] = useState({});
+
+  // Get the base URL from environment or use the current origin
+  const getBaseUrl = () => {
+    // First try to get from env
+    const apiUrl = import.meta.env.VITE_API_URL;
+    if (apiUrl) {
+      // Remove /api from the end if present
+      return apiUrl.replace(/\/api$/, '');
+    }
+    // Fallback to current origin
+    return window.location.origin;
+  };
+
+  const getFullLogoUrl = (logoPath) => {
+    if (!logoPath) return null;
+    
+    // If it's already a full URL, return it
+    if (logoPath.startsWith('http://') || logoPath.startsWith('https://')) {
+      return logoPath;
+    }
+    
+    const baseUrl = getBaseUrl();
+    
+    // Remove any leading slashes
+    const cleanPath = logoPath.replace(/^\/+/, '');
+    
+    // Construct the full URL
+    // The API stores logos in storage/app/public/logos/companies/...
+    // The public URL should be /storage/logos/companies/...
+    let fullUrl;
+    if (cleanPath.startsWith('storage/')) {
+      fullUrl = `${baseUrl}/${cleanPath}`;
+    } else {
+      fullUrl = `${baseUrl}/storage/${cleanPath}`;
+    }
+    
+    console.log('Logo URL constructed:', {
+      original: logoPath,
+      baseUrl,
+      fullUrl
+    });
+    
+    return fullUrl;
+  };
 
   useEffect(() => {
     const checkMobile = () => {
@@ -46,7 +90,6 @@ const Companies = () => {
 
   useEffect(() => {
     if (organizationId) {
-      // If we have the organization from state, set it
       if (organization) {
         dispatch(
           setCurrentOrganization({
@@ -90,6 +133,7 @@ const Companies = () => {
     setSelectedCompany(company);
     setConfirmOpen(true);
   };
+  
   const handleConfirmDelete = async () => {
     if (!selectedCompany) return;
 
@@ -101,11 +145,18 @@ const Companies = () => {
       showToast(`${selectedCompany.name} deleted successfully`, "success");
       setConfirmOpen(false);
       setSelectedCompany(null);
+      // Refresh the list
+      dispatch(fetchCompanies(parseInt(organizationId)));
     } else {
       showToast("Failed to delete company", "error");
     }
 
     setDeleteLoading(false);
+  };
+
+  const handleImageError = (companyId) => {
+    console.log(`Failed to load logo for company ID: ${companyId}`);
+    setFailedImages(prev => ({ ...prev, [companyId]: true }));
   };
 
   const totalCompanies = companies?.length || 0;
@@ -240,63 +291,69 @@ const Companies = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {pageCompanies.map((company) => (
-                      <tr
-                        key={company.id}
-                        className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                      >
-                        <td className="px-3 md:px-4 py-2 md:py-3">
-                          {company.logo ? (
-                            <img
-                              src={company.logo}
-                              alt={company.name}
-                              className="w-8 h-8 md:w-10 md:h-10 rounded-xl object-cover"
-                            />
-                          ) : (
-                            <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white">
-                              <i className="fas fa-building text-sm md:text-lg"></i>
+                    {pageCompanies.map((company) => {
+                      const hasValidLogo = company.logo && !failedImages[company.id];
+                      const logoUrl = hasValidLogo ? getFullLogoUrl(company.logo) : null;
+                      
+                      return (
+                        <tr
+                          key={company.id}
+                          className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                        >
+                          <td className="px-3 md:px-4 py-2 md:py-3">
+                            {hasValidLogo && logoUrl ? (
+                              <img
+                                src={logoUrl}
+                                alt={company.name}
+                                className="w-8 h-8 md:w-10 md:h-10 rounded-xl object-cover"
+                                onError={() => handleImageError(company.id)}
+                              />
+                            ) : (
+                              <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white">
+                                <i className="fas fa-building text-sm md:text-lg"></i>
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold text-gray-800 dark:text-gray-200">
+                            {company.name}
+                          </td>
+                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                            {company.phone !== "-" ? company.phone : "—"}
+                          </td>
+                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                            {company.email !== "-" ? company.email : "—"}
+                          </td>
+                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                            {company.address !== "-" ? company.address : "—"}
+                          </td>
+                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                            {company.createdAt}
+                          </td>
+                          <td className="px-3 md:px-4 py-2 md:py-3">
+                            <div className="flex gap-1 md:gap-2">
+                              <Link
+                                to={`/organizations/${organizationId}/edit-company/${company.id}`}
+                                state={{
+                                  organizationName:
+                                    currentOrganizationName || organization?.name,
+                                }}
+                                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-amber-500 transition-colors"
+                                title="Edit"
+                              >
+                                <i className="fas fa-edit text-xs md:text-sm"></i>
+                              </Link>
+                              <button
+                                onClick={() => handleDeleteClick(company)}
+                                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500 transition-colors"
+                                title="Delete"
+                              >
+                                <i className="fas fa-trash text-xs md:text-sm"></i>
+                              </button>
                             </div>
-                          )}
-                        </td>
-                        <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold text-gray-800 dark:text-gray-200">
-                          {company.name}
-                        </td>
-                        <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                          {company.phone}
-                        </td>
-                        <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                          {company.email}
-                        </td>
-                        <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                          {company.address}
-                        </td>
-                        <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                          {company.createdAt}
-                        </td>
-                        <td className="px-3 md:px-4 py-2 md:py-3">
-                          <div className="flex gap-1 md:gap-2">
-                            <Link
-                              to={`/organizations/${organizationId}/edit-company/${company.id}`}
-                              state={{
-                                organizationName:
-                                  currentOrganizationName || organization?.name,
-                              }}
-                              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-amber-500 transition-colors"
-                              title="Edit"
-                            >
-                              <i className="fas fa-edit text-xs md:text-sm"></i>
-                            </Link>
-                            <button
-                              onClick={() => handleDeleteClick(company)}
-                              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500 transition-colors"
-                              title="Delete"
-                            >
-                              <i className="fas fa-trash text-xs md:text-sm"></i>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                        </tr>
+                      );
+                    })}
                     {pageCompanies.length === 0 && (
                       <tr>
                         <td

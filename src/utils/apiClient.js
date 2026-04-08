@@ -5,7 +5,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL;
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    'Accept': 'application/json',
   },
 });
 
@@ -15,6 +15,13 @@ apiClient.interceptors.request.use(
     const token = localStorage.getItem('hr-token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    // Only set Content-Type to application/json if not sending FormData
+    if (!(config.data instanceof FormData)) {
+      config.headers['Content-Type'] = 'application/json';
+    } else {
+      // For FormData, delete the Content-Type header to let browser set it
+      delete config.headers['Content-Type'];
     }
     return config;
   },

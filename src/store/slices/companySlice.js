@@ -11,7 +11,7 @@ export const fetchCompanies = createAsyncThunk(
       // Filter companies by organization
       if (organizationId) {
         companies = companies.filter(
-          (company) => company.organization_id === parseInt(organizationId)
+          (company) => company.organization_id === parseInt(organizationId),
         );
       }
       return { companies, organizationId };
@@ -28,25 +28,22 @@ export const addCompany = createAsyncThunk(
   "companies/add",
   async (companyData, { rejectWithValue }) => {
     try {
-      const payload = {
-        organization_id: parseInt(companyData.organization_id),
-        company_name: companyData.company_name,
-        phone: companyData.phone || "",
-        email: companyData.email || "",
-        address: companyData.address || "",
-      };
-
-      console.log("Sending company data:", payload);
-      
-      const response = await apiClient.post("/admin/companies", payload);
+      // Don't set headers here - let the interceptor handle it
+      const response = await apiClient.post("/admin/companies", companyData);
       console.log("Company add response:", response.data);
-      
       return response.data.data;
     } catch (error) {
       console.error("Company add error:", error.response?.data);
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.errors || 
-                          "Failed to add company";
+      
+      // Return detailed validation errors
+      if (error.response?.data?.errors) {
+        return rejectWithValue({
+          message: error.response.data.message,
+          errors: error.response.data.errors
+        });
+      }
+      
+      const errorMessage = error.response?.data?.message || "Failed to add company";
       return rejectWithValue(errorMessage);
     }
   },
@@ -97,19 +94,19 @@ export const fetchCompanyById = createAsyncThunk(
       // First fetch all companies for the organization
       const response = await apiClient.get("/admin/companies");
       let companies = response.data.data || [];
-      
+
       // Filter by organization
       companies = companies.filter(
-        (company) => company.organization_id === parseInt(organizationId)
+        (company) => company.organization_id === parseInt(organizationId),
       );
-      
+
       // Find the specific company
-      const company = companies.find(c => c.id === parseInt(companyId));
-      
+      const company = companies.find((c) => c.id === parseInt(companyId));
+
       if (!company) {
         return rejectWithValue("Company not found");
       }
-      
+
       return { company, organizationId };
     } catch (error) {
       return rejectWithValue(
@@ -165,10 +162,10 @@ const companySlice = createSlice({
           logo: company.logo || null,
           organization_id: company.organization_id,
           createdAt: company.created_at
-            ? new Date(company.created_at).toLocaleDateString('en-GB', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric'
+            ? new Date(company.created_at).toLocaleDateString("en-GB", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
               })
             : "-",
           raw: company,
@@ -220,15 +217,15 @@ const companySlice = createSlice({
           logo: action.payload.logo || null,
           organization_id: action.payload.organization_id,
           createdAt: action.payload.created_at
-            ? new Date(action.payload.created_at).toLocaleDateString('en-GB', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric'
+            ? new Date(action.payload.created_at).toLocaleDateString("en-GB", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
               })
-            : new Date().toLocaleDateString('en-GB', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric'
+            : new Date().toLocaleDateString("en-GB", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
               }),
           raw: action.payload,
         };
@@ -262,7 +259,10 @@ const companySlice = createSlice({
           };
         }
         // Also update currentCompany if it matches
-        if (state.currentCompany && state.currentCompany.id === action.payload.id) {
+        if (
+          state.currentCompany &&
+          state.currentCompany.id === action.payload.id
+        ) {
           state.currentCompany = {
             ...state.currentCompany,
             name: action.payload.company_name,
@@ -297,5 +297,6 @@ const companySlice = createSlice({
   },
 });
 
-export const { clearCompanies, setCurrentOrganization, clearError } = companySlice.actions;
+export const { clearCompanies, setCurrentOrganization, clearError } =
+  companySlice.actions;
 export default companySlice.reducer;
