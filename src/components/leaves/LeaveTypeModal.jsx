@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { showToast } from '../common/Toast';
-import { addLeaveType, updateLeaveType } from '../../store/slices/leaveSlice';
+import { addLeaveType, updateLeaveType } from '../../store/slices/LeaveSlice';
 
 const LeaveTypeModal = ({ isOpen, editingType, onClose }) => {
   const dispatch = useDispatch();
