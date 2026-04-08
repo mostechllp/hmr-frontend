@@ -61,12 +61,21 @@ export const updateEmployeeStatus = createAsyncThunk(
   "employees/updateStatus",
   async ({ id, status }, { rejectWithValue }) => {
     try {
-      await apiClient.post(`/admin/employees/${id}/update-status`, { status });
+      await apiClient.post(
+        `/admin/employees/${id}/update-status`,
+        {
+          status: status.toLowerCase(), 
+        }
+      );
+
       return { id, status };
     } catch (error) {
-      return rejectWithValue(error.message);
+      console.log("STATUS ERROR:", error.response?.data); 
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update status"
+      );
     }
-  },
+  }
 );
 
 const initialState = {

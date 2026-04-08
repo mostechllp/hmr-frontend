@@ -10,11 +10,14 @@ import {
   fetchDesignations,
   deleteDesignation,
 } from "../store/slices/designationSlice";
-import DesignationModal from "../components/designations/designationModal"
+import DesignationModal from "../components/designations/designationModal";
+import ConfirmModal from "../components/common/ConfirmModal";
 
 const Designations = () => {
   const dispatch = useDispatch();
-  const { designations = [] } = useSelector((state) => state.designations || {});
+  const { designations = [] } = useSelector(
+    (state) => state.designations || {},
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -22,6 +25,9 @@ const Designations = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingDesignation, setEditingDesignation] = useState(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedDesignation, setSelectedDesignation] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -39,9 +45,8 @@ const Designations = () => {
   const getFilteredDesignations = () => {
     let filtered = designations;
     if (searchTerm) {
-      filtered = filtered.filter(
-        (des) =>
-          des.name.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter((des) =>
+        des.name.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
     return filtered;
@@ -53,15 +58,26 @@ const Designations = () => {
   const start = (currentPage - 1) * perPage;
   const pageDesignations = filteredDesignations.slice(start, start + perPage);
 
-  const handleDelete = async (id, name) => {
-    if (window.confirm(`Are you sure you want to delete ${name}?`)) {
-      const result = await dispatch(deleteDesignation(id));
-      if (deleteDesignation.fulfilled.match(result)) {
-        showToast(`${name} deleted successfully`, "success");
-      } else {
-        showToast("Failed to delete designation", "error");
-      }
+  const handleDeleteClick = (designation) => {
+    setSelectedDesignation(designation);
+    setConfirmOpen(true);
+  };
+  const handleConfirmDelete = async () => {
+    if (!selectedDesignation) return;
+
+    setDeleteLoading(true);
+
+    const result = await dispatch(deleteDesignation(selectedDesignation.id));
+
+    if (deleteDesignation.fulfilled.match(result)) {
+      showToast(`${selectedDesignation.name} deleted successfully`, "success");
+      setConfirmOpen(false);
+      setSelectedDesignation(null);
+    } else {
+      showToast("Failed to delete designation", "error");
     }
+
+    setDeleteLoading(false);
   };
 
   const handleEdit = (designation) => {
@@ -82,12 +98,11 @@ const Designations = () => {
   return (
     <div className="app flex min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
-      <div className={`flex-1 min-w-0 w-full overflow-x-hidden ${!isMobile ? 'md:ml-[72px]' : ''}`}>
+      <div
+        className={`flex-1 min-w-0 w-full overflow-x-hidden ${!isMobile ? "md:ml-[72px]" : ""}`}
+      >
         <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
         <main className="content px-4 py-4 md:px-6 md:py-6 w-full overflow-x-hidden">
-          
-          
-
           {/* Stats Cards */}
           <div className="stats-grid grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-5 mb-6">
             <div className="bg-white dark:bg-gray-800 rounded-xl p-3 md:p-5 border border-gray-200 dark:border-gray-700 transition-all hover:-translate-y-0.5 hover:shadow-soft">
@@ -111,7 +126,10 @@ const Designations = () => {
                 </div>
               </div>
               <div className="text-2xl md:text-3xl font-extrabold text-blue-600 dark:text-blue-400">
-                {designations.filter(d => d.defaultPunchAccess === true).length}
+                {
+                  designations.filter((d) => d.defaultPunchAccess === true)
+                    .length
+                }
               </div>
               <div className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
                 Default Punch Access
@@ -199,7 +217,7 @@ const Designations = () => {
                             <i className="fas fa-edit text-xs md:text-sm"></i>
                           </button>
                           <button
-                            onClick={() => handleDelete(des.id, des.name)}
+                            onClick={() => handleDeleteClick(des)}
                             className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500 transition-colors"
                             title="Delete"
                           >
@@ -211,7 +229,10 @@ const Designations = () => {
                   ))}
                   {pageDesignations.length === 0 && (
                     <tr>
-                      <td colSpan="4" className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                      <td
+                        colSpan="4"
+                        className="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
+                      >
                         No designations found
                       </td>
                     </tr>
@@ -236,6 +257,16 @@ const Designations = () => {
         isOpen={modalOpen}
         onClose={handleModalClose}
         editingDesignation={editingDesignation}
+      />
+
+      <ConfirmModal
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Designation"
+        message={`Are you sure you want to delete "${selectedDesignation?.name}"?`}
+        confirmText="Delete"
+        loading={deleteLoading}
       />
     </div>
   );

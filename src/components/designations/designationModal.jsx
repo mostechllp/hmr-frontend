@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { showToast } from "../common/Toast";
-import { addDesignation, updateDesignation } from "../../store/slices/designationSlice";
+import {
+  addDesignation,
+  fetchDesignations,
+  updateDesignation,
+} from "../../store/slices/designationSlice";
 
 const DesignationModal = ({ isOpen, onClose, editingDesignation }) => {
   const dispatch = useDispatch();
@@ -15,9 +19,9 @@ const DesignationModal = ({ isOpen, onClose, editingDesignation }) => {
     if (editingDesignation) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
-        name: editingDesignation.name,
-        defaultPunchAccess: editingDesignation.defaultPunchAccess,
-      });
+  name: editingDesignation.name,
+  defaultPunchAccess: !!editingDesignation.defaultPunchAccess,
+});
     } else {
       setFormData({
         name: "",
@@ -31,7 +35,10 @@ const DesignationModal = ({ isOpen, onClose, editingDesignation }) => {
   };
 
   const handleToggleChange = () => {
-    setFormData({ ...formData, defaultPunchAccess: !formData.defaultPunchAccess });
+    setFormData((prev) => ({
+  ...prev,
+  defaultPunchAccess: !prev.defaultPunchAccess,
+}));
   };
 
   const handleSubmit = async (e) => {
@@ -44,24 +51,49 @@ const DesignationModal = ({ isOpen, onClose, editingDesignation }) => {
 
     setLoading(true);
 
+    const payload = {
+      name: formData.name,
+      default_punch_access: formData.defaultPunchAccess ? 1 : 0,
+    };
+
+    let result;
+
     if (editingDesignation) {
-      const result = await dispatch(
+      result = await dispatch(
         updateDesignation({
           id: editingDesignation.id,
-          data: formData,
-        })
+          data: payload,
+        }),
       );
+
       if (updateDesignation.fulfilled.match(result)) {
-        showToast(`Designation "${formData.name}" updated successfully`, "success");
+        showToast(
+          `Designation "${formData.name}" updated successfully`,
+          "success",
+        );
+        dispatch(fetchDesignations());
         onClose();
+        setFormData({
+          name: "",
+          defaultPunchAccess: false,
+        });
       } else {
         showToast("Failed to update designation", "error");
       }
     } else {
-      const result = await dispatch(addDesignation(formData));
+      result = await dispatch(addDesignation(payload));
+
       if (addDesignation.fulfilled.match(result)) {
-        showToast(`Designation "${formData.name}" added successfully`, "success");
+        showToast(
+          `Designation "${formData.name}" added successfully`,
+          "success",
+        );
+        dispatch(fetchDesignations());
         onClose();
+        setFormData({
+          name: "",
+          defaultPunchAccess: false,
+        });
       } else {
         showToast("Failed to add designation", "error");
       }
@@ -77,7 +109,9 @@ const DesignationModal = ({ isOpen, onClose, editingDesignation }) => {
       <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-soft-lg border border-gray-200 dark:border-gray-700">
         <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-            <i className={`fas ${editingDesignation ? 'fa-edit' : 'fa-plus-circle'} text-green-500`}></i>
+            <i
+              className={`fas ${editingDesignation ? "fa-edit" : "fa-plus-circle"} text-green-500`}
+            ></i>
             {editingDesignation ? "Edit Designation" : "Add Designation"}
           </h3>
           <button
@@ -116,7 +150,8 @@ const DesignationModal = ({ isOpen, onClose, editingDesignation }) => {
                   Default Punch Access
                 </label>
                 <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 max-w-[250px]">
-                  If enabled, employees with this designation can punch in/out without needing an approved WFH request.
+                  If enabled, employees with this designation can punch in/out
+                  without needing an approved WFH request.
                 </p>
                 <p className="text-[10px] text-blue-500 dark:text-blue-400 mt-1">
                   <i className="fas fa-info-circle mr-1"></i>
@@ -127,12 +162,16 @@ const DesignationModal = ({ isOpen, onClose, editingDesignation }) => {
                 type="button"
                 onClick={handleToggleChange}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-200 ${
-                  formData.defaultPunchAccess ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600"
+                  formData.defaultPunchAccess
+                    ? "bg-green-500"
+                    : "bg-gray-300 dark:bg-gray-600"
                 }`}
               >
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-all duration-200 ${
-                    formData.defaultPunchAccess ? "translate-x-6" : "translate-x-1"
+                    formData.defaultPunchAccess
+                      ? "translate-x-6"
+                      : "translate-x-1"
                   }`}
                 />
               </button>
@@ -154,9 +193,14 @@ const DesignationModal = ({ isOpen, onClose, editingDesignation }) => {
               className="px-4 py-2 rounded-full font-semibold bg-green-500 text-white hover:bg-green-600 transition-all flex items-center gap-2 text-sm disabled:opacity-70"
             >
               {loading ? (
-                <><i className="fas fa-spinner fa-spin"></i> Saving...</>
+                <>
+                  <i className="fas fa-spinner fa-spin"></i> Saving...
+                </>
               ) : (
-                <><i className="fas fa-save"></i> {editingDesignation ? "Update" : "Save"}</>
+                <>
+                  <i className="fas fa-save"></i>{" "}
+                  {editingDesignation ? "Update" : "Save"}
+                </>
               )}
             </button>
           </div>

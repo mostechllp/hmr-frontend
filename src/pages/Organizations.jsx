@@ -8,15 +8,21 @@ import EntriesSelector from "../components/common/EntriesSelector";
 import { showToast } from "../components/common/Toast";
 import {
   fetchOrganizations,
-  deleteOrganization,
+  fetchCompanies,
+  deleteCompany,
+  setCurrentOrganization,
 } from "../store/slices/organizationSlice";
 import Pagination from "../components/common/Paginations";
 
 const Organizations = () => {
   const dispatch = useDispatch();
-  const { organizations = [] } = useSelector(
-    (state) => state.organizations || {},
-  );
+  const { 
+    organizations, 
+    companies, 
+    currentOrganization, 
+    companiesLoading 
+  } = useSelector((state) => state.organizations || {});
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -36,50 +42,61 @@ const Organizations = () => {
     dispatch(fetchOrganizations());
   }, [dispatch]);
 
-  const getFilteredOrgs = () => {
-    let filtered = organizations;
+  // Set first organization as current when organizations are loaded
+  useEffect(() => {
+    if (organizations && organizations.length > 0 && !currentOrganization) {
+      const firstOrg = organizations[0];
+      dispatch(setCurrentOrganization(firstOrg));
+      dispatch(fetchCompanies(firstOrg.id));
+    }
+  }, [organizations, currentOrganization, dispatch]);
+
+  const hasOrganization = organizations && organizations.length > 0;
+
+  const getFilteredCompanies = () => {
+    let filtered = companies || [];
     if (searchTerm) {
       filtered = filtered.filter(
-        (org) =>
-          org.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          org.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          org.phone.includes(searchTerm),
+        (company) =>
+          (company.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (company.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (company.phone || "").includes(searchTerm)
       );
     }
     return filtered;
   };
 
-  const filteredOrgs = getFilteredOrgs();
-  const totalFiltered = filteredOrgs.length;
+  const filteredCompanies = getFilteredCompanies();
+  const totalFiltered = filteredCompanies.length;
   const totalPages = Math.ceil(totalFiltered / perPage);
   const start = (currentPage - 1) * perPage;
-  const pageOrgs = filteredOrgs.slice(start, start + perPage);
+  const pageCompanies = filteredCompanies.slice(start, start + perPage);
 
   const handleDelete = async (id, name) => {
     if (window.confirm(`Are you sure you want to delete ${name}?`)) {
-      const result = await dispatch(deleteOrganization(id));
-      if (deleteOrganization.fulfilled.match(result)) {
+      const result = await dispatch(deleteCompany(id));
+      if (deleteCompany.fulfilled.match(result)) {
         showToast(`${name} deleted successfully`, "success");
       } else {
-        showToast("Failed to delete organization", "error");
+        showToast("Failed to delete company", "error");
       }
     }
   };
 
-  const totalOrgs = organizations.length;
-  const hasOrganization = totalOrgs > 0;
+  const totalCompanies = companies?.length || 0;
 
   return (
     <div className="app flex min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
-      <div className={`flex-1 min-w-0 w-full overflow-x-hidden ${!isMobile ? 'md:ml-[72px]' : ''}`}>
+      <div
+        className={`flex-1 min-w-0 w-full overflow-x-hidden ${!isMobile ? "md:ml-[72px]" : ""}`}
+      >
         <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
         <main className="content px-4 py-4 md:px-6 md:py-6 w-full overflow-x-hidden">
-          
           {/* Header */}
           <div className="flex flex-wrap justify-between items-center mb-4 md:mb-6">
             <h2 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-gray-800 to-green-600 dark:from-gray-200 dark:to-green-400 bg-clip-text text-transparent">
-              Organization Directory
+              {hasOrganization ? "Company Management" : "Organization Directory"}
             </h2>
           </div>
 
@@ -106,9 +123,31 @@ const Organizations = () => {
             </div>
           ) : (
             <>
-              {/* Stats Cards - Responsive Grid */}
+              {/* Current Organization Info */}
+              <div className="mb-6 bg-gradient-to-r from-green-50 to-blue-50 dark:from-gray-800 dark:to-gray-800 rounded-xl p-4 border border-green-200 dark:border-green-800">
+                <div className="flex items-center gap-3">
+                  {currentOrganization?.logo ? (
+                    <img
+                      src={currentOrganization.logo}
+                      alt={currentOrganization.name}
+                      className="w-12 h-12 rounded-xl object-cover"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white">
+                      <i className="fas fa-building text-xl"></i>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Current Organization</p>
+                    <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200">
+                      {currentOrganization?.name}
+                    </h3>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats Cards */}
               <div className="stats-grid grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-5 mb-6">
-                {/* Total Organizations Card */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-3 md:p-5 border border-gray-200 dark:border-gray-700 transition-all hover:-translate-y-0.5 hover:shadow-soft">
                   <div className="flex justify-between items-start mb-2 md:mb-3">
                     <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
@@ -116,30 +155,29 @@ const Organizations = () => {
                     </div>
                   </div>
                   <div className="text-2xl md:text-3xl font-extrabold text-green-600 dark:text-green-400">
-                    {totalOrgs}
-                  </div>
-                  <div className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
-                    Total Organizations
-                  </div>
-                </div>
-
-                {/* Companies Card */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-3 md:p-5 border border-gray-200 dark:border-gray-700 transition-all hover:-translate-y-0.5 hover:shadow-soft">
-                  <div className="flex justify-between items-start mb-2 md:mb-3">
-                    <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
-                      <i className="fas fa-building text-blue-600 dark:text-blue-400 text-base md:text-xl"></i>
-                    </div>
-                  </div>
-                  <div className="text-2xl md:text-3xl font-extrabold text-blue-600 dark:text-blue-400">
-                    {totalOrgs}
+                    {totalCompanies}
                   </div>
                   <div className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
                     Total Companies
                   </div>
                 </div>
+
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-3 md:p-5 border border-gray-200 dark:border-gray-700 transition-all hover:-translate-y-0.5 hover:shadow-soft">
+                  <div className="flex justify-between items-start mb-2 md:mb-3">
+                    <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+                      <i className="fas fa-chart-line text-blue-600 dark:text-blue-400 text-base md:text-xl"></i>
+                    </div>
+                  </div>
+                  <div className="text-2xl md:text-3xl font-extrabold text-blue-600 dark:text-blue-400">
+                    Active
+                  </div>
+                  <div className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
+                    Company Status
+                  </div>
+                </div>
               </div>
 
-              {/* Actions Bar - Fully Responsive */}
+              {/* Actions Bar */}
               <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 mb-5">
                 <EntriesSelector value={perPage} onChange={setPerPage} />
                 <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
@@ -157,108 +195,119 @@ const Organizations = () => {
                 </div>
               </div>
 
-              {/* Organizations Table - Horizontal Scroll on Mobile */}
+              {/* Companies Table */}
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto shadow-soft">
-                <div className="min-w-[800px] md:min-w-0">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
-                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
-                          Logo
-                        </th>
-                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
-                          Company Name
-                        </th>
-                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
-                          Phone
-                        </th>
-                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
-                          Email
-                        </th>
-                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
-                          Parent Organization
-                        </th>
-                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
-                          Created At
-                        </th>
-                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {pageOrgs.map((org) => (
-                        <tr
-                          key={org.id}
-                          className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                        >
-                          <td className="px-3 md:px-4 py-2 md:py-3">
-                            {org.logo ? (
-                              <img 
-                                src={org.logo} 
-                                alt={org.name} 
-                                className="w-8 h-8 md:w-10 md:h-10 rounded-xl object-cover"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white">
-                                <i className="fas fa-building text-sm md:text-lg"></i>
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold text-gray-800 dark:text-gray-200">
-                            {org.name}
-                          </td>
-                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                            {org.phone}
-                          </td>
-                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                            {org.email}
-                          </td>
-                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                            {org.parentOrganization || 'THESAY'}
-                          </td>
-                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                            {org.createdAt}
-                          </td>
-                          <td className="px-3 md:px-4 py-2 md:py-3">
-                            <div className="flex gap-1 md:gap-2">
-                              <Link
-                                to={`/edit-company/${org.id}`}
-                                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-amber-500 transition-colors"
-                                title="Edit"
-                              >
-                                <i className="fas fa-edit text-xs md:text-sm"></i>
-                              </Link>
-                              <button
-                                onClick={() => handleDelete(org.id, org.name)}
-                                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500 transition-colors"
-                                title="Delete"
-                              >
-                                <i className="fas fa-trash text-xs md:text-sm"></i>
-                              </button>
-                            </div>
-                           </td>
-                         </tr>
-                      ))}
-                      {pageOrgs.length === 0 && (
-                        <tr>
-                          <td colSpan="7" className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                            No companies found
-                          </td>
+                {companiesLoading ? (
+                  <div className="flex justify-center items-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+                  </div>
+                ) : (
+                  <div className="min-w-[800px] md:min-w-0">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+                          <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
+                            Logo
+                          </th>
+                          <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
+                            Company Name
+                          </th>
+                          <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
+                            Phone
+                          </th>
+                          <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
+                            Email
+                          </th>
+                          <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
+                            Parent Organization
+                          </th>
+                          <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
+                            Created At
+                          </th>
+                          <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
+                            Actions
+                          </th>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {pageCompanies.map((company) => (
+                          <tr
+                            key={company.id}
+                            className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                          >
+                            <td className="px-3 md:px-4 py-2 md:py-3">
+                              {company.logo ? (
+                                <img
+                                  src={company.logo}
+                                  alt={company.name}
+                                  className="w-8 h-8 md:w-10 md:h-10 rounded-xl object-cover"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white">
+                                  <i className="fas fa-building text-sm md:text-lg"></i>
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold text-gray-800 dark:text-gray-200">
+                              {company.name}
+                            </td>
+                            <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                              {company.phone}
+                            </td>
+                            <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                              {company.email}
+                            </td>
+                            <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                              {currentOrganization?.name || "-"}
+                            </td>
+                            <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                              {company.createdAt}
+                            </td>
+                            <td className="px-3 md:px-4 py-2 md:py-3">
+                              <div className="flex gap-1 md:gap-2">
+                                <Link
+                                  to={`/edit-company/${company.id}`}
+                                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-amber-500 transition-colors"
+                                  title="Edit"
+                                >
+                                  <i className="fas fa-edit text-xs md:text-sm"></i>
+                                </Link>
+                                <button
+                                  onClick={() => handleDelete(company.id, company.name)}
+                                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500 transition-colors"
+                                  title="Delete"
+                                >
+                                  <i className="fas fa-trash text-xs md:text-sm"></i>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {pageCompanies.length === 0 && (
+                          <tr>
+                            <td
+                              colSpan="7"
+                              className="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
+                            >
+                              No companies found
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
 
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-                totalItems={totalFiltered}
-                itemsPerPage={perPage}
-              />
+              {totalCompanies > 0 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                  totalItems={totalFiltered}
+                  itemsPerPage={perPage}
+                />
+              )}
             </>
           )}
         </main>

@@ -1,51 +1,57 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-
-// Initial demo data
-const initialDesignations = [
-  { id: 1, name: "Drivers", defaultPunchAccess: true },
-  { id: 2, name: "Employee", defaultPunchAccess: false },
-  { id: 3, name: "HR", defaultPunchAccess: false },
-  { id: 4, name: "Manager", defaultPunchAccess: false },
-  { id: 5, name: "Salesperson", defaultPunchAccess: true },
-];
-
-// Simulate API delay
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+import apiClient from "../../utils/apiClient";
 
 export const fetchDesignations = createAsyncThunk(
   "designations/fetchAll",
-  async () => {
-    await delay(500);
-    return initialDesignations;
-  }
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.get("/admin/designations");
+
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch designations",
+      );
+    }
+  },
 );
 
 export const addDesignation = createAsyncThunk(
   "designations/add",
-  async (designationData) => {
-    await delay(500);
-    const newDesignation = {
-      id: Date.now(),
-      ...designationData,
-    };
-    return newDesignation;
-  }
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.post("/admin/designations", data);
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to add designation",
+      );
+    }
+  },
 );
 
 export const updateDesignation = createAsyncThunk(
   "designations/update",
-  async ({ id, data }) => {
-    await delay(500);
-    return { id, ...data };
-  }
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.put(`/admin/designations/${id}`, data);
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Update failed");
+    }
+  },
 );
 
 export const deleteDesignation = createAsyncThunk(
   "designations/delete",
-  async (id) => {
-    await delay(500);
-    return id;
-  }
+  async (id, { rejectWithValue }) => {
+    try {
+      await apiClient.delete(`/admin/designations/${id}`);
+      return id;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Delete failed");
+    }
+  },
 );
 
 const designationSlice = createSlice({
@@ -65,8 +71,17 @@ const designationSlice = createSlice({
       })
       .addCase(fetchDesignations.fulfilled, (state, action) => {
         state.loading = false;
-        state.designations = action.payload;
-        state.totalCount = action.payload.length;
+
+        const apiData = action.payload || [];
+
+        state.designations = apiData.map((des) => ({
+          id: des.id,
+          name: des.name,
+          defaultPunchAccess: des.default_punch_access === 1,
+          raw: des,
+        }));
+
+        state.totalCount = apiData.length;
       })
       .addCase(fetchDesignations.rejected, (state, action) => {
         state.loading = false;
@@ -74,19 +89,37 @@ const designationSlice = createSlice({
       })
       // Add Designation
       .addCase(addDesignation.fulfilled, (state, action) => {
-        state.designations.push(action.payload);
+        const des = action.payload;
+
+        state.designations.push({
+          id: des.id,
+          name: des.name,
+          defaultPunchAccess: des.default_punch_access === 1,
+          raw: des,
+        });
+
         state.totalCount += 1;
       })
       // Update Designation
       .addCase(updateDesignation.fulfilled, (state, action) => {
-        const index = state.designations.findIndex(d => d.id === action.payload.id);
+        const index = state.designations.findIndex(
+          (d) => d.id === action.payload.id,
+        );
+
         if (index !== -1) {
-          state.designations[index] = { ...state.designations[index], ...action.payload };
+          state.designations[index] = {
+            ...state.designations[index],
+            name: action.payload.name,
+            defaultPunchAccess: action.payload.default_punch_access === 1,
+            raw: action.payload,
+          };
         }
       })
       // Delete Designation
       .addCase(deleteDesignation.fulfilled, (state, action) => {
-        state.designations = state.designations.filter(d => d.id !== action.payload);
+        state.designations = state.designations.filter(
+          (d) => d.id !== action.payload,
+        );
         state.totalCount -= 1;
       });
   },
