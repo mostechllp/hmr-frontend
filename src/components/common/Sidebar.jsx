@@ -42,6 +42,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { path: "/attendances", icon: "fas fa-fingerprint", label: "Attendance" },
     { path: "/leaves", icon: "fas fa-calendar-check", label: "Leaves" },
     { path: "/designations", icon: "fas fa-tags", label: "Designations" },
+    { path: "/departments", icon: "fas fa-building", label: "Departments" },
     { path: "/task-reports", icon: "fas fa-tasks", label: "Task Reports" },
     { path: "/reports", icon: "fas fa-chart-line", label: "Reports" },
     { path: "/settings", icon: "fas fa-gear", label: "Settings" },

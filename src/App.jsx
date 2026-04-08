@@ -21,6 +21,7 @@ const Attendances = lazy(() => import("./pages/Attendances"));
 const Leaves = lazy(() => import("./pages/Leaves"));
 const LeaveTypeManagement = lazy(() => import("./pages/LeaveTypeManagement"));
 const Designations = lazy(() => import("./pages/Designations"));
+const Departments = lazy(() => import("./pages/Departments"))
 const TaskReports = lazy(() => import("./pages/TaskReports"));
 const Reports = lazy(() => import('./pages/Reports'));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -152,6 +153,14 @@ function App() {
           element={
             <PrivateRoute>
               <Designations />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/departments"
+          element={
+            <PrivateRoute>
+              <Departments />
             </PrivateRoute>
           }
         />
