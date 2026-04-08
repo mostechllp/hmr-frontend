@@ -265,7 +265,7 @@ const Organizations = () => {
                                   <i className="fas fa-building text-xs md:text-sm"></i>
                                 </button>
                                 <Link
-                                  to={`/edit-organization/${org.id}`}
+                                  to={`/organizations/edit-organization/${org.id}`}
                                   className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-amber-500 transition-colors"
                                   title="Edit"
                                 >

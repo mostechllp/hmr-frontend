@@ -51,44 +51,51 @@ const AddOrganization = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!formData.name) {
-      showToast('Organization name is required', 'error');
-      return;
-    }
-    if (!formData.phone) {
-      showToast('Phone number is required', 'error');
-      return;
-    }
-    if (!formData.email) {
-      showToast('Email address is required', 'error');
-      return;
-    }
-    
-    setLoading(true);
-    
-    const organizationData = {
-      name: formData.name,
-      phone: formData.phone,
-      email: formData.email,
-      address: formData.address,
-      multi_company: formData.multi_company,
-      logo: logoPreview,
-    };
-    
-    const result = await dispatch(addOrganization(organizationData));
-    setLoading(false);
-    
-    if (addOrganization.fulfilled.match(result)) {
-      showToast(`✓ Organization "${formData.name}" added successfully!`, 'success');
-      setTimeout(() => {
-        navigate('/organizations');
-      }, 1200);
-    } else {
-      showToast('Failed to add organization', 'error');
-    }
+  e.preventDefault();
+  
+  if (!formData.name) {
+    showToast('Organization name is required', 'error');
+    return;
+  }
+  if (!formData.phone) {
+    showToast('Phone number is required', 'error');
+    return;
+  }
+  if (!formData.email) {
+    showToast('Email address is required', 'error');
+    return;
+  }
+  
+  setLoading(true);
+  
+  // Prepare data with correct field names for API
+  const organizationData = {
+    name: formData.name,
+    phone: formData.phone,
+    email: formData.email,
+    address: formData.address,
+    multi_company: formData.multi_company, // Send as multi_company
+    // Also try these if the above doesn't work:
+    // multiCompany: formData.multi_company,
+    // has_multiple_companies: formData.multi_company,
+    logo: logoPreview,
   };
+  
+  console.log("Sending organization data:", organizationData);
+  
+  const result = await dispatch(addOrganization(organizationData));
+  setLoading(false);
+  
+  if (addOrganization.fulfilled.match(result)) {
+    showToast(`✓ Organization "${formData.name}" added successfully!`, 'success');
+    setTimeout(() => {
+      navigate('/organizations');
+    }, 1200);
+  } else {
+    console.error("Add organization failed:", result.payload);
+    showToast('Failed to add organization', 'error');
+  }
+};
 
   return (
     <div className="app flex min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">

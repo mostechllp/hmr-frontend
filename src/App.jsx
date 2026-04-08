@@ -2,10 +2,6 @@ import React, { Suspense, lazy, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";   
 import { useTheme } from "./hooks/useTheme";
 import RouteChangeLoader from "./components/common/RouteChangeLoader";
-import AddOrganization from "./pages/AddOrganization";
-import Designations from "./pages/Designations";
-import TaskReports from "./pages/TaskReports";
-import Reports from "./pages/Reports";
 import { useSelector } from "react-redux";
 
 // Lazy load pages for better performance
@@ -14,14 +10,19 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Employees = lazy(() => import("./pages/Employees"));
 const AddEmployee = lazy(() => import("./pages/AddEmployee"));
 const Organizations = lazy(() => import("./pages/Organizations"));
+const AddOrganization = lazy(() => import("./pages/AddOrganization"));
+const EditOrganization = lazy(() => import("./pages/EditOrganization"));
 const Companies = lazy(() => import("./pages/Companies"));
 const AddCompany = lazy(() => import("./pages/AddCompany"));
+const EditCompany = lazy(() => import("./pages/EditCompany"));
 const Agreements = lazy(() => import("./pages/Agreements"));
 const AddAgreement = lazy(() => import("./pages/AddAgreement"));
 const Attendances = lazy(() => import("./pages/Attendances"));
 const Leaves = lazy(() => import("./pages/Leaves"));
 const LeaveTypeManagement = lazy(() => import("./pages/LeaveTypeManagement"));
-// const Reports = lazy(() => import('./pages/Reports'));
+const Designations = lazy(() => import("./pages/Designations"));
+const TaskReports = lazy(() => import("./pages/TaskReports"));
+const Reports = lazy(() => import('./pages/Reports'));
 const Settings = lazy(() => import("./pages/Settings"));
 
 const PrivateRoute = ({ children }) => {
@@ -90,6 +91,14 @@ function App() {
             </PrivateRoute>
           }
         />
+        <Route
+          path="/organizations/edit-organization/:id"
+          element={
+            <PrivateRoute>
+              <EditOrganization />
+            </PrivateRoute>
+          }
+        />
           <Route
             path="/organizations/:organizationId/companies"
             element={
@@ -103,6 +112,14 @@ function App() {
           element={
             <PrivateRoute>
               <AddCompany />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/organizations/:organizationId/edit-company/:id"
+          element={
+            <PrivateRoute>
+              <EditCompany />
             </PrivateRoute>
           }
         />

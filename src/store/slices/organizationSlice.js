@@ -22,7 +22,10 @@ export const addOrganization = createAsyncThunk(
   "organizations/add",
   async (organizationData, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post("/admin/organizations", organizationData);
+      const response = await apiClient.post(
+        "/admin/organizations",
+        organizationData,
+      );
       return response.data.data;
     } catch (error) {
       return rejectWithValue(
@@ -37,7 +40,7 @@ export const updateOrganization = createAsyncThunk(
   "organizations/update",
   async ({ id, data }, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post(`/admin/organizations/${id}`, data);
+      const response = await apiClient.put(`/admin/organizations/${id}`, data);
       return response.data.data;
     } catch (error) {
       return rejectWithValue(
@@ -90,19 +93,20 @@ const organizationSlice = createSlice({
           phone: org.phone || "-",
           email: org.email || "-",
           address: org.address || "-",
+          multi_company:
+            org.multi_company === 1 || org.multi_company === true
+              ? "Yes"
+              : "No",
+          parentOrganization: org.parent_organization?.name || "—",
           logo: org.logo || null,
-          multiCompany: org.multi_company || "Yes",
           createdAt: org.created_at
-            ? new Date(org.created_at).toLocaleDateString('en-GB', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric'
-              })
+            ? new Date(org.created_at).toLocaleDateString()
             : "-",
           raw: org,
         }));
         state.totalCount = apiData.length || 0;
       })
+
       .addCase(fetchOrganizations.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || action.error.message;
@@ -120,17 +124,21 @@ const organizationSlice = createSlice({
           email: action.payload.email || "-",
           address: action.payload.address || "-",
           logo: action.payload.logo || null,
-          multiCompany: action.payload.multi_company || "Yes",
+          // Map the response field correctly
+          multi_company:
+            action.payload.multi_company ||
+            action.payload.multiCompany ||
+            "Yes",
           createdAt: action.payload.created_at
-            ? new Date(action.payload.created_at).toLocaleDateString('en-GB', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric'
+            ? new Date(action.payload.created_at).toLocaleDateString("en-GB", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
               })
-            : new Date().toLocaleDateString('en-GB', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric'
+            : new Date().toLocaleDateString("en-GB", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
               }),
           raw: action.payload,
         };
@@ -153,6 +161,11 @@ const organizationSlice = createSlice({
             phone: action.payload.phone || "-",
             email: action.payload.email || "-",
             address: action.payload.address || "-",
+            multi_company:
+              action.payload.multi_company === 1 ||
+              action.payload.multi_company === true
+                ? "Yes"
+                : "No",
             raw: action.payload,
           };
         }
