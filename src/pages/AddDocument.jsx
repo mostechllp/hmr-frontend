@@ -12,7 +12,7 @@ import {
 } from '../store/slices/documentsSlice';
 import { clearError } from '../store/slices/authSlice';
 import AddFolderModal from '../components/documents/AddFolderModal';
-import AddPartyModal from '../components/documents/addPartyModal';
+import AddPartyModal from '../components/documents/AddPartyModal';
 
 const AddDocument = () => {
   const navigate = useNavigate();
