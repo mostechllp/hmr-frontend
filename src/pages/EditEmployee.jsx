@@ -118,6 +118,8 @@ const EditEmployee = () => {
       home_country_number: "",
       role: "Employee",
     },
+    shouldUnregister: false,
+    mode: "onChange",
   });
 
   const watchOrganizationId = watch("organization_id");
@@ -164,79 +166,105 @@ const EditEmployee = () => {
 
   // Set form values when employee data is loaded
   // Set form values when employee data is loaded - only once
-useEffect(() => {
-  if (currentEmployee && !formInitialized) {
-    console.log("Initializing form with employee data:", currentEmployee);
-    
-    // Basic Info
-    setValue('first_name', currentEmployee.first_name || '');
-    setValue('last_name', currentEmployee.last_name || '');
-    setValue('organization_id', currentEmployee.organization_id || '');
-    setValue('company_id', currentEmployee.company_id || '');
-    setValue('designation_id', currentEmployee.designation_id || '');
-    setValue('department_id', currentEmployee.department_id || '');
-    setValue('employee_id', currentEmployee.employee_id || '');
-    setValue('type', currentEmployee.type || 'employee');
-    setValue('total_leaves_allocated', currentEmployee.total_leaves_allocated || 30);
-    setValue('joining_date', currentEmployee.joining_date || '');
-    setValue('dob', currentEmployee.dob || '');
-    setValue('gender', currentEmployee.gender || 'male');
-    setValue('special_days', currentEmployee.special_days || '');
-    setValue('status', currentEmployee.status || 'active');
-    setValue('username', currentEmployee.username || '');
-    
-    // Passport details
-    setValue('passport_full_name', currentEmployee.passport_full_name || '');
-    setValue('passport_number', currentEmployee.passport_number || '');
-    setValue('passport_issued_date', currentEmployee.passport_issued_date || '');
-    setValue('passport_expiry_date', currentEmployee.passport_expiry_date || '');
-    setValue('father_name', currentEmployee.father_name || '');
-    setValue('mother_name', currentEmployee.mother_name || '');
-    setValue('address', currentEmployee.address || '');
-    setValue('passport_issued_from', currentEmployee.passport_issued_from || '');
-    setValue('place_of_birth', currentEmployee.place_of_birth || '');
-    
-    // Visa & Labor
-    setValue('visa_number', currentEmployee.visa_number || '');
-    setValue('visa_issued_date', currentEmployee.visa_issued_date || '');
-    setValue('visa_expiry_date', currentEmployee.visa_expiry_date || '');
-    setValue('labor_number', currentEmployee.labor_number || '');
-    setValue('labor_issued_date', currentEmployee.labor_issued_date || '');
-    setValue('labor_expiry_date', currentEmployee.labor_expiry_date || '');
-    
-    // EID
-    setValue('eid_number', currentEmployee.eid_number || '');
-    setValue('eid_issued_date', currentEmployee.eid_issued_date || '');
-    setValue('eid_expiry_date', currentEmployee.eid_expiry_date || '');
-    
-    // Contact & Others
-    setValue('dependents', currentEmployee.dependents || 0);
-    setValue('company_email', currentEmployee.company_email || '');
-    setValue('company_mobile_number', currentEmployee.company_mobile_number || '');
-    setValue('personal_number', currentEmployee.personal_number || '');
-    setValue('personal_email', currentEmployee.personal_email || '');
-    setValue('other_number', currentEmployee.other_number || '');
-    setValue('home_country_number', currentEmployee.home_country_number || '');
-    setValue('role', currentEmployee.role || 'Employee');
-    
-    // Set existing documents
-    const docs = {};
-    const docFields = [
-      'passport_1st_page', 'passport_2nd_page', 'passport_outer_page', 'passport_id_page',
-      'visa_page', 'labor_card', 'eid_1st_page', 'eid_2nd_page',
-      'educational_1st_page', 'educational_2nd_page', 'home_country_id_proof'
-    ];
-    
-    docFields.forEach(field => {
-      if (currentEmployee[field]) {
-        docs[field] = currentEmployee[field];
-      }
-    });
-    setExistingDocuments(docs);
-    
-    setFormInitialized(true);
-  }
-}, [currentEmployee, setValue, formInitialized]);
+  useEffect(() => {
+    if (currentEmployee && !formInitialized) {
+      console.log("Initializing form with employee data:", currentEmployee);
+
+      // Basic Info
+      setValue("first_name", currentEmployee.first_name || "");
+      setValue("last_name", currentEmployee.last_name || "");
+      setValue("organization_id", currentEmployee.organization_id || "");
+      setValue("company_id", currentEmployee.company_id || "");
+      setValue("designation_id", currentEmployee.designation_id || "");
+      setValue("department_id", currentEmployee.department_id || "");
+      setValue("employee_id", currentEmployee.employee_id || "");
+      setValue("type", currentEmployee.type || "employee");
+      setValue(
+        "total_leaves_allocated",
+        currentEmployee.total_leaves_allocated || 30,
+      );
+      setValue("joining_date", currentEmployee.joining_date || "");
+      setValue("dob", currentEmployee.dob || "");
+      setValue("gender", currentEmployee.gender || "male");
+      setValue("special_days", currentEmployee.special_days || "");
+      setValue("status", currentEmployee.status || "active");
+      setValue("username", currentEmployee.username || "");
+
+      // Passport details
+      setValue("passport_full_name", currentEmployee.passport_full_name || "");
+      setValue("passport_number", currentEmployee.passport_number || "");
+      setValue(
+        "passport_issued_date",
+        currentEmployee.passport_issued_date || "",
+      );
+      setValue(
+        "passport_expiry_date",
+        currentEmployee.passport_expiry_date || "",
+      );
+      setValue("father_name", currentEmployee.father_name || "");
+      setValue("mother_name", currentEmployee.mother_name || "");
+      setValue("address", currentEmployee.address || "");
+      setValue(
+        "passport_issued_from",
+        currentEmployee.passport_issued_from || "",
+      );
+      setValue("place_of_birth", currentEmployee.place_of_birth || "");
+
+      // Visa & Labor
+      setValue("visa_number", currentEmployee.visa_number || "");
+      setValue("visa_issued_date", currentEmployee.visa_issued_date || "");
+      setValue("visa_expiry_date", currentEmployee.visa_expiry_date || "");
+      setValue("labor_number", currentEmployee.labor_number || "");
+      setValue("labor_issued_date", currentEmployee.labor_issued_date || "");
+      setValue("labor_expiry_date", currentEmployee.labor_expiry_date || "");
+
+      // EID
+      setValue("eid_number", currentEmployee.eid_number || "");
+      setValue("eid_issued_date", currentEmployee.eid_issued_date || "");
+      setValue("eid_expiry_date", currentEmployee.eid_expiry_date || "");
+
+      // Contact & Others
+      setValue("dependents", currentEmployee.dependents || 0);
+      setValue("company_email", currentEmployee.company_email || "");
+      setValue(
+        "company_mobile_number",
+        currentEmployee.company_mobile_number || "",
+      );
+      setValue("personal_number", currentEmployee.personal_number || "");
+      setValue("personal_email", currentEmployee.personal_email || "");
+      setValue("other_number", currentEmployee.other_number || "");
+      setValue(
+        "home_country_number",
+        currentEmployee.home_country_number || "",
+      );
+      setValue("role", currentEmployee.role || "Employee");
+
+      // Set existing documents
+      const docs = {};
+      const docFields = [
+        "passport_1st_page",
+        "passport_2nd_page",
+        "passport_outer_page",
+        "passport_id_page",
+        "visa_page",
+        "labor_card",
+        "eid_1st_page",
+        "eid_2nd_page",
+        "educational_1st_page",
+        "educational_2nd_page",
+        "home_country_id_proof",
+      ];
+
+      docFields.forEach((field) => {
+        if (currentEmployee[field]) {
+          docs[field] = currentEmployee[field];
+        }
+      });
+      setExistingDocuments(docs);
+
+      setFormInitialized(true);
+    }
+  }, [currentEmployee, setValue, formInitialized]);
 
   const steps = [
     { number: 1, title: "Basic Info", icon: "fas fa-user-circle" },
@@ -438,43 +466,56 @@ useEffect(() => {
   };
 
   // Update the handleNext function - remove the problematic validation for step 4
-const handleNext = async () => {
-  let fieldsToValidate = [];
-  
-  switch (currentStep) {
-    case 0:
-      fieldsToValidate = ['first_name', 'employee_id', 'username', 'organization_id', 'company_id', 'type', 'total_leaves_allocated'];
-      break;
-    case 1:
-      fieldsToValidate = ['passport_issued_date', 'passport_expiry_date'];
-      break;
-    case 2:
-      fieldsToValidate = ['visa_issued_date', 'visa_expiry_date', 'labor_issued_date', 'labor_expiry_date'];
-      break;
-    case 3:
-      fieldsToValidate = ['eid_issued_date', 'eid_expiry_date'];
-      break;
-    case 4:
-      // For Contact tab, only validate these fields
-      fieldsToValidate = ['company_email', 'personal_email']; // Removed 'type' from validation
-      break;
-    default:
-      fieldsToValidate = [];
-  }
-  
-  // Only validate if there are fields to validate
-  let isValid = true;
-  if (fieldsToValidate.length > 0) {
-    isValid = await trigger(fieldsToValidate);
-  }
-  
-  if (isValid) {
-    setCurrentStep(currentStep + 1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  } else {
-    showToast('Please fix the errors before proceeding', 'error');
-  }
-};
+  const handleNext = async () => {
+    let fieldsToValidate = [];
+
+    switch (currentStep) {
+      case 0:
+        fieldsToValidate = [
+          "first_name",
+          "employee_id",
+          "username",
+          "organization_id",
+          "company_id",
+          "type",
+          "total_leaves_allocated",
+        ];
+        break;
+      case 1:
+        fieldsToValidate = ["passport_issued_date", "passport_expiry_date"];
+        break;
+      case 2:
+        fieldsToValidate = [
+          "visa_issued_date",
+          "visa_expiry_date",
+          "labor_issued_date",
+          "labor_expiry_date",
+        ];
+        break;
+      case 3:
+        fieldsToValidate = ["eid_issued_date", "eid_expiry_date"];
+        break;
+      case 4:
+        // For Contact tab, only validate these fields
+        fieldsToValidate = ["company_email", "personal_email"]; // Removed 'type' from validation
+        break;
+      default:
+        fieldsToValidate = [];
+    }
+
+    // Only validate if there are fields to validate
+    let isValid = true;
+    if (fieldsToValidate.length > 0) {
+      isValid = await trigger(fieldsToValidate);
+    }
+
+    if (isValid) {
+      setCurrentStep(currentStep + 1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      showToast("Please fix the errors before proceeding", "error");
+    }
+  };
 
   const handlePrevious = () => {
     if (currentStep > 0) {
@@ -1634,123 +1675,154 @@ const handleNext = async () => {
         );
 
       case 5:
-  return (
-    <div>
-      <div className="form-section-title mb-4 md:mb-6">
-        <i className="fas fa-file-upload text-green-500 mr-2"></i>
-        <h3 className="text-base md:text-lg font-bold text-gray-800">Upload Documents</h3>
-        <p className="text-sm text-gray-500 mt-1">Upload or update documents (Max size: 5MB per file)</p>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-        {documentFields.map((doc) => {
-          const hasExisting = existingDocuments[doc.key] && !removedDocuments[doc.key];
-          const hasNew = documents[doc.key];
-          const preview = documentPreviews[doc.key];
-          
-          return (
-            <div key={doc.key} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                <i className={`${doc.icon} text-green-500 mr-2`}></i>
-                {doc.label}
-              </label>
-              
-              {/* Existing Document Display */}
-              {hasExisting && !hasNew && (
-                <div className="mb-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <i className="fas fa-file-alt text-green-500"></i>
-                      <span className="text-sm text-gray-600">Current document uploaded</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveExistingDocument(doc.key)}
-                      className="text-red-500 hover:text-red-600 text-sm flex items-center gap-1"
-                    >
-                      <i className="fas fa-trash"></i> Remove
-                    </button>
-                  </div>
-                  <a 
-                    href={getDocumentUrl(existingDocuments[doc.key])} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:text-blue-600 text-sm mt-2 inline-flex items-center gap-1"
-                  >
-                    <i className="fas fa-download"></i> View Current Document
-                  </a>
-                </div>
-              )}
-              
-              {/* File Upload */}
-              <div className="flex items-center gap-3 flex-wrap">
-                <input
-                  type="file"
-                  id={`${doc.key}_edit`}
-                  accept={doc.accept}
-                  onChange={(e) => handleFileChange(doc.key, e.target.files[0])}
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => document.getElementById(`${doc.key}_edit`).click()}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-semibold hover:bg-blue-600 transition-colors flex items-center gap-2"
-                >
-                  <i className="fas fa-upload"></i> {hasExisting ? 'Replace' : 'Choose File'}
-                </button>
-                {hasNew && (
-                  <span className="text-sm text-gray-500 truncate flex-1">
-                    {documents[doc.key]?.name}
-                  </span>
-                )}
-                {!hasNew && !hasExisting && (
-                  <span className="text-sm text-gray-400">No file chosen</span>
-                )}
-              </div>
-              
-              {/* Preview for new file */}
-              {hasNew && preview && preview !== 'pdf' && (
-                <div className="mt-3">
-                  <img src={preview} alt={doc.label} className="h-20 w-20 object-cover rounded-lg border border-gray-200" />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDocuments({ ...documents, [doc.key]: null });
-                      setDocumentPreviews({ ...documentPreviews, [doc.key]: null });
-                    }}
-                    className="mt-2 text-xs text-red-500 hover:text-red-600 flex items-center gap-1"
-                  >
-                    <i className="fas fa-trash"></i> Cancel Upload
-                  </button>
-                </div>
-              )}
-              
-              {hasNew && preview === 'pdf' && (
-                <div className="mt-3">
-                  <div className="h-20 w-20 bg-red-100 rounded-lg flex items-center justify-center border border-gray-200">
-                    <i className="fas fa-file-pdf text-red-500 text-3xl"></i>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDocuments({ ...documents, [doc.key]: null });
-                      setDocumentPreviews({ ...documentPreviews, [doc.key]: null });
-                    }}
-                    className="mt-2 text-xs text-red-500 hover:text-red-600 flex items-center gap-1"
-                  >
-                    <i className="fas fa-trash"></i> Cancel Upload
-                  </button>
-                </div>
-              )}
-              
-              <p className="text-xs text-gray-400 mt-2">
-                <i className="fas fa-info-circle mr-1"></i> Max size: 5MB. Allowed: JPG, PNG, PDF
+        return (
+          <div>
+            <div className="form-section-title mb-4 md:mb-6">
+              <i className="fas fa-file-upload text-green-500 mr-2"></i>
+              <h3 className="text-base md:text-lg font-bold text-gray-800">
+                Upload Documents
+              </h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Upload or update documents (Max size: 5MB per file)
               </p>
             </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+              {documentFields.map((doc) => {
+                const hasExisting =
+                  existingDocuments[doc.key] && !removedDocuments[doc.key];
+                const hasNew = documents[doc.key];
+                const preview = documentPreviews[doc.key];
+
+                return (
+                  <div
+                    key={doc.key}
+                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                  >
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      <i className={`${doc.icon} text-green-500 mr-2`}></i>
+                      {doc.label}
+                    </label>
+
+                    {/* Existing Document Display */}
+                    {hasExisting && !hasNew && (
+                      <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <i className="fas fa-file-alt text-green-500"></i>
+                            <span className="text-sm text-gray-600">
+                              Current document uploaded
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleRemoveExistingDocument(doc.key)
+                            }
+                            className="text-red-500 hover:text-red-600 text-sm flex items-center gap-1"
+                          >
+                            <i className="fas fa-trash"></i> Remove
+                          </button>
+                        </div>
+                        <a
+                          href={getDocumentUrl(existingDocuments[doc.key])}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 hover:text-blue-600 text-sm mt-2 inline-flex items-center gap-1"
+                        >
+                          <i className="fas fa-download"></i> View Current
+                          Document
+                        </a>
+                      </div>
+                    )}
+
+                    {/* File Upload */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <input
+                        type="file"
+                        id={`${doc.key}_edit`}
+                        accept={doc.accept}
+                        onChange={(e) =>
+                          handleFileChange(doc.key, e.target.files[0])
+                        }
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          document.getElementById(`${doc.key}_edit`).click()
+                        }
+                        className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-semibold hover:bg-blue-600 transition-colors flex items-center gap-2"
+                      >
+                        <i className="fas fa-upload"></i>{" "}
+                        {hasExisting ? "Replace" : "Choose File"}
+                      </button>
+                      {hasNew && (
+                        <span className="text-sm text-gray-500 truncate flex-1">
+                          {documents[doc.key]?.name}
+                        </span>
+                      )}
+                      {!hasNew && !hasExisting && (
+                        <span className="text-sm text-gray-400">
+                          No file chosen
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Preview for new file */}
+                    {hasNew && preview && preview !== "pdf" && (
+                      <div className="mt-3">
+                        <img
+                          src={preview}
+                          alt={doc.label}
+                          className="h-20 w-20 object-cover rounded-lg border border-gray-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDocuments({ ...documents, [doc.key]: null });
+                            setDocumentPreviews({
+                              ...documentPreviews,
+                              [doc.key]: null,
+                            });
+                          }}
+                          className="mt-2 text-xs text-red-500 hover:text-red-600 flex items-center gap-1"
+                        >
+                          <i className="fas fa-trash"></i> Cancel Upload
+                        </button>
+                      </div>
+                    )}
+
+                    {hasNew && preview === "pdf" && (
+                      <div className="mt-3">
+                        <div className="h-20 w-20 bg-red-100 rounded-lg flex items-center justify-center border border-gray-200">
+                          <i className="fas fa-file-pdf text-red-500 text-3xl"></i>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDocuments({ ...documents, [doc.key]: null });
+                            setDocumentPreviews({
+                              ...documentPreviews,
+                              [doc.key]: null,
+                            });
+                          }}
+                          className="mt-2 text-xs text-red-500 hover:text-red-600 flex items-center gap-1"
+                        >
+                          <i className="fas fa-trash"></i> Cancel Upload
+                        </button>
+                      </div>
+                    )}
+
+                    <p className="text-xs text-gray-400 mt-2">
+                      <i className="fas fa-info-circle mr-1"></i> Max size: 5MB.
+                      Allowed: JPG, PNG, PDF
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
 
       default:
         return null;

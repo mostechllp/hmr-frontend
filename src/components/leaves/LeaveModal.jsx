@@ -4,21 +4,46 @@ const LeaveModal = ({ isOpen, leave, onClose, onViewDocument }) => {
   if (!isOpen || !leave) return null;
 
   const getStatusClass = (status) => {
-    switch (status) {
-      case "Pending":
+    const lowerStatus = (status || '').toLowerCase();
+    switch (lowerStatus) {
+      case "pending":
         return "bg-amber-100 text-amber-600";
-      case "Approved":
+      case "approved":
         return "bg-green-100 text-green-600";
-      case "Rejected":
+      case "rejected":
         return "bg-red-100 text-red-600";
       default:
         return "bg-gray-100 text-gray-600";
     }
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
+  // Helper to get field value from different possible field names
+  const getField = (fieldName) => {
+    const mappings = {
+      employee: leave.employee_name || leave.employee?.name || leave.employee || '-',
+      type: leave.leave_type?.name || leave.type || '-',
+      fromDate: formatDate(leave.from_date || leave.fromDate),
+      toDate: formatDate(leave.to_date || leave.toDate),
+      days: leave.number_of_days || leave.days || '-',
+      claimSalary: leave.claim_salary === 1 || leave.claimSalary === 'Yes' ? 'Yes' : 'No',
+      doc: leave.document_path || leave.doc,
+      reason: leave.reason || '-',
+      status: leave.status || 'pending',
+      processedBy: leave.processed_by || leave.processedBy || '-',
+      rejectionReason: leave.rejection_reason || leave.rejectionReason,
+    };
+    return mappings[fieldName] || '-';
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[1000]">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-[90%] p-6 shadow-soft-lg border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-[90%] p-6 shadow-soft-lg border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
         <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
           <i className="fas fa-eye text-green-500"></i>
           Leave Request Details
@@ -30,7 +55,7 @@ const LeaveModal = ({ isOpen, leave, onClose, onViewDocument }) => {
               Employee:
             </span>
             <span className="text-gray-600 dark:text-gray-400">
-              {leave.employee}
+              {getField('employee')}
             </span>
           </div>
           <div className="flex py-2 border-b border-gray-200 dark:border-gray-700">
@@ -38,7 +63,7 @@ const LeaveModal = ({ isOpen, leave, onClose, onViewDocument }) => {
               Leave Type:
             </span>
             <span className="text-gray-600 dark:text-gray-400">
-              {leave.type}
+              {getField('type')}
             </span>
           </div>
           <div className="flex py-2 border-b border-gray-200 dark:border-gray-700">
@@ -46,7 +71,7 @@ const LeaveModal = ({ isOpen, leave, onClose, onViewDocument }) => {
               From Date:
             </span>
             <span className="text-gray-600 dark:text-gray-400">
-              {leave.fromDate}
+              {getField('fromDate')}
             </span>
           </div>
           <div className="flex py-2 border-b border-gray-200 dark:border-gray-700">
@@ -54,7 +79,7 @@ const LeaveModal = ({ isOpen, leave, onClose, onViewDocument }) => {
               To Date:
             </span>
             <span className="text-gray-600 dark:text-gray-400">
-              {leave.toDate}
+              {getField('toDate')}
             </span>
           </div>
           <div className="flex py-2 border-b border-gray-200 dark:border-gray-700">
@@ -62,7 +87,7 @@ const LeaveModal = ({ isOpen, leave, onClose, onViewDocument }) => {
               Days:
             </span>
             <span className="text-gray-600 dark:text-gray-400">
-              {leave.days}
+              {getField('days')}
             </span>
           </div>
           <div className="flex py-2 border-b border-gray-200 dark:border-gray-700">
@@ -70,7 +95,7 @@ const LeaveModal = ({ isOpen, leave, onClose, onViewDocument }) => {
               Claim Salary:
             </span>
             <span className="text-gray-600 dark:text-gray-400">
-              {leave.claimSalary}
+              {getField('claimSalary')}
             </span>
           </div>
           <div className="flex py-2 border-b border-gray-200 dark:border-gray-700">
@@ -78,12 +103,12 @@ const LeaveModal = ({ isOpen, leave, onClose, onViewDocument }) => {
               Document:
             </span>
             <span className="text-gray-600 dark:text-gray-400">
-              {leave.doc !== "-" ? (
+              {getField('doc') ? (
                 <button
-                  onClick={() => onViewDocument(leave.doc)}
+                  onClick={() => onViewDocument(getField('doc'))}
                   className="text-blue-500 hover:text-blue-600"
                 >
-                  <i className="fas fa-file-pdf mr-1"></i> {leave.doc}
+                  <i className="fas fa-file-pdf mr-1"></i> View Document
                 </button>
               ) : (
                 "-"
@@ -95,7 +120,7 @@ const LeaveModal = ({ isOpen, leave, onClose, onViewDocument }) => {
               Reason:
             </span>
             <span className="text-gray-600 dark:text-gray-400">
-              {leave.reason}
+              {getField('reason')}
             </span>
           </div>
           <div className="flex py-2 border-b border-gray-200 dark:border-gray-700">
@@ -103,19 +128,29 @@ const LeaveModal = ({ isOpen, leave, onClose, onViewDocument }) => {
               Status:
             </span>
             <span
-              className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusClass(leave.status)}`}
+              className={`inline-block px-3 py-1 rounded-full text-xs font-semibold capitalize ${getStatusClass(getField('status'))}`}
             >
-              {leave.status}
+              {getField('status')}
             </span>
           </div>
-          <div className="flex py-2">
+          <div className="flex py-2 border-b border-gray-200 dark:border-gray-700">
             <span className="font-semibold text-gray-700 dark:text-gray-300 w-28">
               Processed By:
             </span>
             <span className="text-gray-600 dark:text-gray-400">
-              {leave.processedBy}
+              {getField('processedBy')}
             </span>
           </div>
+          {getField('rejectionReason') !== '-' && (
+            <div className="flex py-2">
+              <span className="font-semibold text-gray-700 dark:text-gray-300 w-28">
+                Rejection Reason:
+              </span>
+              <span className="text-red-600 dark:text-red-400">
+                {getField('rejectionReason')}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">

@@ -4,16 +4,26 @@ import { useDispatch, useSelector } from "react-redux";
 import Sidebar from "../components/common/Sidebar";
 import Header from "../components/common/Header";
 import { showToast } from "../components/common/Toast";
-import { fetchCompanyById, updateCompany, clearError } from "../store/slices/companySlice";
+import {
+  fetchCompanyById,
+  updateCompany,
+  clearError,
+} from "../store/slices/companySlice";
 import { fetchOrganizations } from "../store/slices/organizationSlice";
 
 const EditCompany = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { organizationId, id } = useParams();
-  const { currentCompany, loading: companyLoading, error } = useSelector((state) => state.companies || {});
-  const { organizations = [] } = useSelector((state) => state.organizations || {});
-  
+  const {
+    currentCompany,
+    loading: companyLoading,
+    error,
+  } = useSelector((state) => state.companies || {});
+  const { organizations = [] } = useSelector(
+    (state) => state.organizations || {},
+  );
+
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [logoPreview, setLogoPreview] = useState(null);
@@ -49,7 +59,7 @@ const EditCompany = () => {
   // Find current organization
   useEffect(() => {
     if (organizations.length > 0 && organizationId) {
-      const org = organizations.find(o => o.id === parseInt(organizationId));
+      const org = organizations.find((o) => o.id === parseInt(organizationId));
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentOrganization(org);
     }
@@ -58,11 +68,48 @@ const EditCompany = () => {
   // Fetch company data
   useEffect(() => {
     if (organizationId && id) {
-      dispatch(fetchCompanyById({ organizationId, companyId: id })).finally(() => {
-        setInitialLoading(false);
-      });
+      dispatch(fetchCompanyById({ organizationId, companyId: id })).finally(
+        () => {
+          setInitialLoading(false);
+        },
+      );
     }
   }, [dispatch, organizationId, id]);
+
+  const getBaseUrl = () => {
+    // First try to get from env
+    const apiUrl = import.meta.env.VITE_API_URL;
+    if (apiUrl) {
+      // Remove /api from the end if present
+      return apiUrl.replace(/\/api$/, "");
+    }
+    // Fallback to current origin
+    return window.location.origin;
+  };
+
+  const getFullLogoUrl = (logoPath) => {
+    if (!logoPath) return null;
+
+    // If it's already a full URL, return it
+    if (logoPath.startsWith("http://") || logoPath.startsWith("https://")) {
+      return logoPath;
+    }
+
+    const baseUrl = getBaseUrl();
+
+    // Remove any leading slashes
+    const cleanPath = logoPath.replace(/^\/+/, "");
+
+    // Construct the full URL
+    let fullUrl;
+    if (cleanPath.startsWith("storage/")) {
+      fullUrl = `${baseUrl}/${cleanPath}`;
+    } else {
+      fullUrl = `${baseUrl}/storage/${cleanPath}`;
+    }
+
+    return fullUrl;
+  };
 
   // Set form data when company is loaded
   useEffect(() => {
@@ -76,7 +123,8 @@ const EditCompany = () => {
         organization_id: currentCompany.organization_id || organizationId,
       });
       if (currentCompany.logo) {
-        setLogoPreview(currentCompany.logo);
+        // Use the same URL construction logic
+        setLogoPreview(getFullLogoUrl(currentCompany.logo));
       }
     }
   }, [currentCompany, organizationId]);

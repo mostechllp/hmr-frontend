@@ -1,143 +1,54 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import apiClient from "../../utils/apiClient";
-const initialLeaves = [
-  {
-    id: 1,
-    employee: "JITHIN",
-    type: "Annual Leave",
-    fromDate: "01/04/2026",
-    toDate: "20/04/2026",
-    days: 20,
-    claimSalary: "Yes",
-    doc: "-",
-    reason: "Request for annual leave",
-    status: "Approved",
-    processedBy: "HR Manager",
-  },
-  {
-    id: 2,
-    employee: "FAWZY",
-    type: "Sick Leave",
-    fromDate: "05 Apr, 2026",
-    toDate: "06 Apr, 2026",
-    days: 2,
-    claimSalary: "Yes",
-    doc: "medical_cert.pdf",
-    reason: "Fever and body pain",
-    status: "Pending",
-    processedBy: "N/A",
-  },
-  {
-    id: 3,
-    employee: "FAHEEM",
-    type: "Annual Leave",
-    fromDate: "10 Apr, 2026",
-    toDate: "20 Apr, 2026",
-    days: 10,
-    claimSalary: "Yes",
-    doc: "-",
-    reason: "Annual vacation with family",
-    status: "Approved",
-    processedBy: "HR Admin",
-  },
-  {
-    id: 4,
-    employee: "ABHILASH",
-    type: "Emergency Leave",
-    fromDate: "01 Apr, 2026",
-    toDate: "02 Apr, 2026",
-    days: 2,
-    claimSalary: "No",
-    doc: "-",
-    reason: "Family emergency",
-    status: "Approved",
-    processedBy: "HR Manager",
-  },
-  {
-    id: 5,
-    employee: "AKSHAY",
-    type: "Flood",
-    fromDate: "02 Apr, 2026",
-    toDate: "03 Apr, 2026",
-    days: 2,
-    claimSalary: "No",
-    doc: "-",
-    reason: "Severe flood on the way",
-    status: "Approved",
-    processedBy: "HR Admin",
-  },
-  {
-    id: 6,
-    employee: "VIJAY",
-    type: "Sick Leave",
-    fromDate: "12 Apr, 2026",
-    toDate: "13 Apr, 2026",
-    days: 2,
-    claimSalary: "Yes",
-    doc: "prescription.pdf",
-    reason: "Viral infection",
-    status: "Pending",
-    processedBy: "N/A",
-  },
-  {
-    id: 7,
-    employee: "SUNEEL",
-    type: "Annual Leave",
-    fromDate: "15 Apr, 2026",
-    toDate: "25 Apr, 2026",
-    days: 10,
-    claimSalary: "Yes",
-    doc: "-",
-    reason: "Vacation to Kerala",
-    status: "Pending",
-    processedBy: "N/A",
-  },
-  {
-    id: 8,
-    employee: "SUBHANI",
-    type: "Sick Leave",
-    fromDate: "07 Apr, 2026",
-    toDate: "07 Apr, 2026",
-    days: 1,
-    claimSalary: "No",
-    doc: "-",
-    reason: "Cough",
-    status: "Rejected",
-    processedBy: "HR Admin",
-  },
-  {
-    id: 9,
-    employee: "SENTIL",
-    type: "Annual Leave",
-    fromDate: "09 Apr, 2026",
-    toDate: "19 Apr, 2026",
-    days: 10,
-    claimSalary: "Yes",
-    doc: "-",
-    reason: "Annual Leave Vacation",
-    status: "Pending",
-    processedBy: "HR Manager",
-  },
-  {
-    id: 10,
-    employee: "SHANOOB",
-    type: "Flood",
-    fromDate: "14 Apr, 2026",
-    toDate: "14 Apr, 2026",
-    days: 1,
-    claimSalary: "No",
-    doc: "-",
-    reason: "Can't step out of the flat",
-    status: "Pending",
-    processedBy: "N/A",
-  },
-];
 
-export const fetchLeaves = createAsyncThunk("leaves/fetchAll", async () => {
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  return initialLeaves;
-});
+// Async thunks for admin leave management
+export const fetchLeaves = createAsyncThunk(
+  "leaves/fetchAll",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.get("/admin/leaves");
+      return response.data.data || response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch leave requests"
+      );
+    }
+  }
+);
 
+export const fetchLeaveById = createAsyncThunk(
+  "leaves/fetchById",
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.get(`/admin/leaves/${id}`);
+      return response.data.data || response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch leave request"
+      );
+    }
+  }
+);
+
+export const updateLeaveStatus = createAsyncThunk(
+  "leaves/updateStatus",
+  async ({ id, status, processedBy, rejection_reason }, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.post(`/admin/leaves/${id}/status`, {
+        status,
+        processed_by: processedBy,
+        rejection_reason: rejection_reason || null
+      });
+      return response.data.data || response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update leave status"
+      );
+    }
+  }
+);
+
+// Leave Types
 export const fetchLeaveTypes = createAsyncThunk(
   "leaves/fetchTypes",
   async (_, { rejectWithValue }) => {
@@ -149,8 +60,9 @@ export const fetchLeaveTypes = createAsyncThunk(
         err.response?.data?.message || "Failed to fetch leave types",
       );
     }
-  },
+  }
 );
+
 export const addLeaveType = createAsyncThunk(
   "leaves/addType",
   async (data, { rejectWithValue }) => {
@@ -162,7 +74,7 @@ export const addLeaveType = createAsyncThunk(
         err.response?.data?.message || "Failed to add leave type",
       );
     }
-  },
+  }
 );
 
 export const updateLeaveType = createAsyncThunk(
@@ -176,7 +88,7 @@ export const updateLeaveType = createAsyncThunk(
         err.response?.data?.message || "Failed to update leave type",
       );
     }
-  },
+  }
 );
 
 export const deleteLeaveType = createAsyncThunk(
@@ -190,16 +102,9 @@ export const deleteLeaveType = createAsyncThunk(
         err.response?.data?.message || "Failed to delete leave type",
       );
     }
-  },
+  }
 );
 
-export const updateLeaveStatus = createAsyncThunk(
-  "leaves/updateStatus",
-  async ({ id, status, processedBy }) => {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    return { id, status, processedBy };
-  },
-);
 export const updateLeaveTypeStatus = createAsyncThunk(
   "leaves/updateTypeStatus",
   async ({ id, status }, { rejectWithValue }) => {
@@ -213,7 +118,7 @@ export const updateLeaveTypeStatus = createAsyncThunk(
         err.response?.data?.message || "Failed to update status",
       );
     }
-  },
+  }
 );
 
 export const toggleLeaveTypeStatus = createAsyncThunk(
@@ -222,44 +127,91 @@ export const toggleLeaveTypeStatus = createAsyncThunk(
     try {
       const response = await apiClient.put(
         `/admin/leave-types/${id}/status`,
-        {
-          status,
-        },
+        { status }
       );
-      return response.data;
+      return response.data.data;
     } catch (err) {
-      return rejectWithValue(err.response.data);
+      return rejectWithValue(err.response?.data);
     }
-  },
+  }
 );
 
 const leaveSlice = createSlice({
   name: "leaves",
   initialState: {
     leaves: [],
+    currentLeave: null,
     leaveTypes: [],
     loading: false,
     error: null,
     totalCount: 0,
   },
-  reducers: {},
+  reducers: {
+    clearError: (state) => {
+      state.error = null;
+    },
+    clearCurrentLeave: (state) => {
+      state.currentLeave = null;
+    },
+  },
   extraReducers: (builder) => {
     builder
       // Fetch leaves
       .addCase(fetchLeaves.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(fetchLeaves.fulfilled, (state, action) => {
         state.loading = false;
         state.leaves = action.payload;
-        state.totalCount = action.payload.length;
+        state.totalCount = action.payload?.length || 0;
       })
       .addCase(fetchLeaves.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message;
+        state.error = action.payload || action.error.message;
       })
+      
+      // Fetch leave by ID
+      .addCase(fetchLeaveById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchLeaveById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentLeave = action.payload;
+      })
+      .addCase(fetchLeaveById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || action.error.message;
+      })
+      
+      // Update leave status
+      .addCase(updateLeaveStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateLeaveStatus.fulfilled, (state, action) => {
+        state.loading = false;
+        const updatedLeave = action.payload;
+        const index = state.leaves.findIndex((l) => l.id === updatedLeave.id);
+        if (index !== -1) {
+          state.leaves[index] = updatedLeave;
+        }
+        if (state.currentLeave?.id === updatedLeave.id) {
+          state.currentLeave = updatedLeave;
+        }
+      })
+      .addCase(updateLeaveStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || action.error.message;
+      })
+      
       // Fetch leave types
+      .addCase(fetchLeaveTypes.pending, (state) => {
+        state.loading = true;
+      })
       .addCase(fetchLeaveTypes.fulfilled, (state, action) => {
+        state.loading = false;
         state.leaveTypes = action.payload.map((type) => ({
           id: type.id,
           name: type.name,
@@ -267,10 +219,14 @@ const leaveSlice = createSlice({
           raw: type,
         }));
       })
+      .addCase(fetchLeaveTypes.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      
       // Add leave type
       .addCase(addLeaveType.fulfilled, (state, action) => {
         const type = action.payload;
-
         state.leaveTypes.push({
           id: type.id,
           name: type.name,
@@ -278,53 +234,53 @@ const leaveSlice = createSlice({
           raw: type,
         });
       })
+      
       // Update leave type
       .addCase(updateLeaveType.fulfilled, (state, action) => {
+        const updatedType = action.payload;
         const index = state.leaveTypes.findIndex(
-          (t) => t.id === action.payload.id,
+          (t) => t.id === updatedType.id
         );
-
         if (index !== -1) {
           state.leaveTypes[index] = {
-            id: action.payload.id,
-            name: action.payload.name,
-            status: action.payload.status === 1,
-            raw: action.payload,
+            id: updatedType.id,
+            name: updatedType.name,
+            status: updatedType.status === 1,
+            raw: updatedType,
           };
         }
       })
+      
       // Delete leave type
       .addCase(deleteLeaveType.fulfilled, (state, action) => {
         state.leaveTypes = state.leaveTypes.filter(
-          (t) => t.id !== action.payload,
+          (t) => t.id !== action.payload
         );
       })
-      // Update leave status
-      .addCase(updateLeaveStatus.fulfilled, (state, action) => {
-        const index = state.leaves.findIndex((l) => l.id === action.payload.id);
-        if (index !== -1) {
-          state.leaves[index].status = action.payload.status;
-          state.leaves[index].processedBy = action.payload.processedBy;
-        }
-      })
+      
+      // Update leave type status
       .addCase(updateLeaveTypeStatus.fulfilled, (state, action) => {
+        const updatedType = action.payload;
         const index = state.leaveTypes.findIndex(
-          (t) => t.id === action.payload.id,
+          (t) => t.id === updatedType.id
         );
-
         if (index !== -1) {
-          state.leaveTypes[index].status = action.payload.status === 1;
+          state.leaveTypes[index].status = updatedType.status === 1;
+          state.leaveTypes[index].raw = updatedType;
         }
       })
+      
       .addCase(toggleLeaveTypeStatus.fulfilled, (state, action) => {
+        const updatedType = action.payload;
         const index = state.leaveTypes.findIndex(
-          (t) => t.id === action.payload.id,
+          (t) => t.id === updatedType.id
         );
         if (index !== -1) {
-          state.leaveTypes[index].status = action.payload.status;
+          state.leaveTypes[index].status = updatedType.status === 1;
         }
       });
   },
 });
 
+export const { clearError, clearCurrentLeave } = leaveSlice.actions;
 export default leaveSlice.reducer;
