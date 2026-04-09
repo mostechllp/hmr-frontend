@@ -15,16 +15,23 @@ import {
   updateEmployeeStatus,
 } from "../store/slices/employeeSlice";
 import Pagination from "../components/common/Paginations";
+import ConfirmModal from "../components/common/ConfirmModal";
 
 const Employees = () => {
   const dispatch = useDispatch();
   const { employees, currentPage, perPage, filters } = useSelector(
     (state) => state.employees,
   );
+  console.log("Employees: ", employees)
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  
+  // Confirm modal states
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -49,15 +56,28 @@ const Employees = () => {
     dispatch(setFilters({ status }));
   };
 
-  const handleDeleteEmployee = async (id, name) => {
-    if (window.confirm(`Are you sure you want to delete ${name}?`)) {
-      const result = await dispatch(deleteEmployee(id));
-      if (deleteEmployee.fulfilled.match(result)) {
-        showToast(`${name} deleted successfully`, "success");
-      } else {
-        showToast("Failed to delete employee", "error");
-      }
+  const handleDeleteClick = (employee) => {
+    setSelectedEmployee(employee);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedEmployee) return;
+    
+    setDeleteLoading(true);
+    const result = await dispatch(deleteEmployee(selectedEmployee.id));
+    
+    if (deleteEmployee.fulfilled.match(result)) {
+      showToast(`${selectedEmployee.name} deleted successfully`, "success");
+      setConfirmOpen(false);
+      setSelectedEmployee(null);
+      // Refresh the list
+      dispatch(fetchEmployees());
+    } else {
+      showToast("Failed to delete employee", "error");
     }
+    
+    setDeleteLoading(false);
   };
 
   const handleStatusToggle = async (id, currentStatus) => {
@@ -273,7 +293,7 @@ const Employees = () => {
                         {emp.department}
                       </td>
                       <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                        {emp.company}
+                        {emp.raw?.user?.company?.company_name || emp.company || '-'}
                       </td>
                       <td className="px-3 md:px-4 py-2 md:py-3">
                         <label className="inline-flex items-center gap-1 md:gap-2 cursor-pointer">
@@ -312,9 +332,7 @@ const Employees = () => {
                             <i className="fas fa-edit text-xs md:text-sm"></i>
                           </Link>
                           <button
-                            onClick={() =>
-                              handleDeleteEmployee(emp.id, emp.name)
-                            }
+                            onClick={() => handleDeleteClick(emp)}
                             className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500 transition-colors"
                             title="Delete"
                           >
@@ -348,6 +366,20 @@ const Employees = () => {
           />
         </main>
       </div>
+
+      {/* Confirm Delete Modal */}
+      <ConfirmModal
+        isOpen={confirmOpen}
+        onClose={() => {
+          setConfirmOpen(false);
+          setSelectedEmployee(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Delete Employee"
+        message={`Are you sure you want to delete "${selectedEmployee?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        loading={deleteLoading}
+      />
     </div>
   );
 };

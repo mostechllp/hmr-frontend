@@ -4,7 +4,7 @@ import { useTheme } from "./hooks/useTheme";
 import RouteChangeLoader from "./components/common/RouteChangeLoader";
 import { useSelector } from "react-redux";
 import Documents from "./pages/Documents";
-import AddDocument from "./components/documents/AddDocument";
+import AddDocument from "./pages/AddDocument";
 
 // Lazy load pages for better performance
 const Login = lazy(() => import("./pages/Login"));

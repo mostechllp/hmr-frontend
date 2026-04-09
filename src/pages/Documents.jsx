@@ -12,9 +12,13 @@ import { fetchDocuments, deleteDocument, clearError, fetchDocumentFolders } from
 
 const Documents = () => {
   const dispatch = useDispatch();
-  const { documents = [], folders = [], loading, error } = useSelector(
-    (state) => state.documents || { documents: [] }
+  const { documents: documentsState = [], folders = [], loading = false, error = null } = useSelector(
+    (state) => state.documents || { documents: [], folders: [], loading: false, error: null }
   );
+  
+  // Ensure documents is always an array
+  const documents = Array.isArray(documentsState) ? documentsState : [];
+  
   const [currentFolder, setCurrentFolder] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -49,7 +53,7 @@ const Documents = () => {
   // Build folder list from API or use defaults
   const folderList = [
     { name: 'All Files', value: 'all', icon: 'fas fa-folder-open' },
-    ...(folders.length > 0 
+    ...(folders && folders.length > 0 
       ? folders.map(folder => ({
           name: folder.name || folder,
           value: folder.name || folder,
@@ -66,17 +70,21 @@ const Documents = () => {
   ];
 
   const getFilteredDocuments = () => {
-    let filtered = documents;
+    // Ensure documents is an array
+    const docsArray = Array.isArray(documents) ? documents : [];
+    let filtered = docsArray;
+    
     if (currentFolder !== 'all') {
       filtered = filtered.filter(doc => 
         (doc.folder || doc.type || '').toLowerCase() === currentFolder.toLowerCase()
       );
     }
     if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(doc =>
-        (doc.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (doc.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (doc.folder || '').toLowerCase().includes(searchTerm.toLowerCase())
+        (doc.name || '').toLowerCase().includes(searchLower) ||
+        (doc.description || '').toLowerCase().includes(searchLower) ||
+        (doc.folder || '').toLowerCase().includes(searchLower)
       );
     }
     return filtered;
@@ -291,62 +299,63 @@ const Documents = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {pageDocuments.map((document, idx) => (
-                    <tr key={document.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400 text-center">{start + idx + 1}</td>
-                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold text-gray-800 dark:text-gray-200">
-                        <button
-                          onClick={() => handleViewDocument(document.file_path)}
-                          className="hover:text-green-500 transition-colors text-left"
-                        >
-                          {document.name}
-                        </button>
-                      </td>
-                      <td className="px-3 md:px-4 py-2 md:py-3">
-                        <span className={`px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-semibold ${getFolderClass(document.folder || document.type)} whitespace-nowrap`}>
-                          {document.folder || document.type || '-'}
-                        </span>
-                      </td>
-                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400 max-w-[200px] truncate" title={document.description}>
-                        {document.description || '-'}
-                      </td>
-                      <td className="px-3 md:px-4 py-2 md:py-3">
-                        <span className="inline-flex items-center gap-1 md:gap-1.5 bg-gray-100 dark:bg-gray-700 px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs whitespace-nowrap">
-                          <i className="fas fa-share-alt text-gray-500 text-[8px] md:text-xs"></i>
-                          <span>{document.share_with || '-'}</span>
-                        </span>
-                      </td>
-                      <td className={`px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm ${getExpiryClass(document.expiry_date)} whitespace-nowrap`}>
-                        {formatDate(document.expiry_date)}
-                      </td>
-                      <td className="px-3 md:px-4 py-2 md:py-3">
-                        <div className="flex gap-1 md:gap-2">
-                          <button 
+                  {pageDocuments.length > 0 ? (
+                    pageDocuments.map((document, idx) => (
+                      <tr key={document.id || idx} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400 text-center">{start + idx + 1}</td>
+                        <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold text-gray-800 dark:text-gray-200">
+                          <button
                             onClick={() => handleViewDocument(document.file_path)}
-                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-blue-500 transition-colors"
-                            title="View"
+                            className="hover:text-green-500 transition-colors text-left"
                           >
-                            <i className="fas fa-eye text-xs md:text-sm"></i>
+                            {document.name || 'Untitled'}
                           </button>
-                          <Link 
-                            to={`/documents/edit-document/${document.id}`}
-                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-amber-500 transition-colors"
-                            title="Edit"
-                          >
-                            <i className="fas fa-edit text-xs md:text-sm"></i>
-                          </Link>
-                          <button 
-                            onClick={() => handleDeleteClick(document)}
-                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500 transition-colors"
-                            title="Delete"
-                          >
-                            <i className="fas fa-trash text-xs md:text-sm"></i>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {pageDocuments.length === 0 && (
+                        </td>
+                        <td className="px-3 md:px-4 py-2 md:py-3">
+                          <span className={`px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-semibold ${getFolderClass(document.folder || document.type)} whitespace-nowrap`}>
+                            {document.folder || document.type || '-'}
+                          </span>
+                        </td>
+                        <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400 max-w-[200px] truncate" title={document.description}>
+                          {document.description || '-'}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 md:py-3">
+                          <span className="inline-flex items-center gap-1 md:gap-1.5 bg-gray-100 dark:bg-gray-700 px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs whitespace-nowrap">
+                            <i className="fas fa-share-alt text-gray-500 text-[8px] md:text-xs"></i>
+                            <span>{document.share_with || '-'}</span>
+                          </span>
+                        </td>
+                        <td className={`px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm ${getExpiryClass(document.expiry_date)} whitespace-nowrap`}>
+                          {formatDate(document.expiry_date)}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 md:py-3">
+                          <div className="flex gap-1 md:gap-2">
+                            <button 
+                              onClick={() => handleViewDocument(document.file_path)}
+                              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-blue-500 transition-colors"
+                              title="View"
+                            >
+                              <i className="fas fa-eye text-xs md:text-sm"></i>
+                            </button>
+                            <Link 
+                              to={`/documents/edit-document/${document.id}`}
+                              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-amber-500 transition-colors"
+                              title="Edit"
+                            >
+                              <i className="fas fa-edit text-xs md:text-sm"></i>
+                            </Link>
+                            <button 
+                              onClick={() => handleDeleteClick(document)}
+                              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500 transition-colors"
+                              title="Delete"
+                            >
+                              <i className="fas fa-trash text-xs md:text-sm"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
                     <tr>
                       <td colSpan="7" className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                         No documents found. Click "Upload Document" to add one.

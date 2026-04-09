@@ -1,17 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import Sidebar from '../common/Sidebar';
-import { showToast } from '../common/Toast';
-import Header from '../common/Header';
-import { fetchDocumentFolders, fetchShareableUsers, uploadDocument } from '../../store/slices/documentsSlice';
-import { clearError } from '../../store/slices/authSlice';
+import Sidebar from '../components/common/Sidebar';
+import { showToast } from '../components/common/Toast';
+import Header from '../components/common/Header';
+import { 
+  fetchDocumentFolders, 
+  fetchShareableUsers, 
+  fetchParties,
+  uploadDocument 
+} from '../store/slices/documentsSlice';
+import { clearError } from '../store/slices/authSlice';
+import AddFolderModal from '../components/documents/AddFolderModal';
+import AddPartyModal from '../components/documents/addPartyModal';
 
 const AddDocument = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { shareableUsers = [], folders = [], loading, error } = useSelector(
-    (state) => state.documents || { shareableUsers: [], folders: [] }
+  const { shareableUsers = [], folders = [], parties = [], loading, error } = useSelector(
+    (state) => state.documents || { shareableUsers: [], folders: [], parties: [] }
   );
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -22,10 +29,15 @@ const AddDocument = () => {
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
   
+  // Modal states
+  const [showPartyModal, setShowPartyModal] = useState(false);
+  const [showFolderModal, setShowFolderModal] = useState(false);
+  
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     folder: '',
+    party_id: '',
     expiryDate: '',
   });
 
@@ -41,6 +53,7 @@ const AddDocument = () => {
   useEffect(() => {
     dispatch(fetchShareableUsers());
     dispatch(fetchDocumentFolders());
+    dispatch(fetchParties());
   }, [dispatch]);
 
   useEffect(() => {
@@ -112,6 +125,15 @@ const AddDocument = () => {
     setSelectedShareWith(selectedShareWith.filter(i => i !== item));
   };
 
+  const handlePartyAdded = (newParty) => {
+    setSelectedShareWith([...selectedShareWith, newParty.party_name || newParty.name]);
+  };
+
+  const handleFolderAdded = (newFolder) => {
+    setFormData({ ...formData, folder: newFolder.name });
+    dispatch(fetchDocumentFolders()); // Refresh folders list
+  };
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -149,6 +171,7 @@ const AddDocument = () => {
       description: formData.description,
       share_with: selectedShareWith.join(','),
       folder: formData.folder,
+      party_id: formData.party_id,
       expiry_date: formData.expiryDate,
     };
     
@@ -291,7 +314,7 @@ const AddDocument = () => {
                         >
                           <div className="flex flex-wrap gap-1 flex-1 max-h-20 overflow-y-auto">
                             {selectedShareWith.length === 0 ? (
-                              <span className="text-gray-500 dark:text-gray-400 text-xs md:text-sm">Select users or groups...</span>
+                              <span className="text-gray-500 dark:text-gray-400 text-xs md:text-sm">Select users or parties...</span>
                             ) : (
                               selectedShareWith.map(item => (
                                 <span key={item} className="inline-flex items-center gap-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-1.5 md:px-2 py-0.5 rounded-full text-[10px] md:text-xs">
@@ -312,34 +335,86 @@ const AddDocument = () => {
                         
                         {showDropdown && (
                           <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-soft-lg z-10 max-h-80 overflow-y-auto">
-                            {shareableUsers.length > 0 ? (
-                              shareableUsers.map(user => (
-                                <div
-                                  key={user.id || user.name}
-                                  onClick={() => toggleShareItem(user.name || user.email)}
-                                  className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedShareWith.includes(user.name || user.email)}
-                                    onChange={() => {}}
-                                    className="w-3.5 h-3.5 md:w-4 md:h-4 accent-green-500"
-                                  />
-                                  <div className="flex-1 min-w-0">
-                                    <span className="text-xs md:text-sm text-gray-700 dark:text-gray-300">
-                                      {user.name || user.email}
-                                    </span>
-                                    {user.designation && (
-                                      <span className="hidden sm:inline text-[10px] md:text-xs text-gray-500 ml-1">
-                                        ({user.designation})
-                                      </span>
-                                    )}
-                                  </div>
+                            {/* Shareable Users Section */}
+                            {shareableUsers.length > 0 && (
+                              <div>
+                                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50">
+                                  <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">Users</span>
                                 </div>
-                              ))
-                            ) : (
-                              <div className="px-3 py-2 text-gray-500 text-sm">No users available</div>
+                                {shareableUsers.map(user => (
+                                  <div
+                                    key={user.id || user.name}
+                                    onClick={() => toggleShareItem(user.name || user.email)}
+                                    className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedShareWith.includes(user.name || user.email)}
+                                      onChange={() => {}}
+                                      className="w-3.5 h-3.5 md:w-4 md:h-4 accent-green-500"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <span className="text-xs md:text-sm text-gray-700 dark:text-gray-300">
+                                        {user.name || user.email}
+                                      </span>
+                                      {user.designation && (
+                                        <span className="hidden sm:inline text-[10px] md:text-xs text-gray-500 ml-1">
+                                          ({user.designation})
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
                             )}
+                            
+                            {/* Parties Section */}
+                            {parties.length > 0 && (
+                              <div className="border-t border-gray-200 dark:border-gray-700">
+                                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50">
+                                  <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">Parties</span>
+                                </div>
+                                {parties.map(party => (
+                                  <div
+                                    key={party.id}
+                                    onClick={() => toggleShareItem(party.party_name || party.name)}
+                                    className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedShareWith.includes(party.party_name || party.name)}
+                                      onChange={() => {}}
+                                      className="w-3.5 h-3.5 md:w-4 md:h-4 accent-green-500"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <span className="text-xs md:text-sm text-gray-700 dark:text-gray-300">
+                                        {party.party_name || party.name}
+                                      </span>
+                                      {party.company_name && (
+                                        <span className="hidden sm:inline text-[10px] md:text-xs text-gray-500 ml-1">
+                                          ({party.company_name})
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {/* Add Party Button */}
+                            <div className="border-t border-gray-200 dark:border-gray-700 mt-2 pt-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowDropdown(false);
+                                  setShowPartyModal(true);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-green-600 dark:text-green-400 transition-colors"
+                              >
+                                <i className="fas fa-plus-circle"></i>
+                                <span className="text-sm">Add New Party</span>
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -350,30 +425,42 @@ const AddDocument = () => {
                         <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                           <i className="fas fa-folder text-green-500 mr-1"></i> Folder <span className="text-red-500">*</span>
                         </label>
-                        <select
-                          id="folder"
-                          value={formData.folder}
-                          onChange={handleChange}
-                          className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-                          required
-                        >
-                          <option value="">Select Folder</option>
-                          {folders.length > 0 ? (
-                            folders.map(folder => (
-                              <option key={folder.id || folder.name} value={folder.name || folder}>
-                                {folder.name || folder}
-                              </option>
-                            ))
-                          ) : (
-                            <>
-                              <option value="agreements">Agreements</option>
-                              <option value="hr">HR Documents</option>
-                              <option value="it">IT Documents</option>
-                              <option value="finance">Finance Documents</option>
-                              <option value="legal">Legal Documents</option>
-                            </>
-                          )}
-                        </select>
+                        <div className="relative">
+                          <select
+                            id="folder"
+                            value={formData.folder}
+                            onChange={handleChange}
+                            className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 appearance-none pr-10"
+                            required
+                          >
+                            <option value="">Select Folder</option>
+                            {folders.length > 0 ? (
+                              folders.map(folder => (
+                                <option key={folder.id || folder.name} value={folder.name || folder}>
+                                  {folder.name || folder}
+                                </option>
+                              ))
+                            ) : (
+                              <>
+                                <option value="agreements">Agreements</option>
+                                <option value="hr">HR Documents</option>
+                                <option value="it">IT Documents</option>
+                                <option value="finance">Finance Documents</option>
+                                <option value="legal">Legal Documents</option>
+                              </>
+                            )}
+                          </select>
+                          
+                          {/* Add Folder Button */}
+                          <button
+                            type="button"
+                            onClick={() => setShowFolderModal(true)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500 hover:text-green-600"
+                            title="Create New Folder"
+                          >
+                            <i className="fas fa-plus-circle text-lg"></i>
+                          </button>
+                        </div>
                       </div>
                       
                       <div>
@@ -418,6 +505,19 @@ const AddDocument = () => {
           </div>
         </main>
       </div>
+
+      {/* Modals */}
+      <AddPartyModal
+        isOpen={showPartyModal}
+        onClose={() => setShowPartyModal(false)}
+        onPartyAdded={handlePartyAdded}
+      />
+      
+      <AddFolderModal
+        isOpen={showFolderModal}
+        onClose={() => setShowFolderModal(false)}
+        onFolderAdded={handleFolderAdded}
+      />
     </div>
   );
 };

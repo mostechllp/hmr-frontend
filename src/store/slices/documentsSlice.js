@@ -5,14 +5,13 @@ import apiClient from '../../utils/apiClient';
 const transformDocumentForAPI = (formData, file) => {
   const formDataToSend = new FormData();
   
-  // Add document fields
   formDataToSend.append('name', formData.name);
   formDataToSend.append('type', formData.folder || 'general');
   formDataToSend.append('description', formData.description || '');
   formDataToSend.append('folder', formData.folder || 'general');
   formDataToSend.append('expiry_date', formData.expiryDate || '');
+  formDataToSend.append('party_id', formData.party_id || '');
   
-  // Handle share_with (can be array or comma-separated string)
   if (formData.share_with) {
     if (Array.isArray(formData.share_with)) {
       formDataToSend.append('share_with', formData.share_with.join(','));
@@ -21,7 +20,6 @@ const transformDocumentForAPI = (formData, file) => {
     }
   }
   
-  // Add file
   if (file) {
     formDataToSend.append('file_path', file);
   }
@@ -31,7 +29,6 @@ const transformDocumentForAPI = (formData, file) => {
 
 // Helper to transform API response to frontend format
 const transformDocumentFromAPI = (doc) => {
-  // Handle the dynamic field structure from API
   const getFieldValue = (key, defaultValue = '') => {
     const field = doc.find(f => f.key === key);
     if (!field) return defaultValue;
@@ -63,12 +60,9 @@ export const fetchDocuments = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await apiClient.get('/admin/documents');
-      // Handle the array of field objects response
       if (Array.isArray(response.data) && response.data.length > 0 && response.data[0].key) {
-        // This is a single document response in field format
         return [transformDocumentFromAPI(response.data)];
       }
-      // Handle array of documents
       if (Array.isArray(response.data)) {
         return response.data.map(doc => transformDocumentFromAPI(doc));
       }
@@ -170,12 +164,87 @@ export const fetchShareableUsers = createAsyncThunk(
   }
 );
 
+// Party CRUD operations
+export const fetchParties = createAsyncThunk(
+  'documents/fetchParties',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.get('/admin/parties');
+      return response.data.data || response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch parties');
+    }
+  }
+);
+
+export const addParty = createAsyncThunk(
+  'documents/addParty',
+  async (partyData, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.post('/admin/parties', partyData);
+      return response.data.data || response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to add party');
+    }
+  }
+);
+
+export const updateParty = createAsyncThunk(
+  'documents/updateParty',
+  async ({ id, partyData }, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.put(`/admin/parties/${id}`, partyData);
+      return response.data.data || response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to update party');
+    }
+  }
+);
+
+export const deleteParty = createAsyncThunk(
+  'documents/deleteParty',
+  async (id, { rejectWithValue }) => {
+    try {
+      await apiClient.delete(`/admin/parties/${id}`);
+      return id;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to delete party');
+    }
+  }
+);
+
+// Folder CRUD operations
+export const addDocumentFolder = createAsyncThunk(
+  'documents/addFolder',
+  async (folderData, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.post('/admin/documents-folders', folderData);
+      return response.data.data || response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to add folder');
+    }
+  }
+);
+
+export const deleteDocumentFolder = createAsyncThunk(
+  'documents/deleteFolder',
+  async (id, { rejectWithValue }) => {
+    try {
+      await apiClient.delete(`/admin/documents-folders/${id}`);
+      return id;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to delete folder');
+    }
+  }
+);
+
 const documentsSlice = createSlice({
   name: 'documents',
   initialState: {
     documents: [],
     currentDocument: null,
     folders: [],
+    parties: [],
     shareableUsers: [],
     loading: false,
     error: null,
@@ -264,6 +333,40 @@ const documentsSlice = createSlice({
       // Fetch shareable users
       .addCase(fetchShareableUsers.fulfilled, (state, action) => {
         state.shareableUsers = action.payload;
+      })
+      
+      // Fetch parties
+      .addCase(fetchParties.fulfilled, (state, action) => {
+        state.parties = action.payload;
+      })
+      
+      // Add party
+      .addCase(addParty.fulfilled, (state, action) => {
+        state.parties.push(action.payload);
+        state.shareableUsers.push(action.payload);
+      })
+      
+      // Update party
+      .addCase(updateParty.fulfilled, (state, action) => {
+        const index = state.parties.findIndex(p => p.id === action.payload.id);
+        if (index !== -1) {
+          state.parties[index] = action.payload;
+        }
+        const userIndex = state.shareableUsers.findIndex(u => u.id === action.payload.id);
+        if (userIndex !== -1) {
+          state.shareableUsers[userIndex] = action.payload;
+        }
+      })
+      
+      // Delete party
+      .addCase(deleteParty.fulfilled, (state, action) => {
+        state.parties = state.parties.filter(p => p.id !== action.payload);
+        state.shareableUsers = state.shareableUsers.filter(u => u.id !== action.payload);
+      })
+      
+      // Add folder
+      .addCase(addDocumentFolder.fulfilled, (state, action) => {
+        state.folders.push(action.payload);
       });
   },
 });

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useFieldArray } from "react-hook-form";
 import Sidebar from "../components/common/Sidebar";
 import Header from "../components/common/Header";
 import { showToast } from "../components/common/Toast";
@@ -22,21 +22,16 @@ const AddEmployee = () => {
 
   // Document file states
   const [documents, setDocuments] = useState({
-    // Passport docs
     passport_1st_page: null,
     passport_2nd_page: null,
     passport_outer_page: null,
     passport_id_page: null,
-    // Visa & Labor docs
     visa_page: null,
     labor_card: null,
-    // EID docs
     eid_1st_page: null,
     eid_2nd_page: null,
-    // Educational docs
     educational_1st_page: null,
     educational_2nd_page: null,
-    // Home country ID
     home_country_id_proof: null,
   });
 
@@ -74,7 +69,7 @@ const AddEmployee = () => {
       joining_date: "",
       dob: "",
       gender: "male",
-      special_days: "",
+      special_days: [{ name: "", date: "" }], // Changed to array of objects
       username: "",
 
       // Step 2: Passport Details
@@ -113,6 +108,12 @@ const AddEmployee = () => {
     },
     shouldUnregister: true,
     mode: "onSubmit",
+  });
+
+  // UseFieldArray for special days
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "special_days",
   });
 
   const watchOrganizationId = watch("organization_id");
@@ -261,10 +262,8 @@ const AddEmployee = () => {
         return;
       }
 
-      // Store the file object temporarily for preview
       setDocuments({ ...documents, [fieldKey]: file });
 
-      // Convert to base64 for preview and submission
       const reader = new FileReader();
       reader.onload = (event) => {
         const base64String = event.target.result;
@@ -272,7 +271,6 @@ const AddEmployee = () => {
           ...documentPreviews,
           [fieldKey]: base64String,
         });
-        // Store base64 in documents state
         setDocuments((prev) => ({
           ...prev,
           [fieldKey]: base64String,
@@ -337,57 +335,63 @@ const AddEmployee = () => {
   };
 
   const onSubmit = async (data) => {
-  setLoading(true);
+    setLoading(true);
 
-  // Prepare data object with all fields including base64 documents
-  const submitData = { ...data };
+    const submitData = { ...data };
 
-  // Convert IDs to integers
-  submitData.organization_id = parseInt(data.organization_id);
-  submitData.company_id = parseInt(data.company_id);
-  if (data.designation_id) submitData.designation_id = parseInt(data.designation_id);
-  if (data.department_id) submitData.department_id = parseInt(data.department_id);
-  submitData.total_leaves_allocated = parseInt(data.total_leaves_allocated);
-  
-  // Change dependents to string
-  if (data.dependents !== undefined && data.dependents !== "") {
-    submitData.dependents = String(data.dependents);
-  }
-
-  // Add all documents as base64 strings
-  Object.keys(documents).forEach((key) => {
-    if (documents[key]) {
-      submitData[key] = documents[key];
+    // Convert IDs to integers
+    submitData.organization_id = parseInt(data.organization_id);
+    submitData.company_id = parseInt(data.company_id);
+    if (data.designation_id) submitData.designation_id = parseInt(data.designation_id);
+    if (data.department_id) submitData.department_id = parseInt(data.department_id);
+    submitData.total_leaves_allocated = parseInt(data.total_leaves_allocated);
+    
+    if (data.dependents !== undefined && data.dependents !== "") {
+      submitData.dependents = String(data.dependents);
     }
-  });
 
-  console.log("Submitting employee with documents as base64");
-
-  const result = await dispatch(addEmployee(submitData));
-  setLoading(false);
-
-  if (addEmployee.fulfilled.match(result)) {
-    showToast(
-      `✓ Employee "${data.first_name} ${data.last_name || ""}" added successfully!`,
-      "success",
-    );
-    navigate("/employees");
-  } else {
-    const errorPayload = result.payload;
-    if (errorPayload && errorPayload.errors) {
-      const errorMessages = Object.entries(errorPayload.errors).map(
-        ([field, messages]) => {
-          return `${field}: ${Array.isArray(messages) ? messages[0] : messages}`;
-        },
+    // Convert special days array to JSON string for storage
+    if (data.special_days && data.special_days.length > 0) {
+      const validSpecialDays = data.special_days.filter(
+        day => day.name && day.date
       );
-      showToast(errorMessages.join("\n"), "error");
-    } else if (typeof errorPayload === "string") {
-      showToast(errorPayload, "error");
+      submitData.special_days = JSON.stringify(validSpecialDays);
     } else {
-      showToast("Failed to add employee", "error");
+      submitData.special_days = null;
     }
-  }
-};
+
+    // Add all documents as base64 strings
+    Object.keys(documents).forEach((key) => {
+      if (documents[key]) {
+        submitData[key] = documents[key];
+      }
+    });
+
+    const result = await dispatch(addEmployee(submitData));
+    setLoading(false);
+
+    if (addEmployee.fulfilled.match(result)) {
+      showToast(
+        `✓ Employee "${data.first_name} ${data.last_name || ""}" added successfully!`,
+        "success",
+      );
+      navigate("/employees");
+    } else {
+      const errorPayload = result.payload;
+      if (errorPayload && errorPayload.errors) {
+        const errorMessages = Object.entries(errorPayload.errors).map(
+          ([field, messages]) => {
+            return `${field}: ${Array.isArray(messages) ? messages[0] : messages}`;
+          },
+        );
+        showToast(errorMessages.join("\n"), "error");
+      } else if (typeof errorPayload === "string") {
+        showToast(errorPayload, "error");
+      } else {
+        showToast("Failed to add employee", "error");
+      }
+    }
+  };
 
   // Validation rules
   const validationRules = {
@@ -406,6 +410,12 @@ const AddEmployee = () => {
     },
     company_id: {
       required: "Company is required",
+    },
+    designation_id: {
+      required: "Designation is required",
+    },
+    department_id: {
+      required: "Department is required",
     },
     type: {
       required: "User type is required",
@@ -666,7 +676,7 @@ const AddEmployee = () => {
                         <div>
                           <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
                             <i className="fas fa-briefcase text-green-500 mr-1"></i>{" "}
-                            Designation
+                            Designation *
                           </label>
                           <Controller
                             name="designation_id"
@@ -690,7 +700,7 @@ const AddEmployee = () => {
                         <div>
                           <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
                             <i className="fas fa-diagram-project text-green-500 mr-1"></i>{" "}
-                            Department
+                            Department *
                           </label>
                           <Controller
                             name="department_id"
@@ -770,23 +780,65 @@ const AddEmployee = () => {
                           />
                         </div>
 
-                        <div>
-                          <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
+                        {/* Special Days - Array of name and date */}
+                        <div className="md:col-span-2">
+                          <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2">
                             <i className="fas fa-gift text-green-500 mr-1"></i>{" "}
                             Special Days
                           </label>
-                          <Controller
-                            name="special_days"
-                            control={control}
-                            render={({ field }) => (
-                              <input
-                                {...field}
-                                type="text"
-                                className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm md:text-base text-gray-800 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-                                placeholder="e.g. Birthday / Anniversary"
-                              />
-                            )}
-                          />
+                          <div className="space-y-3">
+                            {fields.map((field, index) => (
+                              <div key={field.id} className="flex gap-3 items-start">
+                                <div className="flex-1">
+                                  <Controller
+                                    name={`special_days.${index}.name`}
+                                    control={control}
+                                    render={({ field }) => (
+                                      <input
+                                        {...field}
+                                        type="text"
+                                        placeholder="e.g., Birthday / Anniversary"
+                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                                      />
+                                    )}
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <Controller
+                                    name={`special_days.${index}.date`}
+                                    control={control}
+                                    render={({ field }) => (
+                                      <input
+                                        {...field}
+                                        type="date"
+                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                                      />
+                                    )}
+                                  />
+                                </div>
+                                {index > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => remove(index)}
+                                    className="p-2 text-red-500 hover:text-red-600 transition-colors"
+                                  >
+                                    <i className="fas fa-trash"></i>
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => append({ name: "", date: "" })}
+                              className="text-green-500 hover:text-green-600 text-sm font-semibold flex items-center gap-2 mt-2"
+                            >
+                              <i className="fas fa-plus-circle"></i>
+                              Add Special Day
+                            </button>
+                          </div>
+                          <p className="text-xs text-gray-400 mt-2">
+                            <i className="fas fa-info-circle mr-1"></i> Add special occasions like birthday, anniversary, etc.
+                          </p>
                         </div>
 
                         <div>
