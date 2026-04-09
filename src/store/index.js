@@ -11,6 +11,7 @@ import taskReportReducer from './slices/taskReportSlice';
 import dashboardReducer from "./slices/dashboardSlice";
 import departmentReducer from "./slices/departmentSlice"
 import documentsReducer from "./slices/documentsSlice"
+import wfhReducer from "./slices/wfhSlice"
 
 export const store = configureStore({
     reducer: {
@@ -26,6 +27,7 @@ export const store = configureStore({
         dashboard: dashboardReducer,
         departments: departmentReducer,
         documents: documentsReducer,
+        wfh: wfhReducer
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({

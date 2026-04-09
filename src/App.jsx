@@ -3,6 +3,8 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useTheme } from "./hooks/useTheme";
 import RouteChangeLoader from "./components/common/RouteChangeLoader";
 import { useSelector } from "react-redux";
+import GlobalUploadStatus from "./components/common/GlobalUploadStatus";
+import AdminWFH from "./pages/WFH";
 
 // Lazy load pages for better performance
 const Login = lazy(() => import("./pages/Login"));
@@ -215,6 +217,14 @@ function App() {
             </PrivateRoute>
           }
         />
+        <Route
+          path="/wfh"
+          element={
+            <PrivateRoute>
+              <AdminWFH />
+            </PrivateRoute>
+          }
+        />
         {/* <Route
           path="/reports"
           element={
@@ -232,6 +242,7 @@ function App() {
           }
         />
       </Routes>
+      <GlobalUploadStatus />
     </RouteChangeLoader>
   );
 }

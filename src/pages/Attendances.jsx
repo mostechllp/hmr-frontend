@@ -16,7 +16,6 @@ import {
   fetchPunchOutToday,
   fetchLateComers,
   fetchAbsentees,
-  clearUploadStatus,
 } from "../store/slices/attendanceSlice";
 
 const Attendances = () => {
@@ -30,6 +29,8 @@ const Attendances = () => {
     absentees,
     loading,
     stats,
+    totalCount,
+    lastPage,
   } = useSelector((state) => state.attendance);
 
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -37,11 +38,11 @@ const Attendances = () => {
   const [nameFilter, setNameFilter] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [perPage, setPerPage] = useState(10);
+  const [perPage, setPerPage] = useState(15);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [pollingInterval, setPollingInterval] = useState(null);
   const [refreshLoading, setRefreshLoading] = useState(false);
+  const [pollingInterval, setPollingInterval] = useState(null);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -52,11 +53,16 @@ const Attendances = () => {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Fetch all initial data
+  // Fetch all initial data with server-side pagination
   useEffect(() => {
     const fetchData = async () => {
       await dispatch(
-        fetchAttendanceRecords({ page: currentPage, per_page: perPage }),
+        fetchAttendanceRecords({ 
+          page: currentPage, 
+          per_page: perPage,
+          company: companyFilter !== 'all' ? companyFilter : undefined,
+          search: searchTerm || undefined
+        })
       );
       await dispatch(fetchPunchInToday());
       await dispatch(fetchPunchInYesterday());
@@ -65,21 +71,39 @@ const Attendances = () => {
       await dispatch(fetchAbsentees());
     };
     fetchData();
-  }, [dispatch, currentPage, perPage]);
+  }, [dispatch, currentPage, perPage, companyFilter, searchTerm]);
 
-  // Poll for upload status
+  // Poll for upload status - persists across navigation
   useEffect(() => {
-    if (uploadStatusId && uploadStatus === "processing") {
-      const interval = setInterval(() => {
-        dispatch(fetchUploadStatus(uploadStatusId));
-      }, 3000);
-
+    let interval = null;
+    
+    const startPolling = () => {
+      if (interval) clearInterval(interval);
+      
+      interval = setInterval(() => {
+        if (uploadStatusId && uploadStatus === 'processing') {
+          dispatch(fetchUploadStatus(uploadStatusId));
+        }
+      }, 5000);
+    };
+    
+    
+    // Store interval in state for cleanup
+    if (uploadStatusId && uploadStatus === 'processing') {
+      startPolling();
       setPollingInterval(interval);
+    }
+    
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [uploadStatusId, uploadStatus, dispatch]);
 
-      return () => {
-        if (interval) clearInterval(interval);
-      };
-    } else if (uploadStatus === "completed") {
+  // Handle upload completion
+  useEffect(() => {
+    if (uploadStatus === 'completed') {
       if (pollingInterval) {
         clearInterval(pollingInterval);
         setPollingInterval(null);
@@ -87,23 +111,26 @@ const Attendances = () => {
       showToast("Attendance file processed successfully!", "success");
       // Refresh all data
       refreshAllData();
-      dispatch(clearUploadStatus());
-    } else if (uploadStatus === "failed") {
+    } else if (uploadStatus === 'failed') {
       if (pollingInterval) {
         clearInterval(pollingInterval);
         setPollingInterval(null);
       }
       showToast("Failed to process attendance file", "error");
-      dispatch(clearUploadStatus());
     }
-  }, [uploadStatus, uploadStatusId, dispatch, pollingInterval]);
+  }, [uploadStatus]);
 
   const refreshAllData = async () => {
     setRefreshLoading(true);
     try {
       await Promise.all([
         dispatch(
-          fetchAttendanceRecords({ page: currentPage, per_page: perPage }),
+          fetchAttendanceRecords({ 
+            page: currentPage, 
+            per_page: perPage,
+            company: companyFilter !== 'all' ? companyFilter : undefined,
+            search: searchTerm || undefined
+          })
         ),
         dispatch(fetchPunchInToday()),
         dispatch(fetchPunchInYesterday()),
@@ -119,32 +146,16 @@ const Attendances = () => {
     }
   };
 
+  // Get filtered records - now just returns the records from API
   const getFilteredRecords = () => {
-    let filtered = records;
-    if (companyFilter !== "all") {
-      filtered = filtered.filter((r) => r.company === companyFilter);
-    }
-    if (nameFilter) {
-      filtered = filtered.filter((r) =>
-        r.employeeName?.toLowerCase().includes(nameFilter.toLowerCase()),
-      );
-    }
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (r) =>
-          r.employeeName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          r.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          r.date?.includes(searchTerm),
-      );
-    }
-    return filtered;
+    return records;
   };
 
   const filteredRecords = getFilteredRecords();
-  const totalFiltered = filteredRecords.length;
-  const totalPages = Math.ceil(totalFiltered / perPage);
+  const totalFiltered = totalCount || filteredRecords.length;
+  const totalPages = lastPage || Math.ceil(totalFiltered / perPage);
   const start = (currentPage - 1) * perPage;
-  const pageRecords = filteredRecords.slice(start, start + perPage);
+  const pageRecords = filteredRecords;
 
   // Safe array getter - handles API errors gracefully
   const getSafeArray = (data) => {
@@ -161,58 +172,42 @@ const Attendances = () => {
   const absentTodayCount = stats?.absentToday || 0;
   const punchOutTodayCount = stats?.punchedOutToday || 0;
 
-  // In your Attendances component
-useEffect(() => {
-  let interval = null;
-  
-  const startPolling = () => {
-    if (interval) clearInterval(interval);
-    
-    interval = setInterval(() => {
-      if (uploadStatusId && uploadStatus === 'processing') {
-        dispatch(fetchUploadStatus(uploadStatusId));
+  const handleUploadComplete = async ({ company_id, file }) => {
+    try {
+      const result = await dispatch(uploadAttendanceFile({ company_id, file })).unwrap();
+      if (result?.id) {
+        showToast("File uploaded! Processing in background...", "info");
+        setShowUploadModal(false);
       }
-    }, 5000);
-  };
-  
-  const stopPolling = () => {
-    if (interval) {
-      clearInterval(interval);
-      interval = null;
+    } catch (error) {
+      showToast(error || "Upload failed", "error");
     }
   };
-  
-  // Handle page visibility
-  const handleVisibilityChange = () => {
-    if (document.hidden) {
-      stopPolling();
-    } else {
-      startPolling();
-    }
-  };
-  
-  if (uploadStatusId && uploadStatus === 'processing') {
-    startPolling();
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-  }
-  
-  return () => {
-    stopPolling();
-    document.removeEventListener('visibilitychange', handleVisibilityChange);
-  };
-}, [uploadStatusId, uploadStatus, dispatch]);
 
- const handleUploadComplete = async ({ company_id, file }) => {
-  try {
-    const result = await dispatch(uploadAttendanceFile({ company_id, file })).unwrap();
-    if (result?.id) {
-      showToast("File uploaded! Processing in background...", "info");
-      setShowUploadModal(false);
-    }
-  } catch (error) {
-    showToast(error || "Upload failed", "error");
-  }
-};
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePerPageChange = (value) => {
+    setPerPage(value);
+    setCurrentPage(1);
+  };
+
+  const handleCompanyFilterChange = (e) => {
+    setCompanyFilter(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleNameFilterChange = (e) => {
+    setNameFilter(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
 
   // Helper function to render employee list
   const renderEmployeeList = (employees, title) => {
@@ -342,7 +337,7 @@ useEffect(() => {
             <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-center gap-3">
               <i className="fas fa-spinner fa-spin text-blue-500"></i>
               <span className="text-sm text-blue-700 dark:text-blue-300">
-                Processing attendance file... Please wait.
+                Processing attendance file... This will continue in the background.
               </span>
             </div>
           )}
@@ -361,7 +356,7 @@ useEffect(() => {
           <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-5">
             <select
               value={companyFilter}
-              onChange={(e) => setCompanyFilter(e.target.value)}
+              onChange={handleCompanyFilterChange}
               className="px-3 md:px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full text-xs md:text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:border-green-500"
             >
               <option value="all">All Companies</option>
@@ -374,7 +369,7 @@ useEffect(() => {
             <input
               type="text"
               value={nameFilter}
-              onChange={(e) => setNameFilter(e.target.value)}
+              onChange={handleNameFilterChange}
               placeholder="Employee Name..."
               className="flex-1 sm:flex-none px-3 md:px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full text-xs md:text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:border-green-500 w-full sm:w-48"
             />
@@ -393,11 +388,11 @@ useEffect(() => {
 
           {/* Actions Bar */}
           <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 mb-5">
-            <EntriesSelector value={perPage} onChange={setPerPage} />
+            <EntriesSelector value={perPage} onChange={handlePerPageChange} />
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <SearchBar
                 value={searchTerm}
-                onChange={setSearchTerm}
+                onChange={handleSearchChange}
                 placeholder="Search records..."
               />
               <button
@@ -503,7 +498,7 @@ useEffect(() => {
               <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}
-                onPageChange={setCurrentPage}
+                onPageChange={handlePageChange}
                 totalItems={totalFiltered}
                 itemsPerPage={perPage}
               />

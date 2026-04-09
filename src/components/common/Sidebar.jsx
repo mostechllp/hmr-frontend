@@ -44,13 +44,12 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { path: "/designations", icon: "fas fa-tags", label: "Designations" },
     { path: "/departments", icon: "fas fa-building", label: "Departments" },
     { path: "/task-reports", icon: "fas fa-tasks", label: "Task Reports" },
+    {path: "/wfh", icon: "fas fa-home", label: "WFH Requests"},
     { path: "/reports", icon: "fas fa-chart-line", label: "Reports" },
     { path: "/settings", icon: "fas fa-gear", label: "Settings" },
   ];
 
-
   const handleLogout = async () => {
-
     try {
       await dispatch(logoutUser()).unwrap();
       navigate("/login");
