@@ -13,7 +13,11 @@ import ConfirmModal from '../components/common/ConfirmModal';
 
 const Leaves = () => {
   const dispatch = useDispatch();
-  const { leaves = [], loading = false, error = null } = useSelector((state) => state.leaves || { leaves: [] });
+  const { leaves = [], error = null } = useSelector((state) => {
+    return state.leaves || { leaves: [] };
+  });
+  console.log(leaves)
+
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -65,7 +69,7 @@ const Leaves = () => {
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(leave =>
-        (leave.employee_name || leave.employee?.name || '').toLowerCase().includes(searchLower) ||
+        (leave.employee?.first_name || '').toLowerCase().includes(searchLower) ||
         (leave.leave_type?.name || leave.type || '').toLowerCase().includes(searchLower) ||
         (leave.reason || '').toLowerCase().includes(searchLower)
       );
@@ -156,22 +160,6 @@ const Leaves = () => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   };
-
-  if (loading && leavesArray.length === 0) {
-    return (
-      <div className="app flex min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
-        <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
-        <div className={`flex-1 min-w-0 w-full overflow-x-hidden ${!isMobile ? 'md:ml-[72px]' : ''}`}>
-          <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-          <main className="content px-4 py-4 md:px-6 md:py-6 w-full overflow-x-hidden">
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
-            </div>
-          </main>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="app flex min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">

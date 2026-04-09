@@ -3,8 +3,6 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useTheme } from "./hooks/useTheme";
 import RouteChangeLoader from "./components/common/RouteChangeLoader";
 import { useSelector } from "react-redux";
-import Documents from "./pages/Documents";
-import AddDocument from "./pages/AddDocument";
 
 // Lazy load pages for better performance
 const Login = lazy(() => import("./pages/Login"));
@@ -142,22 +140,6 @@ function App() {
           element={
             <PrivateRoute>
               <EditCompany />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/documents"
-          element={
-            <PrivateRoute>
-              <Documents />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/documents/add-document"
-          element={
-            <PrivateRoute>
-              <AddDocument />
             </PrivateRoute>
           }
         />

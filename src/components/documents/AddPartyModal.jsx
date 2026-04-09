@@ -7,12 +7,14 @@ const AddPartyModal = ({ isOpen, onClose, onPartyAdded }) => {
   const dispatch = useDispatch();
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState({
-    party_name: '',
+    name: '',  // Changed from party_name to match API
     company_name: '',
     contact_person: '',
     email: '',
     phone: '',
-    address: ''
+    address: '',
+    website: '',     // Added from API response
+    notes: ''        // Added from API response
   });
 
   const handleInputChange = (e) => {
@@ -20,7 +22,7 @@ const AddPartyModal = ({ isOpen, onClose, onPartyAdded }) => {
   };
 
   const handleSubmit = async () => {
-    if (!formData.party_name || !formData.company_name) {
+    if (!formData.name || !formData.company_name) {
       showToast('Party Name and Company Name are required', 'error');
       return;
     }
@@ -30,16 +32,21 @@ const AddPartyModal = ({ isOpen, onClose, onPartyAdded }) => {
     try {
       const result = await dispatch(addParty(formData));
       if (addParty.fulfilled.match(result)) {
+        const newParty = result.payload;
         showToast('Party added successfully', 'success');
-        onPartyAdded?.(result.payload);
+        // Pass the party data back to parent component
+        onPartyAdded?.(newParty);
         onClose();
+        // Reset form
         setFormData({
-          party_name: '',
+          name: '',
           company_name: '',
           contact_person: '',
           email: '',
           phone: '',
-          address: ''
+          address: '',
+          website: '',
+          notes: ''
         });
       } else {
         showToast(result.payload || 'Failed to add party', 'error');
@@ -76,8 +83,8 @@ const AddPartyModal = ({ isOpen, onClose, onPartyAdded }) => {
             </label>
             <input
               type="text"
-              name="party_name"
-              value={formData.party_name}
+              name="name"
+              value={formData.name}
               onChange={handleInputChange}
               className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
               placeholder="Enter party name"
@@ -143,6 +150,20 @@ const AddPartyModal = ({ isOpen, onClose, onPartyAdded }) => {
           
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+              Website
+            </label>
+            <input
+              type="url"
+              name="website"
+              value={formData.website}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+              placeholder="Enter website URL"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
               Address
             </label>
             <textarea
@@ -152,6 +173,20 @@ const AddPartyModal = ({ isOpen, onClose, onPartyAdded }) => {
               rows="2"
               className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 resize-vertical"
               placeholder="Enter address"
+            ></textarea>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+              Notes
+            </label>
+            <textarea
+              name="notes"
+              value={formData.notes}
+              onChange={handleInputChange}
+              rows="2"
+              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 resize-vertical"
+              placeholder="Additional notes about this party"
             ></textarea>
           </div>
         </div>

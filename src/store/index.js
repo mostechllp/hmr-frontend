@@ -4,7 +4,6 @@ import employeeReducer from "./slices/employeeSlice"
 import notificationReducer from "./slices/notificationSlice"
 import organizationReducer from "./slices/organizationSlice"
 import companyReducer from "./slices/companySlice";
-import agreementReducer from "./slices/agreementsSlice"
 import attendanceReducer from "./slices/attendanceSlice"
 import leaveReducer from "./slices/LeaveSlice"
 import designationReducer from "./slices/designationSlice"
@@ -20,7 +19,6 @@ export const store = configureStore({
         notifications: notificationReducer,
         organizations: organizationReducer,
         companies: companyReducer,
-        agreements: agreementReducer,
         attendance: attendanceReducer,
         leaves: leaveReducer,
         designations: designationReducer,

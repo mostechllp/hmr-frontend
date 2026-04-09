@@ -4,6 +4,8 @@ import SearchBar from "../common/SearchBar";
 import EntriesSelector from "../common/EntriesSelector";
 import Pagination from "../common/Paginations";
 import { useSelector } from "react-redux";
+import ConfirmModal from "../common/ConfirmModal";
+import { showToast } from "../common/Toast";
 
 const RecentFiles = () => {
   const { recentData } = useSelector((state) => state.dashboard);
@@ -12,6 +14,8 @@ const RecentFiles = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState(null);
 
   const documents = [
     ...(recentData?.agreements || []),
@@ -21,12 +25,12 @@ const RecentFiles = () => {
   ];
 
   const folders = [
-    { name: "All Files", value: "all", icon: "fas fa-folder-open" },
-    { name: "Agreements", value: "Agreements", icon: "fas fa-file-signature" },
-    { name: "HR", value: "HR", icon: "fas fa-users" },
-    { name: "Employees", value: "Employees", icon: "fas fa-user-tie" },
-    { name: "Folders", value: "Folders", icon: "fas fa-folder" },
-    { name: "Others", value: "Others", icon: "fas fa-ellipsis-h" },
+    { name: "All Files", value: "all", icon: "fas fa-folder-open", route: null },
+    { name: "Agreements", value: "Agreements", icon: "fas fa-file-signature", route: "/agreements/add-agreement" },
+    { name: "HR", value: "HR", icon: "fas fa-users", route: "/agreements/add-agreement" },
+    { name: "Employees", value: "Employees", icon: "fas fa-user-tie", route: "/employees/add-employee" },
+    { name: "Folders", value: "Folders", icon: "fas fa-folder", route: "create-folder" },
+    { name: "Others", value: "Others", icon: "fas fa-ellipsis-h", route: "create-file" },
   ];
 
   const getFilteredDocs = () => {
@@ -48,33 +52,91 @@ const RecentFiles = () => {
   const pageDocs = filteredDocs.slice(start, start + perPage);
 
   const handleAddClick = () => {
+    
     switch (activeFolder) {
       case "Agreements":
-        navigate("/add-agreement");
+        navigate("/agreements/add-agreement");
         break;
       case "HR":
-        navigate("/add-agreement");
+        navigate("/agreements/add-agreement");
         break;
       case "Employees":
-        navigate("/add-employee");
+        navigate("/employees/add-employee");
         break;
       case "Folders": {
         const folderName = prompt("Enter folder name:", "New Folder");
         if (folderName) {
-          alert(`Folder "${folderName}" created`);
+          // TODO: API call to create folder
+          showToast(`Folder "${folderName}" created successfully`, "success");
         }
         break;
       }
       case "Others": {
         const fileName = prompt("Enter file name:", "New File");
         if (fileName) {
-          alert(`File "${fileName}" added`);
+          // TODO: API call to create file
+          showToast(`File "${fileName}" added successfully`, "success");
         }
         break;
       }
       default:
-        navigate("/add-company");
+        navigate("/agreements/add-agreement");
     }
+  };
+
+  const handleView = (doc) => {
+    if (doc.file_path) {
+      const baseUrl = import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || window.location.origin;
+      const fileUrl = `${baseUrl}/storage/${doc.file_path.replace(/^\/+/, '')}`;
+      window.open(fileUrl, '_blank');
+    } else {
+      showToast("No document file available", "info");
+    }
+  };
+
+  const handleEdit = (doc) => {
+    // Navigate to appropriate edit page based on document type
+    if (doc.type === 'agreement' || doc.folder === 'Agreements') {
+      navigate(`/agreements/edit-agreement/${doc.id}`);
+    } else if (doc.folder === 'HR') {
+      navigate(`/agreements/edit-agreement/${doc.id}`);
+    } else if (doc.folder === 'Employees') {
+      navigate(`/employees/edit/${doc.employee_id || doc.id}`);
+    }
+  };
+
+  const handleDeleteClick = (doc) => {
+    setSelectedDocument(doc);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedDocument) return;
+    
+    // TODO: API call to delete document
+    showToast(`${selectedDocument.name} deleted successfully`, "success");
+    setConfirmOpen(false);
+    setSelectedDocument(null);
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'No Expiry';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  const getExpiryClass = (expiryDate) => {
+    if (!expiryDate) return '';
+    const today = new Date();
+    const expiry = new Date(expiryDate);
+    const diffDays = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+    if (diffDays < 0) return 'text-red-500 font-semibold';
+    if (diffDays <= 30) return 'text-amber-500 font-semibold';
+    return '';
   };
 
   return (
@@ -125,7 +187,7 @@ const RecentFiles = () => {
                       ? "Create Folder"
                       : activeFolder === "Others"
                         ? "Add Other File"
-                        : "Add Company"}
+                        : "Add Document"}
             </button>
           </div>
         </div>
@@ -155,7 +217,7 @@ const RecentFiles = () => {
           <tbody>
             {pageDocs.map((doc, idx) => (
               <tr
-                key={idx}
+                key={doc.id || idx}
                 className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
               >
                 <td className="px-4 py-3 text-sm text-center">
@@ -169,24 +231,43 @@ const RecentFiles = () => {
                     {doc.folder}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                  {doc.expiry || "No Expiry"}
+                <td className={`px-4 py-3 text-sm ${getExpiryClass(doc.expiry)}`}>
+                  {formatDate(doc.expiry)}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex gap-2">
-                    <button className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-blue-500">
+                    <button 
+                      onClick={() => handleView(doc)}
+                      className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-blue-500 transition-colors"
+                      title="View"
+                    >
                       <i className="fas fa-eye"></i>
                     </button>
-                    <button className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-amber-500">
+                    <button 
+                      onClick={() => handleEdit(doc)}
+                      className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-amber-500 transition-colors"
+                      title="Edit"
+                    >
                       <i className="fas fa-edit"></i>
                     </button>
-                    <button className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-red-500">
+                    <button 
+                      onClick={() => handleDeleteClick(doc)}
+                      className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-red-500 transition-colors"
+                      title="Delete"
+                    >
                       <i className="fas fa-trash"></i>
                     </button>
                   </div>
                 </td>
               </tr>
             ))}
+            {pageDocs.length === 0 && (
+              <tr>
+                <td colSpan="5" className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                  No documents found in this folder
+                 </td>
+               </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -200,6 +281,18 @@ const RecentFiles = () => {
           itemsPerPage={perPage}
         />
       </div>
+
+      <ConfirmModal
+        isOpen={confirmOpen}
+        onClose={() => {
+          setConfirmOpen(false);
+          setSelectedDocument(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Delete Document"
+        message={`Are you sure you want to delete "${selectedDocument?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+      />
     </div>
   );
 };

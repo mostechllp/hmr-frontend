@@ -39,7 +39,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       label: "Organizations",
     },
     { path: "/agreements", icon: "fas fa-file-signature", label: "Agreements" },
-    { path: "/documents", icon: "fas fa-file-signature", label: "Documents" },
     { path: "/attendances", icon: "fas fa-fingerprint", label: "Attendance" },
     { path: "/leaves", icon: "fas fa-calendar-check", label: "Leaves" },
     { path: "/designations", icon: "fas fa-tags", label: "Designations" },

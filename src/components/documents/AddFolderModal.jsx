@@ -1,4 +1,3 @@
-// src/components/modals/AddFolderModal.jsx
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { showToast } from '../common/Toast';
@@ -20,8 +19,9 @@ const AddFolderModal = ({ isOpen, onClose, onFolderAdded }) => {
     try {
       const result = await dispatch(addDocumentFolder({ name: folderName }));
       if (addDocumentFolder.fulfilled.match(result)) {
+        const newFolder = result.payload;
         showToast('Folder created successfully', 'success');
-        onFolderAdded?.(result.payload);
+        onFolderAdded?.(newFolder);
         onClose();
         setFolderName('');
       } else {
