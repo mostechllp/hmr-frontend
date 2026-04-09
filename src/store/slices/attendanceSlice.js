@@ -1,77 +1,119 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import apiClient from '../../utils/apiClient';
 
-// Generate dummy attendance data
-const companies = ["THESAY", "SAYGEN", "warehouse", "farmassay"];
-const employees = [
-  "JITHIN", "FAWZY", "FAHEEM", "ASLAN", "ABHILASH", "AKSHAY", "VIJAY", "SUNEEL",
-  "SUBHANI", "SENTHIL", "SHANOOB", "ILYAS", "SAFFY", "IFTIKAR", "PRASHANT",
-  "SARUN", "CHENNAIA", "YAHYA", "MANOJ", "DEEPITA", "KSENIA", "SHOKHISTA", "AMINA"
-];
-
-const generateAttendanceRecords = () => {
-  const records = [];
-  const today = new Date();
-  
-  for (let i = 0; i < 85; i++) {
-    const empIdx = i % employees.length;
-    const companyIdx = i % companies.length;
-    const daysAgo = Math.floor(Math.random() * 25);
-    const recordDate = new Date(today);
-    recordDate.setDate(today.getDate() - daysAgo);
-    const dateStr = recordDate.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: '2-digit'
-    }).replace(/\//g, '-');
-
-    const hour = Math.floor(Math.random() * 2) + 7;
-    const minute = Math.floor(Math.random() * 60);
-    const punchInTime = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} AM`;
-    const isLate = (hour === 8 && minute > 30) || hour >= 9;
-
-    let punchOut = "Not Punched Out";
-    let hasPunchOut = false;
-    if (Math.random() > 0.3) {
-      const outHour = Math.floor(Math.random() * 3) + 16;
-      const outMinute = Math.floor(Math.random() * 60);
-      punchOut = `${outHour.toString().padStart(2, '0')}:${outMinute.toString().padStart(2, '0')} PM`;
-      hasPunchOut = true;
-    }
-
-    records.push({
-      id: i + 1,
-      company: companies[companyIdx],
-      employeeName: employees[empIdx],
-      date: dateStr,
-      punchIn: punchInTime,
-      isLate: isLate,
-      punchOut: punchOut,
-      hasPunchOut: hasPunchOut
-    });
+// Helper for error handling
+const handleApiError = (error) => {
+  if (error.response) {
+    return error.response.data?.message || `Server error: ${error.response.status}`;
   }
-  
-  records.sort((a, b) => {
-    const dateA = a.date.split('-').reverse().join('-');
-    const dateB = b.date.split('-').reverse().join('-');
-    return dateB.localeCompare(dateA);
-  });
-  
-  return records;
+  if (error.request) {
+    return 'Network error: Unable to connect to server';
+  }
+  return error.message || 'An unexpected error occurred';
 };
 
+// Async Thunks
 export const fetchAttendanceRecords = createAsyncThunk(
   'attendance/fetchAll',
-  async () => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return generateAttendanceRecords();
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.get(`/admin/attendance`, { params });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
   }
 );
 
 export const uploadAttendanceFile = createAsyncThunk(
   'attendance/upload',
-  async (fileData) => {
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    return fileData;
+  async ({ company, file }, { rejectWithValue }) => {
+    try {
+      const formData = new FormData();
+      formData.append('company', company);
+      formData.append('file', file);
+      
+      const response = await apiClient.post(`/admin/attendance/upload`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
+export const fetchUploadStatus = createAsyncThunk(
+  'attendance/fetchUploadStatus',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.get(`/admin/attendance/upload-status/${id}`);
+      return { id, status: response.data };
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
+export const fetchPunchInToday = createAsyncThunk(
+  'attendance/fetchPunchInToday',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.get(`/admin/attendance/punch-in-today`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
+export const fetchPunchInYesterday = createAsyncThunk(
+  'attendance/fetchPunchInYesterday',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.get(`/admin/attendance/punch-in-yesterday`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
+export const fetchPunchOutToday = createAsyncThunk(
+  'attendance/fetchPunchOutToday',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.get(`/admin/attendance/punch-out-today`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
+export const fetchLateComers = createAsyncThunk(
+  'attendance/fetchLateComers',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.get(`/admin/attendance/late-comers`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
+export const fetchAbsentees = createAsyncThunk(
+  'attendance/fetchAbsentees',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.get(`/admin/attendance/absentees`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
   }
 );
 
@@ -79,30 +121,111 @@ const attendanceSlice = createSlice({
   name: 'attendance',
   initialState: {
     records: [],
+    uploadStatus: null, // 'idle', 'processing', 'completed', 'failed'
+    uploadStatusId: null,
+    punchInToday: [],
+    punchInYesterday: [],
+    punchOutToday: [],
+    lateComers: [],
+    absentees: [],
     loading: false,
     error: null,
     totalCount: 0,
   },
-  reducers: {},
+  reducers: {
+    clearUploadStatus: (state) => {
+      state.uploadStatus = null;
+      state.uploadStatusId = null;
+    },
+    clearErrors: (state) => {
+      state.error = null;
+    },
+  },
   extraReducers: (builder) => {
     builder
+      // Fetch Attendance Records
       .addCase(fetchAttendanceRecords.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(fetchAttendanceRecords.fulfilled, (state, action) => {
         state.loading = false;
-        state.records = action.payload;
-        state.totalCount = action.payload.length;
+        state.records = action.payload.data || action.payload;
+        state.totalCount = action.payload.total || (action.payload.data?.length || 0);
       })
       .addCase(fetchAttendanceRecords.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message;
+        state.error = action.payload;
+      })
+      
+      // Upload Attendance File
+      .addCase(uploadAttendanceFile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
       .addCase(uploadAttendanceFile.fulfilled, (state, action) => {
-        // In a real app, you would add the new records here
-        console.log('File uploaded:', action.payload);
+        state.loading = false;
+        state.uploadStatus = 'processing';
+        state.uploadStatusId = action.payload.id;
+      })
+      .addCase(uploadAttendanceFile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.uploadStatus = 'failed';
+      })
+      
+      // Fetch Upload Status
+      .addCase(fetchUploadStatus.pending, (state) => {
+        state.error = null;
+      })
+      .addCase(fetchUploadStatus.fulfilled, (state, action) => {
+        state.uploadStatus = action.payload.status;
+      })
+      .addCase(fetchUploadStatus.rejected, (state, action) => {
+        state.error = action.payload;
+      })
+      
+      // Fetch Punch In Today
+      .addCase(fetchPunchInToday.fulfilled, (state, action) => {
+        state.punchInToday = action.payload.data || action.payload;
+      })
+      .addCase(fetchPunchInToday.rejected, (state, action) => {
+        console.error('Failed to fetch punch in today:', action.payload);
+      })
+      
+      // Fetch Punch In Yesterday
+      .addCase(fetchPunchInYesterday.fulfilled, (state, action) => {
+        state.punchInYesterday = action.payload.data || action.payload;
+      })
+      .addCase(fetchPunchInYesterday.rejected, (state, action) => {
+        console.error('Failed to fetch punch in yesterday:', action.payload);
+      })
+      
+      // Fetch Punch Out Today
+      .addCase(fetchPunchOutToday.fulfilled, (state, action) => {
+        state.punchOutToday = action.payload.data || action.payload;
+      })
+      .addCase(fetchPunchOutToday.rejected, (state, action) => {
+        console.error('Failed to fetch punch out today:', action.payload);
+      })
+      
+      // Fetch Late Comers
+      .addCase(fetchLateComers.fulfilled, (state, action) => {
+        state.lateComers = action.payload.data || action.payload;
+      })
+      .addCase(fetchLateComers.rejected, (state, action) => {
+        console.error('Failed to fetch late comers:', action.payload);
+      })
+      
+      // Fetch Absentees
+      .addCase(fetchAbsentees.fulfilled, (state, action) => {
+        state.absentees = action.payload.data || action.payload;
+      })
+      .addCase(fetchAbsentees.rejected, (state, action) => {
+        console.error('Failed to fetch absentees:', action.payload);
       });
   },
 });
 
+export const { clearUploadStatus, clearErrors } = attendanceSlice.actions;
 export default attendanceSlice.reducer;

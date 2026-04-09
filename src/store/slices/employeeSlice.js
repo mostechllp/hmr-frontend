@@ -15,30 +15,39 @@ export const fetchEmployees = createAsyncThunk(
   },
 );
 
+// In your employeeSlice.js, update the addEmployee thunk
 export const addEmployee = createAsyncThunk(
   "employees/add",
   async (employeeData, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post("/admin/employees", employeeData);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to add employee",
-      );
-    }
-  },
-);
+      console.log("Sending employee data:", employeeData);
 
-export const updateEmployee = createAsyncThunk(
-  "employees/update",
-  async ({ id, data }, { rejectWithValue }) => {
-    try {
-      const response = await apiClient.put(`/admin/employees/${id}`, data);
-      return response.data;
+      const response = await apiClient.post("/admin/employees", employeeData);
+      console.log("Employee add response:", response.data);
+
+      return response.data.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to update employee",
+      console.error("Employee add error - Full error:", error);
+      console.error(
+        "Employee add error - Response data:",
+        error.response?.data,
       );
+      console.error(
+        "Employee add error - Validation errors:",
+        error.response?.data?.errors,
+      );
+
+      // Return the full error object with validation details
+      if (error.response?.data?.errors) {
+        return rejectWithValue({
+          message: error.response.data.message,
+          errors: error.response.data.errors,
+        });
+      }
+
+      const errorMessage =
+        error.response?.data?.message || "Failed to add employee";
+      return rejectWithValue(errorMessage);
     }
   },
 );
@@ -61,21 +70,73 @@ export const updateEmployeeStatus = createAsyncThunk(
   "employees/updateStatus",
   async ({ id, status }, { rejectWithValue }) => {
     try {
-      await apiClient.post(
-        `/admin/employees/${id}/update-status`,
-        {
-          status: status.toLowerCase(), 
-        }
-      );
+      await apiClient.post(`/admin/employees/${id}/update-status`, {
+        status: status.toLowerCase(),
+      });
 
       return { id, status };
     } catch (error) {
-      console.log("STATUS ERROR:", error.response?.data); 
+      console.log("STATUS ERROR:", error.response?.data);
       return rejectWithValue(
-        error.response?.data?.message || "Failed to update status"
+        error.response?.data?.message || "Failed to update status",
       );
     }
-  }
+  },
+);
+
+export const fetchEmployeeById = createAsyncThunk(
+  "employees/fetchById",
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.get(`/admin/employees/${id}`);
+      console.log("Fetch employee by ID response:", response.data);
+
+      if (response.data && response.data.status === "success") {
+        return response.data.data;
+      } else {
+        return rejectWithValue(
+          response.data?.message || "Failed to fetch employee",
+        );
+      }
+    } catch (error) {
+      console.error("Fetch employee error:", error);
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch employee",
+      );
+    }
+  },
+);
+
+// Update employee
+export const updateEmployee = createAsyncThunk(
+  "employees/update",
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.put(`/admin/employees/${id}`, data);
+      console.log("Update employee response:", response.data);
+
+      if (response.data && response.data.status === "success") {
+        return response.data.data;
+      } else {
+        return rejectWithValue(
+          response.data?.message || "Failed to update employee",
+        );
+      }
+    } catch (error) {
+      console.error("Update employee error:", error.response?.data);
+
+      if (error.response?.data?.errors) {
+        return rejectWithValue({
+          message: error.response.data.message,
+          errors: error.response.data.errors,
+        });
+      }
+
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update employee",
+      );
+    }
+  },
 );
 
 const initialState = {
@@ -153,14 +214,6 @@ const employeeSlice = createSlice({
         state.employees.unshift(action.payload);
         state.totalCount += 1;
       })
-      .addCase(updateEmployee.fulfilled, (state, action) => {
-        const index = state.employees.findIndex(
-          (emp) => emp.id === action.payload.id,
-        );
-        if (index !== -1) {
-          state.employees[index] = action.payload;
-        }
-      })
       .addCase(deleteEmployee.fulfilled, (state, action) => {
         state.employees = state.employees.filter(
           (emp) => emp.id !== action.payload,
@@ -174,6 +227,38 @@ const employeeSlice = createSlice({
         if (index !== -1) {
           state.employees[index].status = action.payload.status;
         }
+      })
+      .addCase(fetchEmployeeById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchEmployeeById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentEmployee = action.payload;
+      })
+      .addCase(fetchEmployeeById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Update Employee
+      .addCase(updateEmployee.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateEmployee.fulfilled, (state, action) => {
+        state.loading = false;
+        // Update the employee in the employees list if it exists
+        const index = state.employees.findIndex(
+          (emp) => emp.id === action.payload.id,
+        );
+        if (index !== -1) {
+          state.employees[index] = action.payload;
+        }
+        state.currentEmployee = action.payload;
+      })
+      .addCase(updateEmployee.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });

@@ -9,6 +9,8 @@ const Login = lazy(() => import("./pages/Login"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Employees = lazy(() => import("./pages/Employees"));
 const AddEmployee = lazy(() => import("./pages/AddEmployee"));
+const EditEmployee = lazy(() => import("./pages/EditEmployee"));
+const EmployeeDetails = lazy(() => import("./pages/EmployeeDetails"));
 const Organizations = lazy(() => import("./pages/Organizations"));
 const AddOrganization = lazy(() => import("./pages/AddOrganization"));
 const EditOrganization = lazy(() => import("./pages/EditOrganization"));
@@ -76,6 +78,23 @@ function App() {
             </PrivateRoute>
           }
         />
+        <Route
+          path="/employees/edit/:id"
+          element={
+            <PrivateRoute>
+              <EditEmployee />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/employees/:id"
+          element={
+            <PrivateRoute>
+              <EmployeeDetails />
+            </PrivateRoute>
+          }
+        />
+        
         <Route
           path="/organizations"
           element={

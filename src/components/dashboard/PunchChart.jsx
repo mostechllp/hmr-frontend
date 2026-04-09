@@ -31,6 +31,8 @@ const PunchChart = () => {
           charts?.punch_chart?.today?.punched_in || 0,
           charts?.punch_chart?.yesterday?.punched_in || 0,
         ],
+        backgroundColor: "#22c55e",
+        hoverBackgroundColor: "#16a34a"
       },
       {
         label: "Out",
@@ -38,6 +40,8 @@ const PunchChart = () => {
           charts?.punch_chart?.today?.punched_out || 0,
           charts?.punch_chart?.yesterday?.punched_out || 0,
         ],
+        backgroundColor: "#ef4444",
+        hoverBackgroundColor: "#dc2626"
       },
     ],
   };

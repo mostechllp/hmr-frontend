@@ -11,7 +11,7 @@ const UploadAttendanceModal = ({ isOpen, onClose, onUpload }) => {
     if (file) {
       const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
       if (!['.dat', '.csv', '.txt'].includes(fileExt)) {
-        alert('Please upload .dat or .csv files only');
+        alert('Please upload .dat, .csv, or .txt files only');
         return;
       }
       if (file.size > 10 * 1024 * 1024) {
@@ -40,16 +40,17 @@ const UploadAttendanceModal = ({ isOpen, onClose, onUpload }) => {
 
     setUploading(true);
     
-    // Simulate upload
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    onUpload({
-      company: selectedCompany,
-      file: selectedFile
-    });
-    
-    setUploading(false);
-    handleClose();
+    try {
+      await onUpload({
+        company: selectedCompany,
+        file: selectedFile
+      });
+      handleClose();
+    } catch (error) {
+      console.error('Upload error:', error);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleClose = () => {
@@ -105,7 +106,12 @@ const UploadAttendanceModal = ({ isOpen, onClose, onUpload }) => {
                 <i className="fas fa-file-upload text-5xl text-green-500"></i>
               </div>
               <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Click to upload attendance file</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">Accepted formats: .dat (space-separated) or .csv</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                Accepted formats: .dat (space-separated) or .csv
+              </div>
+              <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                File should contain: Employee ID, Name, Date, Punch In, Punch Out
+              </div>
             </div>
             <input
               ref={fileInputRef}
@@ -121,7 +127,7 @@ const UploadAttendanceModal = ({ isOpen, onClose, onUpload }) => {
                   <i className="fas fa-file-csv text-2xl text-green-500"></i>
                   <div>
                     <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{selectedFile.name}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{(selectedFile.size / 1024).toFixed(2)} KB</div>
                   </div>
                 </div>
                 <button
@@ -146,7 +152,7 @@ const UploadAttendanceModal = ({ isOpen, onClose, onUpload }) => {
             <button
               type="submit"
               disabled={uploading}
-              className="px-5 py-2 rounded-full font-semibold bg-green-500 text-white hover:bg-green-600 transition-all flex items-center gap-2 disabled:opacity-70"
+              className="px-5 py-2 rounded-full font-semibold bg-green-500 text-white hover:bg-green-600 transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {uploading ? (
                 <><i className="fas fa-spinner fa-spin"></i> Uploading...</>

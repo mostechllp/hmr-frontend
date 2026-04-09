@@ -31,6 +31,12 @@ const AttendanceChart = () => {
       {
         label: "Present",
         data: charts?.weekly_attendance?.data || [],
+        borderColor: "#22c55e", //line color
+        backgroundColor: "#22c55e33", //light fill under line
+        fill: true, // enables area fill
+        tension: 0.4, // smooth curve
+        pointBackgroundColor: "#22c55e",
+        pointBorderColor: "#22c55e",
       },
     ],
   };
