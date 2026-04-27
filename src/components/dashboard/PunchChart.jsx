@@ -120,7 +120,7 @@ const PunchChart = () => {
                 0
               </td>
               <td className="py-2 text-center text-green-600 dark:text-green-400 font-bold">
-                14
+                0
               </td>
             </tr>
             <tr>

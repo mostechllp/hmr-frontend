@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "https://violet-leopard-500489.hostingersite.com",
+        target: "https://seagreen-porpoise-215084.hostingersite.com",
         changeOrigin: true,
         secure: false,
       },

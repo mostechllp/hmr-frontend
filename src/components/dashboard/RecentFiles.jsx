@@ -6,6 +6,9 @@ import Pagination from "../common/Paginations";
 import { useSelector } from "react-redux";
 import ConfirmModal from "../common/ConfirmModal";
 import { showToast } from "../common/Toast";
+import EmployeesTable from "../dashboardtables/EmployeesTable";
+import DocumentsTable from "../dashboardtables/DocumentsTable";
+import FoldersTable from "../dashboardtables/FoldersTable";
 
 const RecentFiles = () => {
   const { recentData } = useSelector((state) => state.dashboard);
@@ -18,33 +21,98 @@ const RecentFiles = () => {
   const [selectedDocument, setSelectedDocument] = useState(null);
 
   const documents = [
+    ...(recentData?.organization_files || []),
     ...(recentData?.agreements || []),
     ...(recentData?.hr || []),
     ...(recentData?.others || []),
-    ...(recentData?.organization_files || []),
   ];
 
   const folders = [
     { name: "All Files", value: "all", icon: "fas fa-folder-open", route: null },
-    { name: "Agreements", value: "Agreements", icon: "fas fa-file-signature", route: "/agreements/add-agreement" },
-    { name: "HR", value: "HR", icon: "fas fa-users", route: "/agreements/add-agreement" },
-    { name: "Employees", value: "Employees", icon: "fas fa-user-tie", route: "/employees/add-employee" },
-    { name: "Folders", value: "Folders", icon: "fas fa-folder", route: "create-folder" },
-    { name: "Others", value: "Others", icon: "fas fa-ellipsis-h", route: "create-file" },
+    { name: "Organization Files", value: "organizations", icon: "fas fa-building", route: "/agreements/add-agreement" },
+    { name: "Agreements", value: "agreements", icon: "fas fa-file-signature", route: "/agreements/add-agreement" },
+    { name: "HR", value: "hr", icon: "fas fa-user-tie", route: "/agreements/add-agreement" },
+    { name: "Employees", value: "employees", icon: "fas fa-users", route: "/employees/add-employee" },
+    { name: "Folders", value: "folders", icon: "fas fa-folder", route: "create-folder" },
+    { name: "Others", value: "others", icon: "fas fa-ellipsis-h", route: "create-file" },
   ];
 
+  const renderTable = () => {
+    switch (activeFolder) {
+      case "folders":
+        return (
+          <FoldersTable
+            pageDocs={pageDocs}
+            start={start}
+            handleView={handleView}
+            handleEdit={handleEdit}
+            handleDeleteClick={handleDeleteClick}
+          />
+        );
+
+      case "employees":
+        return (
+          <EmployeesTable
+            pageDocs={pageDocs}
+            start={start}
+            handleView={handleView}
+            handleEdit={handleEdit}
+            handleDeleteClick={handleDeleteClick}
+          />
+        );
+
+      default:
+        return (
+          <DocumentsTable
+            pageDocs={pageDocs}
+            start={start}
+            handleView={handleView}
+            handleEdit={handleEdit}
+            handleDeleteClick={handleDeleteClick}
+            formatDate={formatDate}
+            getExpiryClass={getExpiryClass}
+          />
+        );
+    }
+  };
+
+
   const getFilteredDocs = () => {
-    let filtered =
-      activeFolder === "all"
-        ? documents
-        : documents.filter((doc) => doc.folder === activeFolder);
+    let filtered = [];
+
+    if (activeFolder === "all") {
+      filtered = [
+        ...(recentData?.organization_files || []),
+        ...(recentData?.agreements || []),
+        ...(recentData?.hr || []),
+        ...(recentData?.others || []),
+      ];
+    } else if (activeFolder === "organizations") {
+      filtered = recentData?.organization_files || [];
+    } else if (activeFolder === "agreements") {
+      filtered = recentData?.agreements || [];
+    } else if (activeFolder === "hr") {
+      filtered = recentData?.hr || [];
+    } else if (activeFolder === "employees") {
+      filtered = recentData?.employees || [];
+    } else if (activeFolder === "folders") {
+      filtered = recentData?.folders || [];
+    } else if (activeFolder === "others") {
+      filtered = recentData?.others || [];
+    } else {
+      filtered = documents.filter((doc) => doc.type === activeFolder);
+    }
+
     if (searchTerm) {
-      filtered = filtered.filter((doc) =>
-        doc.name.toLowerCase().includes(searchTerm.toLowerCase()),
+      filtered = filtered.filter((item) =>
+        (item.name || item.username || item.email || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())
       );
     }
     return filtered;
   };
+
 
   const filteredDocs = getFilteredDocs();
   const totalPages = Math.ceil(filteredDocs.length / perPage);
@@ -52,29 +120,30 @@ const RecentFiles = () => {
   const pageDocs = filteredDocs.slice(start, start + perPage);
 
   const handleAddClick = () => {
-    
+
     switch (activeFolder) {
-      case "Agreements":
+      case "all":
+        navigate("/agreements/add-document");
+        break;
+      case "agreements":
         navigate("/agreements/add-agreement");
         break;
-      case "HR":
-        navigate("/agreements/add-agreement");
+      case "hr":
+        navigate("/agreements/add-document");
         break;
-      case "Employees":
+      case "employees":
         navigate("/employees/add-employee");
         break;
-      case "Folders": {
+      case "folders": {
         const folderName = prompt("Enter folder name:", "New Folder");
         if (folderName) {
-          // TODO: API call to create folder
           showToast(`Folder "${folderName}" created successfully`, "success");
         }
         break;
       }
-      case "Others": {
+      case "others": {
         const fileName = prompt("Enter file name:", "New File");
         if (fileName) {
-          // TODO: API call to create file
           showToast(`File "${fileName}" added successfully`, "success");
         }
         break;
@@ -82,6 +151,7 @@ const RecentFiles = () => {
       default:
         navigate("/agreements/add-agreement");
     }
+
   };
 
   const handleView = (doc) => {
@@ -96,11 +166,11 @@ const RecentFiles = () => {
 
   const handleEdit = (doc) => {
     // Navigate to appropriate edit page based on document type
-    if (doc.type === 'agreement' || doc.folder === 'Agreements') {
+    if (doc.type === 'agreements') {
       navigate(`/agreements/edit-agreement/${doc.id}`);
-    } else if (doc.folder === 'HR') {
+    } else if (doc.type === 'hr') {
       navigate(`/agreements/edit-agreement/${doc.id}`);
-    } else if (doc.folder === 'Employees') {
+    } else if (doc.type === 'employee') {
       navigate(`/employees/edit/${doc.employee_id || doc.id}`);
     }
   };
@@ -112,7 +182,7 @@ const RecentFiles = () => {
 
   const handleConfirmDelete = async () => {
     if (!selectedDocument) return;
-    
+
     // TODO: API call to delete document
     showToast(`${selectedDocument.name} deleted successfully`, "success");
     setConfirmOpen(false);
@@ -152,11 +222,10 @@ const RecentFiles = () => {
             <button
               key={folder.value}
               onClick={() => setActiveFolder(folder.value)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                activeFolder === folder.value
-                  ? "bg-green-500 text-white"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-green-100 dark:hover:bg-green-900/30"
-              }`}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${activeFolder === folder.value
+                ? "bg-green-500 text-white"
+                : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-green-100 dark:hover:bg-green-900/30"
+                }`}
             >
               <i className={`${folder.icon} mr-1 text-xs`}></i>
               {folder.name}
@@ -177,99 +246,25 @@ const RecentFiles = () => {
               className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 transition-all"
             >
               <i className="fas fa-plus"></i>
-              {activeFolder === "Agreements"
+              {activeFolder === "agreements"
                 ? "Add Agreement"
-                : activeFolder === "HR"
+                : activeFolder === "hr"
                   ? "Add HR Document"
-                  : activeFolder === "Employees"
+                  : activeFolder === "employees"
                     ? "Add Employee"
-                    : activeFolder === "Folders"
+                    : activeFolder === "folders"
                       ? "Create Folder"
-                      : activeFolder === "Others"
+                      : activeFolder === "others"
                         ? "Add Other File"
                         : "Add Document"}
+
             </button>
           </div>
         </div>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse min-w-[600px]">
-          <thead>
-            <tr className="bg-gray-50 dark:bg-gray-700/50">
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">
-                S.L.NO.
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">
-                Document Name
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">
-                Folder
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">
-                Expiry Date
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {pageDocs.map((doc, idx) => (
-              <tr
-                key={doc.id || idx}
-                className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-              >
-                <td className="px-4 py-3 text-sm text-center">
-                  {start + idx + 1}
-                </td>
-                <td className="px-4 py-3 text-sm font-semibold text-gray-800 dark:text-gray-200">
-                  {doc.name}
-                </td>
-                <td className="px-4 py-3 text-sm">
-                  <span className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full text-xs">
-                    {doc.folder}
-                  </span>
-                </td>
-                <td className={`px-4 py-3 text-sm ${getExpiryClass(doc.expiry)}`}>
-                  {formatDate(doc.expiry)}
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => handleView(doc)}
-                      className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-blue-500 transition-colors"
-                      title="View"
-                    >
-                      <i className="fas fa-eye"></i>
-                    </button>
-                    <button 
-                      onClick={() => handleEdit(doc)}
-                      className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-amber-500 transition-colors"
-                      title="Edit"
-                    >
-                      <i className="fas fa-edit"></i>
-                    </button>
-                    <button 
-                      onClick={() => handleDeleteClick(doc)}
-                      className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-red-500 transition-colors"
-                      title="Delete"
-                    >
-                      <i className="fas fa-trash"></i>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {pageDocs.length === 0 && (
-              <tr>
-                <td colSpan="5" className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                  No documents found in this folder
-                 </td>
-               </tr>
-            )}
-          </tbody>
-        </table>
+        {renderTable()}
       </div>
 
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">

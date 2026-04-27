@@ -5,7 +5,7 @@ export const fetchDashboard = createAsyncThunk(
   "dashboard/fetchDashboard",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await apiClient.get("/admin/dashboard"); 
+      const res = await apiClient.get("/admin/dashboard");
       return res.data.data;
     } catch (err) {
       return rejectWithValue(err.response?.data || "Error fetching dashboard");

@@ -368,3 +368,15 @@ img, video, canvas {
   background: rgba(243, 156, 18, 0.2);
   color: #f39c12;
 }
+
+.text-primary{
+  color: #2ecc71;
+}
+
+.text-success{
+  color: #2ecc71;
+}
+
+.text-danger{
+  color: #e74c3c;
+}

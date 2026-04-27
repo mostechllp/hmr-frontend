@@ -57,7 +57,7 @@ const authSlice = createSlice({
 
         state.user = {
           ...user,
-          name: user.employee?.name, 
+          name: user.employee?.name,
         };
 
         state.token = action.payload.access_token;

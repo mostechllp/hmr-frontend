@@ -21,6 +21,7 @@ const AddCompany = lazy(() => import("./pages/AddCompany"));
 const EditCompany = lazy(() => import("./pages/EditCompany"));
 const Agreements = lazy(() => import("./pages/Agreements"));
 const AddAgreement = lazy(() => import("./pages/AddAgreement"));
+const AddDocument = lazy(() => import("./pages/AddDocument"));
 const Attendances = lazy(() => import("./pages/Attendances"));
 const Leaves = lazy(() => import("./pages/Leaves"));
 const LeaveTypeManagement = lazy(() => import("./pages/LeaveTypeManagement"));
@@ -158,6 +159,14 @@ function App() {
           element={
             <PrivateRoute>
               <AddAgreement />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/agreements/add-document"
+          element={
+            <PrivateRoute>
+              <AddDocument />
             </PrivateRoute>
           }
         />

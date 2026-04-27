@@ -409,7 +409,7 @@ const AddAgreement = () => {
                                       checked={selectedShareWith.includes(
                                         user.name || user.email,
                                       )}
-                                      onChange={() => {}}
+                                      onChange={() => { }}
                                       className="w-3.5 h-3.5 md:w-4 md:h-4 accent-green-500"
                                     />
                                     <div className="flex-1 min-w-0">
@@ -446,7 +446,7 @@ const AddAgreement = () => {
                                       checked={selectedShareWith.includes(
                                         party.name,
                                       )} // Changed from party_name to name
-                                      onChange={() => {}}
+                                      onChange={() => { }}
                                       className="w-3.5 h-3.5 md:w-4 md:h-4 accent-green-500"
                                     />
                                     <div className="flex-1 min-w-0">

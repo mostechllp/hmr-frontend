@@ -6,18 +6,18 @@ const transformDocumentForAPI = (formData, file) => {
   const formDataToSend = new FormData();
 
   formDataToSend.append("name", formData.name);
-  formDataToSend.append("type", formData.folder || "general");
+  formDataToSend.append("type", formData.type || "all");
   formDataToSend.append("description", formData.description || "");
-  formDataToSend.append("folder", formData.folder || "general");
-  formDataToSend.append("expiry_date", formData.expiryDate || "");
-  formDataToSend.append("party_id", formData.party_id || "");
+  formDataToSend.append("folder_id", formData.folder_id || "");
+  formDataToSend.append("expiry_date", formData.expiry_date || "");
+  if (formData.party_id) {
+    formDataToSend.append("party_id", formData.party_id);
+  }
 
-  if (formData.share_with) {
-    if (Array.isArray(formData.share_with)) {
-      formDataToSend.append("share_with", formData.share_with.join(","));
-    } else {
-      formDataToSend.append("share_with", formData.share_with);
-    }
+  if (formData.share_with && Array.isArray(formData.share_with)) {
+    formData.share_with.forEach((id, index) => {
+      formDataToSend.append(`share_with[${index}]`, id);
+    });
   }
 
   if (file) {
@@ -44,7 +44,7 @@ const transformDocumentFromAPI = (doc) => {
     type: getFieldValue("type"),
     description: getFieldValue("description"),
     file_path: getFieldValue("file_path"),
-    folder: getFieldValue("folder"),
+    folder_id: getFieldValue("folder_id"),
     party_id: getFieldValue("party_id"),
     share_with: getFieldValue("share_with"),
     expiry_date: getFieldValue("expiry_date"),
