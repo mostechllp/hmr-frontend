@@ -12,7 +12,6 @@ import {
   setPerPage,
   setFilters,
   deleteEmployee,
-  updateEmployeeStatus,
 } from "../store/slices/employeeSlice";
 import Pagination from "../components/common/Paginations";
 import ConfirmModal from "../components/common/ConfirmModal";
@@ -22,10 +21,9 @@ const Employees = () => {
   const { employees, currentPage, perPage, filters } = useSelector(
     (state) => state.employees,
   );
-  console.log("Employees: ", employees)
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("Active");
   const [searchTerm, setSearchTerm] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   
   // Confirm modal states
@@ -35,7 +33,9 @@ const Employees = () => {
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) setSidebarOpen(false);
     };
     checkMobile();
     window.addEventListener("resize", checkMobile);
@@ -80,16 +80,6 @@ const Employees = () => {
     setDeleteLoading(false);
   };
 
-  const handleStatusToggle = async (id, currentStatus) => {
-    const newStatus = currentStatus === "Active" ? "Inactive" : "Active";
-    const result = await dispatch(
-      updateEmployeeStatus({ id, status: newStatus }),
-    );
-    if (updateEmployeeStatus.fulfilled.match(result)) {
-      showToast(`Employee status updated to ${newStatus}`, "success");
-    }
-  };
-
   const getFilteredEmployees = () => {
     let filtered = employees;
     if (statusFilter !== "all") {
@@ -111,142 +101,100 @@ const Employees = () => {
   const start = (currentPage - 1) * perPage;
   const pageEmployees = filteredEmployees.slice(start, start + perPage);
 
-  const activeCount = employees.filter((e) => e.status === "Active").length;
-  const inactiveCount = employees.filter((e) => e.status === "Inactive").length;
+  const getStorageUrl = (path) => {
+    if (!path) return null;
+    if (/^https?:\/\//i.test(path)) return path;
+    const baseUrl = import.meta.env.VITE_API_URL?.replace(/\/api$/, "") || "";
+    return `${baseUrl}/storage/${String(path).replace(/^\/+/, "")}`;
+  };
+
+  const getEmployeeAvatarUrl = (emp) => {
+    const raw = emp?.raw || {};
+    const possible =
+      raw?.passport_size_photo ||
+      raw?.user?.passport_size_photo ||
+      raw?.user?.avatar ||
+      raw?.user?.profile_picture ||
+      raw?.user?.profile_photo ||
+      raw?.photo ||
+      raw?.image;
+
+    return getStorageUrl(possible);
+  };
 
   return (
     <div className="app flex min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
       <div
-        className={`flex-1 min-w-0 w-full overflow-x-hidden ${!isMobile ? "md:ml-[72px]" : ""}`}
+        className={`flex-1 min-w-0 w-full overflow-x-hidden ${!isMobile ? (sidebarOpen ? "md:ml-[250px]" : "md:ml-[84px]") : ""}`}
       >
         <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
         <main className="content px-4 py-4 md:px-6 md:py-6 w-full overflow-x-hidden">
-          {/* Stats Cards - Responsive Grid */}
-          <div className="stats-grid grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
-            {/* Active Employees Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-3 md:p-4 border border-gray-200 dark:border-gray-700 transition-all hover:-translate-y-0.5 hover:shadow-soft">
-              <div className="flex justify-between items-start mb-2 md:mb-3">
-                <div className="w-8 h-8 md:w-10 md:h-10 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
-                  <i className="fas fa-user-check text-green-600 dark:text-green-400 text-sm md:text-lg"></i>
-                </div>
-              </div>
-              <div className="text-xl md:text-2xl font-bold text-green-600 dark:text-green-400">
-                {activeCount}
-              </div>
-              <div className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
-                Active Employees
-              </div>
-            </div>
-
-            {/* Inactive Employees Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-3 md:p-4 border border-gray-200 dark:border-gray-700 transition-all hover:-translate-y-0.5 hover:shadow-soft">
-              <div className="flex justify-between items-start mb-2 md:mb-3">
-                <div className="w-8 h-8 md:w-10 md:h-10 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center">
-                  <i className="fas fa-user-slash text-red-600 dark:text-red-400 text-sm md:text-lg"></i>
-                </div>
-              </div>
-              <div className="text-xl md:text-2xl font-bold text-red-600 dark:text-red-400">
-                {inactiveCount}
-              </div>
-              <div className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
-                Inactive Employees
-              </div>
-            </div>
-
-            {/* Total Employees Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-3 md:p-4 border border-gray-200 dark:border-gray-700 transition-all hover:-translate-y-0.5 hover:shadow-soft">
-              <div className="flex justify-between items-start mb-2 md:mb-3">
-                <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
-                  <i className="fas fa-users text-blue-600 dark:text-blue-400 text-sm md:text-lg"></i>
-                </div>
-              </div>
-              <div className="text-xl md:text-2xl font-bold text-blue-600 dark:text-blue-400">
-                {employees.length}
-              </div>
-              <div className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
-                Total Employees
-              </div>
-            </div>
-
-            {/* On Leave Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-3 md:p-4 border border-gray-200 dark:border-gray-700 transition-all hover:-translate-y-0.5 hover:shadow-soft">
-              <div className="flex justify-between items-start mb-2 md:mb-3">
-                <div className="w-8 h-8 md:w-10 md:h-10 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center">
-                  <i className="fas fa-calendar-times text-amber-600 dark:text-amber-400 text-sm md:text-lg"></i>
-                </div>
-              </div>
-              <div className="text-xl md:text-2xl font-bold text-amber-600 dark:text-amber-400">
-                0
-              </div>
-              <div className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
-                On Leave
-              </div>
-            </div>
-          </div>
-
-          {/* Header with Filters - Responsive */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
-            <h2 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-gray-800 to-green-600 dark:from-gray-200 dark:to-green-400 bg-clip-text text-transparent">
-              Employee Directory
+          {/* Page title + breadcrumb */}
+          <div className="mb-4">
+            <h2 className="text-xl md:text-2xl font-semibold text-slate-800 dark:text-slate-100">
+              Employees
             </h2>
-            <div className="flex gap-2 w-full sm:w-auto">
-              <button
-                onClick={() => handleStatusFilter("all")}
-                className={`flex-1 sm:flex-none px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all ${
-                  statusFilter === "all"
-                    ? "bg-green-500 text-white shadow-md"
-                    : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
-                }`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => handleStatusFilter("Active")}
-                className={`flex-1 sm:flex-none px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all ${
-                  statusFilter === "Active"
-                    ? "bg-green-500 text-white shadow-md"
-                    : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
-                }`}
-              >
-                Active
-              </button>
-              <button
-                onClick={() => handleStatusFilter("Inactive")}
-                className={`flex-1 sm:flex-none px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all ${
-                  statusFilter === "Inactive"
-                    ? "bg-green-500 text-white shadow-md"
-                    : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
-                }`}
-              >
-                Inactive
-              </button>
+            <div className="mt-1 text-xs text-slate-400">
+              Employees <span className="px-1">{">"}</span> Listing
             </div>
           </div>
 
-          {/* Actions Bar - Fully Responsive */}
-          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 mb-5">
-            <EntriesSelector
-              value={perPage}
-              onChange={(val) => dispatch(setPerPage(val))}
-            />
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              <SearchBar
-                value={searchTerm}
-                onChange={handleSearch}
-                placeholder="Search by name..."
-              />
-              <Link
-                to="/employees/add-employee"
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg w-full sm:w-auto"
-              >
-                <i className="fas fa-plus-circle"></i> Add Employee
-              </Link>
+          {/* Listing header */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 shadow-soft">
+            <div className="flex flex-col gap-3 p-4 md:p-5">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                  Employees ({statusFilter})
+                </div>
+                <Link
+                  to="/employees/add-employee"
+                  className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-full text-sm font-semibold inline-flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg w-full sm:w-auto"
+                >
+                  <i className="fas fa-plus"></i> Add Employee
+                </Link>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleStatusFilter("Active")}
+                  className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    statusFilter === "Active"
+                      ? "bg-emerald-500 text-white shadow-md"
+                      : "bg-slate-100 dark:bg-gray-700 text-slate-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-600"
+                  }`}
+                >
+                  Active
+                </button>
+                <button
+                  onClick={() => handleStatusFilter("Inactive")}
+                  className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    statusFilter === "Inactive"
+                      ? "bg-emerald-500 text-white shadow-md"
+                      : "bg-slate-100 dark:bg-gray-700 text-slate-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-600"
+                  }`}
+                >
+                  Inactive
+                </button>
+              </div>
+
+              {/* Actions row */}
+              <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
+                <EntriesSelector
+                  value={perPage}
+                  onChange={(val) => dispatch(setPerPage(val))}
+                />
+                <SearchBar
+                  value={searchTerm}
+                  onChange={handleSearch}
+                  placeholder="Search records..."
+                />
+              </div>
             </div>
           </div>
 
           {/* Employees Table - Horizontal Scroll on Mobile */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto shadow-soft">
+          <div className="mt-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto shadow-soft">
             <div className="min-w-[800px] md:min-w-0">
               <table className="w-full border-collapse">
                 <thead>
@@ -267,9 +215,6 @@ const Employees = () => {
                       COMPANY
                     </th>
                     <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
-                      STATUS
-                    </th>
-                    <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
                       ACTION
                     </th>
                   </tr>
@@ -284,7 +229,23 @@ const Employees = () => {
                         {start + idx + 1}
                       </td>
                       <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold text-gray-800 dark:text-gray-200">
-                        {emp.name}
+                        <div className="flex items-center gap-3">
+                          {getEmployeeAvatarUrl(emp) ? (
+                            <img
+                              src={getEmployeeAvatarUrl(emp)}
+                              alt={emp.name}
+                              className="h-9 w-9 rounded-full object-cover border border-slate-200"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <div className="h-9 w-9 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">
+                              {(emp.name || "?").trim().charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <span className="truncate">{emp.name}</span>
+                        </div>
                       </td>
                       <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
                         {emp.designation}
@@ -294,26 +255,6 @@ const Employees = () => {
                       </td>
                       <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
                         {emp.raw?.user?.company?.company_name || emp.company || '-'}
-                      </td>
-                      <td className="px-3 md:px-4 py-2 md:py-3">
-                        <label className="inline-flex items-center gap-1 md:gap-2 cursor-pointer">
-                          <div className="relative">
-                            <input
-                              type="checkbox"
-                              className="sr-only peer"
-                              checked={emp.status === "Active"}
-                              onChange={() =>
-                                handleStatusToggle(emp.id, emp.status)
-                              }
-                            />
-                            <div className="w-9 h-5 md:w-11 md:h-5 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-green-500 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
-                          </div>
-                          <span
-                            className={`text-[10px] md:text-xs font-semibold ${emp.status === "Active" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
-                          >
-                            {emp.status}
-                          </span>
-                        </label>
                       </td>
                       <td className="px-3 md:px-4 py-2 md:py-3">
                         <div className="flex gap-1 md:gap-2">
@@ -345,7 +286,7 @@ const Employees = () => {
                   {pageEmployees.length === 0 && (
                     <tr>
                       <td
-                        colSpan="7"
+                        colSpan="6"
                         className="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
                       >
                         No employees found
