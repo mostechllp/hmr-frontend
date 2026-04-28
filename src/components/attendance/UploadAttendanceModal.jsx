@@ -1,15 +1,55 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { fetchCompanies } from '../../store/slices/companySlice';
 
 const UploadAttendanceModal = ({ isOpen, onClose, onUpload }) => {
+  const dispatch = useDispatch();
+  const [selectedCompanyId, setSelectedCompanyId] = useState('');
+  const [selectedCompanyName, setSelectedCompanyName] = useState('');
+  const [companies, setCompanies] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+  const [loadingCompanies, setLoadingCompanies] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Fetch companies when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchCompaniesList();
+    }
+  }, [isOpen]);
+
+  const fetchCompaniesList = async () => {
+    setLoadingCompanies(true);
+    try {
+      // Fetch all companies (you might need to pass organization_id if required)
+      const result = await dispatch(fetchCompanies()).unwrap();
+      console.log("Fetched companies:", result);
+      
+      // Extract companies from the result
+      let companiesList = [];
+      if (result && result.companies) {
+        companiesList = result.companies;
+      } else if (Array.isArray(result)) {
+        companiesList = result;
+      } else if (result && result.data) {
+        companiesList = result.data;
+      }
+      
+      setCompanies(companiesList);
+    } catch (error) {
+      console.error("Error fetching companies:", error);
+      setError("Failed to load companies. Please try again.");
+    } finally {
+      setLoadingCompanies(false);
+    }
+  };
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     setError('');
-
+    
     if (file) {
       const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
       if (!['.dat', '.csv', '.txt'].includes(fileExt)) {
@@ -30,19 +70,38 @@ const UploadAttendanceModal = ({ isOpen, onClose, onUpload }) => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const handleCompanyChange = (e) => {
+    const companyId = e.target.value;
+    setSelectedCompanyId(companyId);
+    
+    // Find and set company name for display
+    const selectedCompany = companies.find(c => c.id === parseInt(companyId));
+    if (selectedCompany) {
+      setSelectedCompanyName(selectedCompany.name || selectedCompany.company_name);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
+    
+    if (!selectedCompanyId) {
+      setError('Please select a company');
+      return;
+    }
     if (!selectedFile) {
       setError('Please select an attendance file');
       return;
     }
 
     setUploading(true);
-
+    
     try {
-      await onUpload({ file: selectedFile });
+      await onUpload({
+        company_id: selectedCompanyId,  // Send company_id to API
+        company_name: selectedCompanyName,
+        file: selectedFile
+      });
       handleClose();
     } catch (error) {
       console.error('Upload error:', error);
@@ -53,6 +112,8 @@ const UploadAttendanceModal = ({ isOpen, onClose, onUpload }) => {
   };
 
   const handleClose = () => {
+    setSelectedCompanyId('');
+    setSelectedCompanyName('');
     setSelectedFile(null);
     setError('');
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -74,6 +135,7 @@ const UploadAttendanceModal = ({ isOpen, onClose, onUpload }) => {
           </button>
         </div>
 
+        {/* Error Message */}
         {error && (
           <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
             <i className="fas fa-exclamation-circle"></i>
@@ -82,6 +144,29 @@ const UploadAttendanceModal = ({ isOpen, onClose, onUpload }) => {
         )}
 
         <form onSubmit={handleSubmit}>
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              <i className="fas fa-building text-green-500 mr-1"></i> Select Company <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={selectedCompanyId}
+              onChange={handleCompanyChange}
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+              required
+              disabled={loadingCompanies}
+            >
+              <option value="">{loadingCompanies ? "Loading companies..." : "Select Company"}</option>
+              {companies.map((company) => (
+                <option key={company.id} value={company.id}>
+                  {company.name || company.company_name}
+                </option>
+              ))}
+            </select>
+            {companies.length === 0 && !loadingCompanies && (
+              <p className="text-xs text-red-500 mt-1">No companies found. Please add a company first.</p>
+            )}
+          </div>
+
           <div className="mb-6">
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               <i className="fas fa-file-alt text-green-500 mr-1"></i> Attendance File <span className="text-red-500">*</span>
@@ -108,7 +193,7 @@ const UploadAttendanceModal = ({ isOpen, onClose, onUpload }) => {
               onChange={handleFileSelect}
               className="hidden"
             />
-
+            
             {selectedFile && (
               <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -139,7 +224,7 @@ const UploadAttendanceModal = ({ isOpen, onClose, onUpload }) => {
             </button>
             <button
               type="submit"
-              disabled={uploading}
+              disabled={uploading || loadingCompanies || companies.length === 0}
               className="px-5 py-2 rounded-full font-semibold bg-green-500 text-white hover:bg-green-600 transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {uploading ? (

@@ -72,7 +72,6 @@
       opacity: 0;
       transform: translateY(20px);
     }
-
     to {
       opacity: 1;
       transform: translateY(0);
@@ -86,7 +85,6 @@
 
 /* Mobile-first responsive styles */
 @media (max-width: 768px) {
-
   /* Adjust main content padding */
   main {
     padding: 12px !important;
@@ -131,7 +129,6 @@
 
 /* Prevent zoom on input focus for mobile */
 @media (max-width: 768px) {
-
   input,
   select,
   textarea {
@@ -149,10 +146,7 @@
 /* Add to index.css or your main CSS file */
 
 /* Global overflow fixes */
-html,
-body,
-#root,
-.app {
+html, body, #root, .app {
   overflow-x: hidden !important;
   width: 100% !important;
   max-width: 100% !important;
@@ -168,112 +162,110 @@ body,
 
 /* Mobile fixes */
 @media (max-width: 767px) {
-
   /* Remove any margins */
-  .main,
-  .flex-1 {
+  .main, .flex-1 {
     margin-left: 0 !important;
   }
-
+  
   /* Stats grid - 2 columns with proper spacing */
   .stats-grid {
     display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 12px !important;
   }
-
+  
   /* Charts grid - single column with full width */
   .charts-grid {
     display: grid !important;
     grid-template-columns: 1fr !important;
     gap: 16px !important;
   }
-
+  
   /* Chart containers - ensure no overflow */
-  .charts-grid>div {
+  .charts-grid > div {
     width: 100% !important;
     min-width: 0 !important;
     overflow: hidden !important;
   }
-
+  
   /* Chart canvas - responsive sizing */
   canvas {
     max-width: 100% !important;
     height: auto !important;
   }
-
+  
   /* Content padding */
   .content {
     padding-left: 16px !important;
     padding-right: 16px !important;
   }
-
+  
   /* Welcome banner */
   .welcome-banner {
     padding: 16px !important;
   }
-
+  
   /* Stats card adjustments */
   .stat-card {
     padding: 12px !important;
   }
-
+  
   .stat-number {
     font-size: 20px !important;
   }
-
+  
   /* Section titles */
   .section-title {
     font-size: 16px !important;
   }
-
+  
   /* Folder tabs */
   .folder-tabs {
     flex-wrap: wrap !important;
     gap: 8px !important;
   }
-
+  
   .folder-tab {
     padding: 6px 12px !important;
     font-size: 11px !important;
   }
-
+  
   /* Files section actions */
   .files-actions {
     flex-direction: column !important;
     gap: 12px !important;
   }
-
+  
   .search-wrapper {
     width: 100% !important;
   }
-
+  
   .search-box {
     width: 100% !important;
   }
-
+  
   .search-box input {
     width: 100% !important;
   }
-
+  
   .add-btn {
     width: 100% !important;
     justify-content: center !important;
   }
-
+  
   /* Table wrapper */
   .table-wrapper {
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
   }
-
+  
   /* Pagination */
   .pagination {
     flex-direction: column !important;
     gap: 12px !important;
     align-items: center !important;
   }
-
+  
   /* Entries selector */
   .entries-select {
     justify-content: space-between !important;
@@ -287,12 +279,12 @@ body,
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 16px !important;
   }
-
+  
   .charts-grid {
     grid-template-columns: 1fr !important;
     gap: 20px !important;
   }
-
+  
   .content {
     padding-left: 24px !important;
     padding-right: 24px !important;
@@ -304,30 +296,26 @@ body,
   .stats-grid {
     grid-template-columns: repeat(4, 1fr) !important;
   }
-
+  
   .charts-grid {
     grid-template-columns: repeat(2, 1fr) !important;
   }
 }
 
 /* Fix for charts overflowing */
-.chart-container,
-.chart-card>div:last-child {
+.chart-container, 
+.chart-card > div:last-child {
   width: 100% !important;
   min-width: 0 !important;
   overflow: hidden !important;
 }
 
 /* Ensure all containers respect parent width */
-*,
-*::before,
-*::after {
+*, *::before, *::after {
   box-sizing: border-box;
 }
 
-img,
-video,
-canvas {
+img, video, canvas {
   max-width: 100%;
   height: auto;
 }
@@ -381,14 +369,14 @@ canvas {
   color: #f39c12;
 }
 
-.text-primary {
+.text-primary{
   color: #2ecc71;
 }
 
-.text-success {
+.text-success{
   color: #2ecc71;
 }
 
-.text-danger {
+.text-danger{
   color: #e74c3c;
 }
