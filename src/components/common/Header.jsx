@@ -1,109 +1,25 @@
-// Header.js - Updated with dynamic title
 import React, { useState, useRef, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { markAsRead, markAllRead } from "../../store/slices/notificationSlice";
 import { logoutUser } from "../../store/slices/authSlice";
-import { useTheme } from "../../hooks/useTheme";
 import { fetchNotifications } from "../../store/slices/notificationSlice";
 
 const Header = ({ onMenuClick }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const [currentDate, setCurrentDate] = useState("");
   const notificationRef = useRef(null);
   const profileRef = useRef(null);
   const dispatch = useDispatch();
-  const location = useLocation();
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const { notifications, unreadCount } = useSelector(
     (state) => state.notifications,
   );
-  const { theme, toggleTheme } = useTheme();
-
-  // Get page title based on current route
-  const getPageTitle = () => {
-    const path = location.pathname;
-
-    if (path === "/dashboard" || path === "/") {
-      return "Dashboard";
-    } else if (path === "/employees") {
-      return "Employees";
-    } else if (path === "/organizations") {
-      return "Organizations";
-    } else if (path === "/organizations/add-company") {
-      return "Add Company";
-    } else if (path === "/organizations/add-organization") {
-      return "Add Organization";
-    } else if (path === "/agreements") {
-      return "Agreements";
-    } else if (path === "/agreements/add-agreement") {
-      return "Add Agreement";
-    } else if (path === "/attendances") {
-      return "Attendance";
-    } else if (path === "/leaves/leave-types") {
-      return "Add Leave Types";
-    } else if (path === "/designations") {
-      return "Designations";
-    } else if (path === "/task-reports") {
-      return "Task Reports";
-    } else if (path === "/reports") {
-      return "Reports";
-    } else if (path === "/settings") {
-      return "Settings";
-    } else if (path.includes("/employees/add-employee")) {
-      return "Add Employee";
-    } else if (path.includes("/edit-employee")) {
-      return "Edit Employee";
-    } else {
-      return "HR Management";
-    }
-  };
-
-  const getPageSubtitle = () => {
-    const path = location.pathname;
-
-    if (path === "/dashboard" || path === "/") {
-      return "Command Center";
-    } else if (path === "/employees") {
-      return "Manage employee records";
-    } else if (path === "/organizations") {
-      return "Manage company profiles";
-    } else if (path === "/agreements") {
-      return "Manage contracts and agreements";
-    } else if (path === "/attendances") {
-      return "Track employee attendance";
-    } else if (path === "/leaves") {
-      return "Manage leave requests";
-    } else if (path === "/reports") {
-      return "View analytics and reports";
-    } else if (path === "/settings") {
-      return "Configure system settings";
-    } else {
-      return "HR Management System";
-    }
-  };
 
   useEffect(() => {
     dispatch(fetchNotifications());
   }, [dispatch]);
-
-  useEffect(() => {
-    const updateDate = () => {
-      setCurrentDate(
-        new Date().toLocaleDateString("en-US", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        }),
-      );
-    };
-    updateDate();
-    const interval = setInterval(updateDate, 60000);
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -138,113 +54,92 @@ const Header = ({ onMenuClick }) => {
     }
   };
 
+  const initials =
+    user?.name
+      ?.split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("") || "HR";
+
+  const displayName = "HR";
+  const displayRole = "Administrator";
+
   return (
-    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 md:px-6 py-2 md:py-3 sticky top-0 z-40">
-      <div className="flex items-center justify-between">
+    <header className="sticky top-0 z-40 border-b border-slate-200 bg-slate-50/90 backdrop-blur px-4 py-3 md:px-6">
+      <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          {/* Mobile menu button */}
           <button
             onClick={onMenuClick}
-            className="md:hidden w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-emerald-600 shadow-sm"
             aria-label="Toggle menu"
           >
-            <i className="fas fa-bars text-gray-600 dark:text-gray-300 text-lg"></i>
+            <i className="fas fa-border-all text-base"></i>
           </button>
-
-          <div>
-            <h1 className="text-base md:text-lg font-bold text-gray-800 dark:text-gray-200">
-              {getPageTitle()}
-            </h1>
-            <p className="hidden sm:block text-xs text-gray-500 dark:text-gray-400">
-              {getPageSubtitle()}
-            </p>
-          </div>
         </div>
 
         <div className="flex items-center gap-2 md:gap-3">
-          <div className="hidden md:block bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 px-3 py-1.5 rounded-full text-xs font-medium">
-            <i className="far fa-calendar-alt mr-2"></i>
-            <span>{currentDate}</span>
-          </div>
+          {/* Square action buttons (match screenshot style) */}
+          <button
+            type="button"
+            className="hidden md:flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm hover:bg-slate-50"
+            title="Quick action"
+          >
+            <i className="fas fa-arrow-up-from-bracket text-sm"></i>
+          </button>
 
-          {/* Theme Toggle */}
-          <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full p-1">
-            <button
-              onClick={() => toggleTheme("light")}
-              className={`w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center transition-all ${
-                theme === "light"
-                  ? "bg-white dark:bg-gray-800 shadow-md text-green-500"
-                  : "text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
-            >
-              <i className="fas fa-sun text-xs md:text-sm"></i>
-            </button>
-            <button
-              onClick={() => toggleTheme("dark")}
-              className={`w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center transition-all ${
-                theme === "dark"
-                  ? "bg-white dark:bg-gray-800 shadow-md text-green-500"
-                  : "text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
-            >
-              <i className="fas fa-moon text-xs md:text-sm"></i>
-            </button>
-          </div>
-
-          {/* Notification Bell */}
           <div className="relative" ref={notificationRef}>
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative w-9 h-9 md:w-10 md:h-10 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full flex items-center justify-center"
+              className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm hover:bg-slate-50"
+              title="Notifications"
             >
-              <i className="fas fa-bell text-gray-600 dark:text-gray-300 text-sm md:text-base"></i>
+              <i className="fas fa-bell text-sm"></i>
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
+                <span className="absolute right-1 top-1 min-w-[16px] rounded-full bg-emerald-500 px-1 py-0 text-center text-[10px] font-bold text-white">
                   {unreadCount}
                 </span>
               )}
             </button>
 
             {showNotifications && (
-              <div className="absolute top-12 right-0 w-80 bg-white dark:bg-gray-800 rounded-2xl shadow-soft-lg border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                  <h3 className="font-semibold text-gray-800 dark:text-gray-200">
+              <div className="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+                <div className="flex items-center justify-between border-b border-slate-200 p-4">
+                  <h3 className="font-semibold text-slate-800">
                     Notifications
                   </h3>
                   <button
                     onClick={handleMarkAllRead}
-                    className="text-xs text-green-500 hover:text-green-600"
+                    className="text-xs text-emerald-600 hover:text-emerald-700"
                   >
                     Mark all as read
                   </button>
                 </div>
                 <div className="max-h-96 overflow-y-auto">
                   {notifications.length === 0 ? (
-                    <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                    <div className="p-8 text-center text-slate-500">
                       No notifications
                     </div>
                   ) : (
                     notifications.map((notification) => (
                       <div
                         key={notification.id}
-                        className={`p-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer transition-colors ${
-                          !notification.read
-                            ? "bg-green-50 dark:bg-green-900/20"
-                            : ""
-                        } hover:bg-gray-50 dark:hover:bg-gray-700`}
+                        className={`cursor-pointer border-b border-slate-100 p-3 transition-colors ${
+                          !notification.read ? "bg-emerald-50" : ""
+                        } hover:bg-slate-50`}
                         onClick={() => handleMarkAsRead(notification.id)}
                       >
-                        <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                        <div className="text-sm font-medium text-slate-800">
                           {notification.title}
                         </div>
-                        <small className="text-xs text-gray-500 dark:text-gray-400 block mt-1">
+                        <small className="mt-1 block text-xs text-slate-500">
                           {notification.time || "Just now"}
                         </small>
                       </div>
                     ))
                   )}
                 </div>
-                <div className="p-3 border-t border-gray-200 dark:border-gray-700 text-center bg-gray-50 dark:bg-gray-700/50">
+                <div className="border-t border-slate-200 bg-slate-50 p-3 text-center">
                   <button
                     onClick={() =>
                       alert(
@@ -252,7 +147,7 @@ const Header = ({ onMenuClick }) => {
                           notifications.map((n) => n.title).join("\n"),
                       )
                     }
-                    className="text-xs text-green-500 hover:text-green-600"
+                    className="text-xs text-emerald-600 hover:text-emerald-700"
                   >
                     View all notifications
                   </button>
@@ -261,52 +156,69 @@ const Header = ({ onMenuClick }) => {
             )}
           </div>
 
-          {/* Profile Avatar */}
           <div className="relative" ref={profileRef}>
             <button
               onClick={() => setShowProfile(!showProfile)}
-              className="w-9 h-9 md:w-10 md:h-10 rounded-xl overflow-hidden shadow-md"
+              className="flex items-center gap-3 rounded-xl border border-transparent bg-transparent px-1 py-1.5 hover:border-slate-200"
             >
-              <img
-                src={user?.avatar}
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center justify-center rounded-lg bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-600">
+                  {initials}
+                </span>
+                <div className="hidden min-w-0 text-left md:block">
+                  <p className="truncate text-sm font-medium leading-none text-slate-700">
+                    {displayName}
+                  </p>
+                  <p className="mt-1 truncate text-[11px] leading-none text-slate-400">
+                    {displayRole}
+                  </p>
+                </div>
+              </div>
+              <div className="hidden min-w-0 text-left md:block">
+                {/* kept above */}
+              </div>
+              <i className="fas fa-angle-down hidden text-xs text-slate-400 md:block"></i>
             </button>
 
             {showProfile && (
-              <div className="absolute top-12 right-0 w-64 bg-white dark:bg-gray-800 rounded-2xl shadow-soft-lg border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
-                <div className="p-4 flex gap-3 border-b border-gray-200 dark:border-gray-700">
-                  <img
-                    src={user?.avatar}
-                    alt="Profile"
-                    className="w-12 h-12 rounded-xl object-cover"
-                  />
+              <div className="absolute right-0 top-14 z-50 w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+                <div className="flex gap-3 border-b border-slate-200 p-4">
+                  {user?.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt="Profile"
+                      className="h-12 w-12 rounded-xl object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-50 font-semibold text-violet-600">
+                      {initials}
+                    </div>
+                  )}
                   <div>
-                    <h4 className="font-semibold text-gray-800 dark:text-gray-200">
-                      {user?.employee?.name || "HR Admin"}
+                    <h4 className="font-semibold text-slate-800">
+                      {displayName}
                     </h4>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {user?.email}
+                    <p className="text-xs text-slate-500">
+                      {user?.email || displayRole}
                     </p>
                   </div>
                 </div>
                 <NavLink
                   to="/settings"
-                  className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className="flex items-center gap-3 p-3 transition-colors hover:bg-slate-50"
                   onClick={() => setShowProfile(false)}
                 >
-                  <i className="fas fa-user text-green-500 w-5"></i>
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                  <i className="fas fa-user w-5 text-emerald-500"></i>
+                  <span className="text-sm text-slate-700">
                     My Profile
                   </span>
                 </NavLink>
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left"
+                  className="flex w-full items-center gap-3 p-3 text-left transition-colors hover:bg-slate-50"
                 >
-                  <i className="fas fa-arrow-right-from-bracket text-green-500 w-5"></i>
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                  <i className="fas fa-arrow-right-from-bracket w-5 text-emerald-500"></i>
+                  <span className="text-sm text-slate-700">
                     Sign out
                   </span>
                 </button>
