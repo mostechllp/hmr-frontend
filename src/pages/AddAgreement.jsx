@@ -39,6 +39,7 @@ const AddAgreement = () => {
   // Modal states
   const [showPartyModal, setShowPartyModal] = useState(false);
   const [showFolderModal, setShowFolderModal] = useState(false);
+  const [pendingPartyId, setPendingPartyId] = useState(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -56,7 +57,7 @@ const AddAgreement = () => {
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
-
+  
   useEffect(() => {
     dispatch(fetchShareableUsers());
     dispatch(fetchDocumentFolders());
@@ -71,6 +72,11 @@ const AddAgreement = () => {
   }, [error, dispatch]);
 
   const handleChange = (e) => {
+    if (e.target.id === 'party_id' && e.target.value === '__add_new__') {
+      setFormData({ ...formData, party_id: '' });
+      setShowPartyModal(true);
+      return;
+    }
     setFormData({ ...formData, [e.target.id]: e.target.value });
   };
 
@@ -144,9 +150,11 @@ const AddAgreement = () => {
     setSelectedShareWith(selectedShareWith.filter((i) => i !== item));
   };
 
-  const handlePartyAdded = (newParty) => {
-    setSelectedShareWith([...selectedShareWith, newParty.name]);
-    dispatch(fetchParties());
+  const handlePartyAdded = async (newParty) => {
+    if (newParty?.id) {
+      setPendingPartyId(String(newParty.id));
+      await dispatch(fetchParties());
+    }
   };
 
   const handleFolderAdded = (newFolder) => {
@@ -164,9 +172,107 @@ const AddAgreement = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (pendingPartyId && Array.isArray(parties)) {
+      const found = parties.find((p) => String(p.id) === String(pendingPartyId));
+      if (found) {
+        setFormData((prev) => ({ ...prev, party_id: String(pendingPartyId) }));
+        setPendingPartyId(null);
+      }
+    }
+  }, [parties, pendingPartyId]);
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   console.log("shareWithIds:", shareWithIds);
+  //   console.log("selectedFolder:", selectedFolder);
+  //   console.log("documentData:", documentData);
+  //    console.log("parties:", parties);
+  //   console.log("shareableUsers:", shareableUsers);
+  //   console.log("selectedShareWith:", selectedShareWith);
+  //   if (!formData.name) {
+  //     showToast("Document name is required", "error");
+  //     return;
+  //   }
+  //   if (selectedShareWith.length === 0) {
+  //     showToast("Please select at least one recipient to share with", "error");
+  //     return;
+  //   }
+  //   if (!formData.folder) {
+  //     showToast("Please select a folder", "error");
+  //     return;
+  //   }
+  //   if (!selectedFile) {
+  //     showToast("Please upload a file", "error");
+  //     return;
+  //   }
+
+  //   setUploading(true);
+
+  //   const selectedFolder = folders.find(
+  //     (f) => (f.name || f) === formData.folder
+  //   );
+
+  //   // const documentData = {
+  //   //   name: formData.name,
+  //   //   description: formData.description,
+  //   //   share_with: selectedShareWith.join(","),
+  //   //   folder: formData.folder,
+  //   //   party_id: formData.party_id,
+  //   //   expiry_date: formData.expiryDate,
+  //   // };
+  //   // const shareWithIds = selectedShareWith.map((selectedName) => {
+  //   //   const user = shareableUsers.find(
+  //   //     (u) => (u.name || u.email) === selectedName
+  //   //   );
+  //   //   const party = parties.find((p) => p.name === selectedName);
+  //   //   return user?.id || party?.id || selectedName;
+  //   // });
+  //   const partiesList = Array.isArray(parties) ? parties : [];
+  //   const usersList = Array.isArray(shareableUsers) ? shareableUsers : [];
+    
+  //   const shareWithIds = selectedShareWith.map((selectedName) => {
+  //       const user = usersList.find(
+  //         (u) => (u.name || u.email) === selectedName
+  //       );
+  //       const party = partiesList.find((p) => p.name === selectedName);
+  //       return user?.id || party?.id || selectedName;
+  //     });
+
+  //   const documentData = {
+  //     name: formData.name,
+  //     description: formData.description,
+  //     share_with: shareWithIds,           // array of IDs now
+  //     folder_id: selectedFolder?.id || formData.folder,  // send ID
+  //     party_id: formData.party_id,
+  //     expiry_date: formData.expiryDate,
+  //   };
+
+  //   // const result = await dispatch(
+  //   //   uploadDocument({ formData: documentData, file: selectedFile }),
+  //   // );
+  //   const result = await dispatch(
+  //     uploadDocument({ formData: documentData, file: selectedFile }),
+  //   );
+
+  //   setUploading(false);
+
+  //   if (uploadDocument.fulfilled.match(result)) {
+  //     showToast(
+  //       `✓ Document "${formData.name}" uploaded successfully!`,
+  //       "success",
+  //     );
+  //     setTimeout(() => {
+  //       navigate("/agreements");
+  //     }, 1200);
+  //   } else {
+  //     showToast(result.payload || "Failed to upload agreement", "error");
+  //   }
+  // }; 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     if (!formData.name) {
       showToast("Document name is required", "error");
       return;
@@ -183,23 +289,49 @@ const AddAgreement = () => {
       showToast("Please upload a file", "error");
       return;
     }
-
+  
     setUploading(true);
-
+  
+    const partiesList = Array.isArray(parties) ? parties : [];
+    const usersList = Array.isArray(shareableUsers) ? shareableUsers : [];
+  
+    const selectedFolder = folders.find(
+      (f) => (f.name || f) === formData.folder
+    );
+  
+    const shareWithIds = selectedShareWith.map((selectedName) => {
+      const user = usersList.find(
+        (u) => (u.name || u.email) === selectedName
+      );
+      const party = partiesList.find((p) => p.name === selectedName);
+      return user?.id || party?.id || selectedName;
+    });
+  
+    // Debug logs — remove after fixing
+    console.log("selectedFolder:", selectedFolder);
+    console.log("shareWithIds:", shareWithIds);
+    console.log("selectedShareWith:", selectedShareWith);
+    console.log("parties:", partiesList);
+    console.log("shareableUsers:", usersList);
+  
     const documentData = {
       name: formData.name,
       description: formData.description,
-      share_with: selectedShareWith.join(","),
-      folder: formData.folder,
+      share_with: shareWithIds,
+      folder_id: selectedFolder?.id || formData.folder,
+      type: "agreements",
       party_id: formData.party_id,
       expiry_date: formData.expiryDate,
     };
-
+  
+    console.log("documentData being sent:", documentData);
+  
     const result = await dispatch(
       uploadDocument({ formData: documentData, file: selectedFile }),
     );
+  
     setUploading(false);
-
+  
     if (uploadDocument.fulfilled.match(result)) {
       showToast(
         `✓ Document "${formData.name}" uploaded successfully!`,
@@ -465,8 +597,8 @@ const AddAgreement = () => {
                               </div>
                             )}
 
-                            {/* Add Party Button */}
-                            <div className="border-t border-gray-200 dark:border-gray-700 mt-2 pt-2">
+                            
+                            {/* <div className="border-t border-gray-200 dark:border-gray-700 mt-2 pt-2">
                               <button
                                 type="button"
                                 onClick={() => {
@@ -478,12 +610,101 @@ const AddAgreement = () => {
                                 <i className="fas fa-plus-circle"></i>
                                 <span className="text-sm">Add New Party</span>
                               </button>
-                            </div>
+                            </div> */}
                           </div>
                         )}
                       </div>
                     </div>
+                   {/* Party Field */}
+                   <div>
+                      <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
+                        <i className="fas fa-building text-green-500 mr-1"></i>{" "}
+                        Party
+                      </label>
+                      {/* <div className="flex gap-2">
+                        <select
+                          id="party_id"
+                          value={formData.party_id}
+                          onChange={handleChange}
+                          className="flex-1 px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                        >
+                          <option value="">Select Party (Optional)</option>
+                          {Array.isArray(parties) && parties.map((party) => (
+                            <option key={party.id} value={party.id}>
+                              {party.name} {party.company_name ? `(${party.company_name})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => setShowPartyModal(true)}
+                          className="px-3 md:px-4 py-2 md:py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-semibold whitespace-nowrap"
+                        >
+                          <i className="fas fa-plus"></i>
+                          <span className="hidden sm:inline">Add Party</span>
+                        </button>
+                      </div> */}
+                      <div className="relative">
+                        <select
+                          id="party_id"
+                          value={formData.party_id}
+                          onChange={handleChange}
+                          className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 appearance-none pr-10"
+                        >
+                          <option value="">Select Party (Optional)</option>
+                          {Array.isArray(parties) && parties.map((party) => (
+                            <option key={party.id} value={party.id}>
+                              {party.name} {party.company_name ? `(${party.company_name})` : ''}
+                            </option>
+                          ))}
+                          <option value="__add_new__">+ Add New Party</option>
+                        </select>
+                      </div>
+                      {/* Selected Party Details */}
+                      {formData.party_id && (() => {
+                        const selectedParty = Array.isArray(parties)
+                          ? parties.find((p) => String(p.id) === String(formData.party_id))
+                          : null;
+                        return selectedParty ? (
+                          <div className="mt-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <i className="fas fa-building text-green-500 text-sm"></i>
+                                <div>
+                                  <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                    {selectedParty.name}
+                                  </div>
+                                  {selectedParty.company_name && (
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                      {selectedParty.company_name}
+                                    </div>
+                                  )}
+                                  {selectedParty.email && (
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                      <i className="fas fa-envelope mr-1"></i>{selectedParty.email}
+                                    </div>
+                                  )}
+                                  {selectedParty.phone && (
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                      <i className="fas fa-phone mr-1"></i>{selectedParty.phone}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setFormData({ ...formData, party_id: '' })}
+                                className="text-red-400 hover:text-red-600 transition-colors p-1"
+                              >
+                                <i className="fas fa-times text-xs"></i>
+                              </button>
+                            </div>
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
 
+              
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
                       <div>
                         <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
