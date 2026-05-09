@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { showToast } from '../common/Toast';
+import apiClient from '../../utils/apiClient';
 import { addParty } from '../../store/slices/documentsSlice';
 
 const AddPartyModal = ({ isOpen, onClose, onPartyAdded }) => {
@@ -21,38 +22,71 @@ const AddPartyModal = ({ isOpen, onClose, onPartyAdded }) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // const handleSubmit = async () => {
+  //   if (!formData.name || !formData.company_name) {
+  //     showToast('Party Name and Company Name are required', 'error');
+  //     return;
+  //   }
+
+  //   setIsCreating(true);
+    
+  //   try {
+  //     const result = await dispatch(addParty(formData));
+  //    console.log("full result:", JSON.stringify(result));
+  //    console.log("result.type:", result.type);
+  //    console.log("fulfilled type:", addParty.fulfilled.type);
+  //    console.log("is fulfilled:", addParty.fulfilled.match(result));
+
+  //     if (result.type === 'documents/addParty/fulfilled') {
+  //       const newParty = result.payload;
+  //       showToast('Party added successfully', 'success');
+  //       // Pass the party data back to parent component
+  //       onPartyAdded?.(newParty);
+  //       onClose();
+  //       // Reset form
+  //       setFormData({
+  //         name: '',
+  //         company_name: '',
+  //         contact_person: '',
+  //         email: '',
+  //         phone: '',
+  //         address: '',
+  //         website: '',
+  //         notes: ''
+  //       });
+  //     } else {
+  //       showToast(result.payload || 'Failed to add party', 'error');
+  //     }
+  //   } catch (error) {
+  //     console.log("CATCH ERROR:", error);
+  //     console.log("CATCH ERROR message:", error.message);
+  //     showToast('Failed to add party', 'error');
+    
+  //   } finally {
+  //     setIsCreating(false);
+  //   }
+  // }; 
   const handleSubmit = async () => {
     if (!formData.name || !formData.company_name) {
       showToast('Party Name and Company Name are required', 'error');
       return;
     }
-
+  
     setIsCreating(true);
-    
+  
     try {
-      const result = await dispatch(addParty(formData));
-      if (addParty.fulfilled.match(result)) {
-        const newParty = result.payload;
-        showToast('Party added successfully', 'success');
-        // Pass the party data back to parent component
-        onPartyAdded?.(newParty);
-        onClose();
-        // Reset form
-        setFormData({
-          name: '',
-          company_name: '',
-          contact_person: '',
-          email: '',
-          phone: '',
-          address: '',
-          website: '',
-          notes: ''
-        });
-      } else {
-        showToast(result.payload || 'Failed to add party', 'error');
-      }
+      const response = await apiClient.post("/admin/parties", formData);
+      const newParty = response.data.data || response.data;
+      showToast('Party added successfully', 'success');
+      onPartyAdded?.(newParty);
+      onClose();
+      setFormData({
+        name: '', company_name: '', contact_person: '',
+        email: '', phone: '', address: '', website: '', notes: ''
+      });
     } catch (error) {
-      showToast('Failed to add party', error);
+      console.log("Error:", error);
+      showToast(error.response?.data?.message || 'Failed to add party', 'error');
     } finally {
       setIsCreating(false);
     }

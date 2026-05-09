@@ -20,6 +20,14 @@ const EmployeeDetails = () => {
   const { currentEmployee } = useSelector((state) => state.employees || {});
 
   useEffect(() => {
+    if (currentEmployee) {
+      console.log("EmployeeDetails currentEmployee:", currentEmployee);
+      console.log("Avatar value:", currentEmployee.avatar);  // ← add this
+      console.log("Resolved photo URL:", getEmployeePhoto());  // ← add this
+    }
+  }, [currentEmployee]);
+
+  useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
@@ -49,6 +57,39 @@ const EmployeeDetails = () => {
     if (!documentPath) return null;
     const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || '';
     return `${baseUrl}/storage/${documentPath}`;
+  };
+
+  const getPhotoUrl = (photoValue) => {
+  if (!photoValue) return null;
+  if (photoValue.startsWith('/tmp/')) return null; // reject PHP temp paths
+  if (photoValue.startsWith('data:')) return photoValue;
+  if (photoValue.startsWith('http://') || photoValue.startsWith('https://')) return photoValue;
+  
+  // handles both "temp/filename.jpg" and "employees/photos/filename.jpg"
+  const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || '';
+  if (photoValue.startsWith('/storage/')) return `${baseUrl}${photoValue}`;
+  
+  return `${baseUrl}/storage/${photoValue}`; // ✅ covers temp/ and any other relative path
+};
+
+  const getEmployeePhoto = () => {
+    const possiblePhotoFields = [
+      currentEmployee?.passport_size_photo,
+      currentEmployee?.profile_photo,
+      currentEmployee?.photo,
+      currentEmployee?.avatar,
+      currentEmployee?.user?.passport_size_photo,
+      currentEmployee?.user?.profile_photo,
+      currentEmployee?.user?.photo,
+      currentEmployee?.user?.avatar,
+    ];
+
+    for (const fieldValue of possiblePhotoFields) {
+      const resolvedPhoto = getPhotoUrl(fieldValue);
+      if (resolvedPhoto) return resolvedPhoto;
+    }
+
+    return null;
   };
 
   const tabs = [
@@ -152,9 +193,17 @@ const EmployeeDetails = () => {
             {/* Profile Summary Card */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
               <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
-                <div className="w-24 h-24 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-md">
-                  {currentEmployee.first_name?.charAt(0)}{currentEmployee.last_name?.charAt(0)}
-                </div>
+                {getEmployeePhoto() ? (
+                  <img
+                    src={getEmployeePhoto()}
+                    alt={`${currentEmployee.first_name || 'Employee'} photo`}
+                    className="w-24 h-24 rounded-full object-cover border-2 border-green-100 shadow-md"
+                  />
+                ) : (
+                  <div className="w-24 h-24 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-md">
+                    {currentEmployee.first_name?.charAt(0)}{currentEmployee.last_name?.charAt(0)}
+                  </div>
+                )}
                 <div className="flex-1 text-center md:text-left">
                   <h2 className="text-2xl font-bold text-gray-800">
                     {currentEmployee.first_name} {currentEmployee.last_name}

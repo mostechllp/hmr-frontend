@@ -2,20 +2,65 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import apiClient from "../../utils/apiClient";
 
 // Helper function to transform form data for API
+// const transformDocumentForAPI = (formData, file) => {
+//   const formDataToSend = new FormData();
+
+//   formDataToSend.append("name", formData.name);
+//   formDataToSend.append("type", formData.type || "all");
+//   formDataToSend.append("description", formData.description || "");
+//   formDataToSend.append("folder_id", formData.folder_id || "");
+//   formDataToSend.append("expiry_date", formData.expiry_date || "");
+//   if (formData.party_id) {
+//     formDataToSend.append("party_id", formData.party_id);
+//   }
+
+//   // if (formData.share_with && Array.isArray(formData.share_with)) {
+//   //   formData.share_with.forEach((id, index) => {
+//   //     formDataToSend.append(`share_with[${index}]`, id);
+//   //   });
+//   // }
+//   if (formData.share_with) {
+//     const shareArray = Array.isArray(formData.share_with)
+//       ? formData.share_with
+//       : formData.share_with.split(",");
+  
+//     shareArray.forEach((id, index) => {
+//       formDataToSend.append(`share_with[${index}]`, id);
+//     });
+//   }
+//   if (file) {
+//     formDataToSend.append("file_path", file);
+//   }
+
+//   return formDataToSend;
+// };
 const transformDocumentForAPI = (formData, file) => {
   const formDataToSend = new FormData();
 
   formDataToSend.append("name", formData.name);
-  formDataToSend.append("type", formData.type || "all");
-  formDataToSend.append("description", formData.description || "");
+  formDataToSend.append("type", formData.type || "agreements");
+  
+  if (formData.description) {
+    formDataToSend.append("description", formData.description);
+  }
+  
   formDataToSend.append("folder_id", formData.folder_id || "");
-  formDataToSend.append("expiry_date", formData.expiry_date || "");
+  
+  if (formData.expiry_date) {
+    formDataToSend.append("expiry_date", formData.expiry_date);
+  }
+  
+  // Only append party_id if it has a value
   if (formData.party_id) {
     formDataToSend.append("party_id", formData.party_id);
   }
 
-  if (formData.share_with && Array.isArray(formData.share_with)) {
-    formData.share_with.forEach((id, index) => {
+  if (formData.share_with) {
+    const shareArray = Array.isArray(formData.share_with)
+      ? formData.share_with
+      : formData.share_with.split(",");
+
+    shareArray.forEach((id, index) => {
       formDataToSend.append(`share_with[${index}]`, id);
     });
   }
@@ -55,22 +100,42 @@ const transformDocumentFromAPI = (doc) => {
 };
 
 // Fetch all documents
+// export const fetchDocuments = createAsyncThunk(
+//   "documents/fetchAll",
+//   async (_, { rejectWithValue }) => {
+//     try {
+//       const response = await apiClient.get("/admin/documents");
+//       if (
+//         Array.isArray(response.data) &&
+//         response.data.length > 0 &&
+//         response.data[0].key
+//       ) {
+//         return [transformDocumentFromAPI(response.data)];
+//       }
+//       if (Array.isArray(response.data)) {
+//         return response.data.map((doc) => transformDocumentFromAPI(doc));
+//       }
+//       return response.data.data || [];
+//     } catch (error) {
+//       return rejectWithValue(
+//         error.response?.data?.message || "Failed to fetch documents",
+//       );
+//     }
+//   },
+// );
 export const fetchDocuments = createAsyncThunk(
   "documents/fetchAll",
   async (_, { rejectWithValue }) => {
     try {
       const response = await apiClient.get("/admin/documents");
-      if (
-        Array.isArray(response.data) &&
-        response.data.length > 0 &&
-        response.data[0].key
-      ) {
-        return [transformDocumentFromAPI(response.data)];
+      // Handle paginated response: { status, message, data: { data: [...], total, ... } }
+      if (response.data?.data?.data) {
+        return response.data.data.data;
       }
-      if (Array.isArray(response.data)) {
-        return response.data.map((doc) => transformDocumentFromAPI(doc));
+      if (response.data?.data) {
+        return Array.isArray(response.data.data) ? response.data.data : [];
       }
-      return response.data.data || [];
+      return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch documents",
