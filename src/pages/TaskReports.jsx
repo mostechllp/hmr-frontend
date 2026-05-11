@@ -131,6 +131,9 @@ const TaskReports = () => {
             <h2 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-gray-800 to-green-600 dark:from-gray-200 dark:to-green-400 bg-clip-text text-transparent">
               Task Reports
             </h2>
+            <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg w-full sm:w-auto">
+              <i className="fas fa-plus-circle"></i> Add Task Report
+            </button>
           </div>
           {/* Actions Bar */}
           <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 mb-5">
@@ -220,6 +223,18 @@ const TaskReports = () => {
                             title="View"
                           >
                             <i className="fas fa-eye text-xs md:text-sm"></i>
+                          </button>
+                          <button
+                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-amber-500 transition-colors"
+                            title="Edit"
+                          >
+                            <i className="fas fa-edit text-xs md:text-sm"></i>
+                          </button>
+                          <button
+                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500 transition-colors"
+                            title="Delete"
+                          >
+                            <i className="fas fa-trash text-xs md:text-sm"></i>
                           </button>
                         </div>
                       </td>
