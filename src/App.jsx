@@ -4,7 +4,6 @@ import { useTheme } from "./hooks/useTheme";
 import RouteChangeLoader from "./components/common/RouteChangeLoader";
 import { useSelector } from "react-redux";
 import GlobalUploadStatus from "./components/common/GlobalUploadStatus";
-import AdminWFH from "./pages/WFH";
 
 // Lazy load pages for better performance
 const Login = lazy(() => import("./pages/Login"));
@@ -29,6 +28,15 @@ const Designations = lazy(() => import("./pages/Designations"));
 const Departments = lazy(() => import("./pages/Departments"))
 const TaskReports = lazy(() => import("./pages/TaskReports"));
 const Reports = lazy(() => import('./pages/Reports'));
+const EmployeeDetailsReport = lazy(() => import('./components/reports/EmployeeDetailsReport'));
+const AttendanceReport = lazy(() => import('./components/reports/AttendanceReport'));
+const LeaveRequestReport = lazy(() => import('./components/reports/LeaveRequestsReports'));
+const PendingLeaveReport = lazy(() => import('./components/reports/PendingLeavesReport'));
+const EmployeeNearestExpiryReport = lazy(() => import('./components/reports/EmployeeNearestExpiryReport'));
+const EmployeeUpcomingRenewalReport = lazy(() => import('./components/reports/EmployeeUpcomingRenewalsReport'));
+const OrgNearestExpiryReport = lazy(() => import('./components/reports/CompanyNearestExpiryReport'));
+const OrgUpcomingRenewalReport = lazy(() => import('./components/reports/CompanyUpcomingRenewalsReport'));
+const AdminWFH = lazy(() => import('./pages/WFH'));
 const Settings = lazy(() => import("./pages/Settings"));
 
 const PrivateRoute = ({ children }) => {
@@ -211,6 +219,70 @@ function App() {
           }
         />
         <Route
+          path="/reports/employee-details"
+          element={
+            <PrivateRoute>
+              <EmployeeDetailsReport />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/reports/attendance-reports"
+          element={
+            <PrivateRoute>
+              <AttendanceReport />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/reports/leave-requests-reports"
+          element={
+            <PrivateRoute>
+              <LeaveRequestReport />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/reports/pending-leaves-reports"
+          element={
+            <PrivateRoute>
+              <PendingLeaveReport />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/reports/employee-near-expiry"
+          element={
+            <PrivateRoute>
+              <EmployeeNearestExpiryReport />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/reports/employee-upcoming-renewals"
+          element={
+            <PrivateRoute>
+              <EmployeeUpcomingRenewalReport />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/reports/organization-near-expiry"
+          element={
+            <PrivateRoute>
+              <OrgNearestExpiryReport />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/reports/organization-upcoming-renewals"
+          element={
+            <PrivateRoute>
+              <OrgUpcomingRenewalReport />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/leaves"
           element={
             <PrivateRoute>
@@ -234,14 +306,6 @@ function App() {
             </PrivateRoute>
           }
         />
-        {/* <Route
-          path="/reports"
-          element={
-            <PrivateRoute>
-              <Reports />
-            </PrivateRoute>
-          }
-        /> */}
         <Route
           path="/settings"
           element={
