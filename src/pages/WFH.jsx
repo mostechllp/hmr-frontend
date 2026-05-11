@@ -94,10 +94,15 @@ const AdminWFH = () => {
     if (!selectedRequestId) return;
     
     setActionLoading(true);
-    const newStatus = actionType === "approve" ? "approved" : "rejected";
+    // Many backends expect capitalized status values and a processed_by field
+    const newStatus = actionType === "approve" ? "Approved" : "Rejected";
     
     const result = await dispatch(
-      updateWFHRequestStatus({ id: selectedRequestId, status: newStatus })
+      updateWFHRequestStatus({ 
+        id: selectedRequestId, 
+        status: newStatus,
+        processedBy: "Admin"
+      })
     );
     
     if (updateWFHRequestStatus.fulfilled.match(result)) {
@@ -106,12 +111,7 @@ const AdminWFH = () => {
       setSelectedRequestId(null);
       setActionType(null);
       // Re-fetch to get updated list and counts
-      dispatch(fetchAdminWFHRequests({
-        status: filter.status !== 'all' ? filter.status : undefined,
-        search: filter.search || undefined,
-        page: pagination.currentPage,
-        limit: pagination.perPage
-      }));
+      dispatch(fetchAdminWFHRequests());
     } else {
       showToast(result.payload || `Failed to ${actionType} request`, "error");
     }
@@ -129,15 +129,44 @@ const AdminWFH = () => {
     });
   };
 
-  // Stats calculation (from current results or we could fetch separate stats)
+  // Client-side filtering and pagination logic
+  const getFilteredRequests = () => {
+    let filtered = [...requests];
+    
+    if (filter.status !== "all") {
+      filtered = filtered.filter(
+        (r) => r.status?.toLowerCase() === filter.status.toLowerCase()
+      );
+    }
+    
+    if (filter.search) {
+      const searchLower = filter.search.toLowerCase();
+      filtered = filtered.filter(
+        (r) =>
+          (r.reason || "").toLowerCase().includes(searchLower) ||
+          (r.employeeName || "").toLowerCase().includes(searchLower) ||
+          (r.notes || "").toLowerCase().includes(searchLower)
+      );
+    }
+    
+    return filtered;
+  };
+
+  const filteredRequests = getFilteredRequests();
+  const totalPages = Math.ceil(filteredRequests.length / pagination.perPage);
+  const start = (pagination.currentPage - 1) * pagination.perPage;
+  const currentRequests = filteredRequests.slice(
+    start,
+    start + pagination.perPage
+  );
+
+  // Stats calculation
   const stats = {
-    total: pagination.total,
+    total: requests.length,
     pending: requests.filter(r => r.status?.toLowerCase() === "pending").length,
     approved: requests.filter(r => r.status?.toLowerCase() === "approved").length,
     rejected: requests.filter(r => r.status?.toLowerCase() === "rejected").length,
   };
-
-  const totalPages = Math.ceil(pagination.total / pagination.perPage);
 
   return (
     <div className="app flex min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden transition-colors duration-300">
@@ -255,11 +284,11 @@ const AdminWFH = () => {
                         </div>
                       </td>
                     </tr>
-                  ) : requests.length > 0 ? (
-                    requests.map((request, idx) => (
+                  ) : currentRequests.length > 0 ? (
+                    currentRequests.map((request, idx) => (
                       <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group">
                         <td className="px-4 py-4 text-sm text-gray-600 dark:text-gray-400 font-medium">
-                          {(pagination.currentPage - 1) * pagination.perPage + idx + 1}
+                          {start + idx + 1}
                         </td>
                         <td className="px-4 py-4 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap font-medium">
                           {formatDate(request.date)}
