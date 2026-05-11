@@ -217,14 +217,7 @@ const Reports = () => {
                     <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
                       {card.description}
                     </p>
-                  </div>
-                  
-                  {/* Card Footer */}
-                  <div className="px-4 py-2 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
-                    <span className="text-xs text-green-600 dark:text-green-400 font-medium">
-                      View Report
-                    </span>
-                    <i className="fas fa-arrow-right text-green-600 dark:text-green-400 text-xs group-hover:translate-x-1 transition-transform"></i>
+                    
                   </div>
                 </div>
               </Link>
