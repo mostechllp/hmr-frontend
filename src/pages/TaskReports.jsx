@@ -5,12 +5,15 @@ import Header from "../components/common/Header";
 import SearchBar from "../components/common/SearchBar";
 import EntriesSelector from "../components/common/EntriesSelector";
 import Pagination from "../components/common/Paginations";
-import { fetchTaskReports } from "../store/slices/taskReportSlice";
+import { fetchTaskReports, deleteTaskReport } from "../store/slices/taskReportSlice";
+import { showToast } from "../components/common/Toast";
+import { fetchEmployees } from "../store/slices/employeeSlice";
 import TaskReportModal from "../components/taskReports/TaskReportModal";
+import ConfirmModal from "../components/common/ConfirmModal";
 
 const TaskReports = () => {
   const dispatch = useDispatch();
-  const { taskReports = [] } = useSelector((state) => state.taskReports || {});
+  const { taskReports = [], loading, error } = useSelector((state) => state.taskReports || {});
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -18,6 +21,11 @@ const TaskReports = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
   const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [editingReport, setEditingReport] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -30,6 +38,7 @@ const TaskReports = () => {
 
   useEffect(() => {
     dispatch(fetchTaskReports());
+    dispatch(fetchEmployees());
   }, [dispatch]);
 
   const getFilteredReports = () => {
@@ -65,12 +74,45 @@ const TaskReports = () => {
     setViewModalOpen(false);
     setSelectedReport(null);
   };
+  
+  const handleAdd = () => {
+    setEditingReport(null);
+    setReportModalOpen(true);
+  };
+  
+  const handleEdit = (report) => {
+    setEditingReport(report);
+    setReportModalOpen(true);
+  };
+  
+  const handleDelete = (id) => {
+    setReportToDelete(id);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!reportToDelete) return;
+    
+    setDeleteLoading(true);
+    const result = await dispatch(deleteTaskReport(reportToDelete));
+    setDeleteLoading(false);
+    
+    if (deleteTaskReport.fulfilled.match(result)) {
+      showToast("Task report deleted successfully", "success");
+      setDeleteModalOpen(false);
+      setReportToDelete(null);
+      // If we deleted from view modal, close it
+      if (viewModalOpen) handleViewModalClose();
+    } else {
+      showToast("Failed to delete task report", "error");
+    }
+  };
 
   // Calculate stats
   const totalReports = taskReports.length;
   const uniqueEmployees = [...new Set(taskReports.map((r) => r.employee))]
     .length;
-  const today = new Date().toLocaleDateString("en-GB");
+  const today = new Date().toISOString().split("T")[0];
   const todayReports = taskReports.filter((r) => r.date === today).length;
 
   return (
@@ -131,7 +173,10 @@ const TaskReports = () => {
             <h2 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-gray-800 to-green-600 dark:from-gray-200 dark:to-green-400 bg-clip-text text-transparent">
               Task Reports
             </h2>
-            <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg w-full sm:w-auto">
+            <button 
+              onClick={handleAdd}
+              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg w-full sm:w-auto"
+            >
               <i className="fas fa-plus-circle"></i> Add Task Report
             </button>
           </div>
@@ -147,103 +192,131 @@ const TaskReports = () => {
             </div>
           </div>
 
-          {/* Task Reports Table */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto shadow-soft">
-            <div className="min-w-[800px] md:min-w-0">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
-                    <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
-                      Sl.No.
-                    </th>
-                    <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
-                      Date
-                    </th>
-                    <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
-                      Employee
-                    </th>
-                    <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
-                      Tasks Completed
-                    </th>
-                    <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
-                      Plan for Tomorrow
-                    </th>
-                    <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
-                      Remarks
-                    </th>
-                    <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pageReports.map((report, idx) => (
-                    <tr
-                      key={report.id}
-                      className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                    >
-                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                        {start + idx + 1}
-                      </td>
-                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                        {report.date}
-                      </td>
-                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold text-gray-800 dark:text-gray-200">
-                        {report.employee}
-                      </td>
-                      <td
-                        className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400 max-w-[200px] truncate"
-                        title={report.tasksCompleted}
-                      >
-                        {report.tasksCompleted.length > 40
-                          ? report.tasksCompleted.substring(0, 40) + "..."
-                          : report.tasksCompleted}
-                      </td>
-                      <td
-                        className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400 max-w-[200px] truncate"
-                        title={report.planForTomorrow}
-                      >
-                        {report.planForTomorrow.length > 40
-                          ? report.planForTomorrow.substring(0, 40) + "..."
-                          : report.planForTomorrow}
-                      </td>
-                      <td
-                        className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400 max-w-[150px] truncate"
-                        title={report.remarks}
-                      >
-                        {report.remarks.length > 30
-                          ? report.remarks.substring(0, 30) + "..."
-                          : report.remarks || "-"}
-                      </td>
-                      <td className="px-3 md:px-4 py-2 md:py-3">
-                        <div className="flex gap-1 md:gap-2">
-                          <button
-                            onClick={() => handleView(report)}
-                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-blue-500 transition-colors"
-                            title="View"
-                          >
-                            <i className="fas fa-eye text-xs md:text-sm"></i>
-                          </button>
-                          <button
-                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-amber-500 transition-colors"
-                            title="Edit"
-                          >
-                            <i className="fas fa-edit text-xs md:text-sm"></i>
-                          </button>
-                          <button
-                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500 transition-colors"
-                            title="Delete"
-                          >
-                            <i className="fas fa-trash text-xs md:text-sm"></i>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {loading && taskReports.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-soft mb-6">
+              <div className="w-12 h-12 border-4 border-green-500/20 border-t-green-500 rounded-full animate-spin mb-4"></div>
+              <p className="text-gray-500 dark:text-gray-400 font-medium">Loading task reports...</p>
             </div>
-          </div>
+          )}
+
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-xl mb-6 flex items-center gap-3 text-red-600 dark:text-red-400">
+              <i className="fas fa-exclamation-circle"></i>
+              <p className="text-sm font-medium">{error}</p>
+            </div>
+          )}
+
+          {!loading && !error && taskReports.length === 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center shadow-soft mb-6">
+              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i className="fas fa-clipboard-list text-gray-400 text-2xl"></i>
+              </div>
+              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-1">No reports found</h3>
+              <p className="text-gray-500 dark:text-gray-400">There are no task reports to display at this time.</p>
+            </div>
+          )}
+
+          {/* Task Reports Table */}
+          {taskReports.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto shadow-soft">
+              <div className="min-w-[800px] md:min-w-0">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+                      <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
+                        Sl.No.
+                      </th>
+                      <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
+                        Date
+                      </th>
+                      <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
+                        Employee
+                      </th>
+                      <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
+                        Tasks Completed
+                      </th>
+                      <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
+                        Plan for Tomorrow
+                      </th>
+                      <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
+                        Remarks
+                      </th>
+                      <th className="px-3 md:px-4 py-2 md:py-3 text-left text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pageReports.map((report, idx) => (
+                      <tr
+                        key={report.id}
+                        className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                      >
+                        <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                          {start + idx + 1}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                          {report.date}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold text-gray-800 dark:text-gray-200">
+                          {report.employee}
+                        </td>
+                        <td
+                          className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400 max-w-[200px] truncate"
+                          title={report.tasksCompleted}
+                        >
+                          {report.tasksCompleted.length > 40
+                            ? report.tasksCompleted.substring(0, 40) + "..."
+                            : report.tasksCompleted}
+                        </td>
+                        <td
+                          className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400 max-w-[200px] truncate"
+                          title={report.planForTomorrow}
+                        >
+                          {report.planForTomorrow.length > 40
+                            ? report.planForTomorrow.substring(0, 40) + "..."
+                            : report.planForTomorrow}
+                        </td>
+                        <td
+                          className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400 max-w-[150px] truncate"
+                          title={report.remarks}
+                        >
+                          {report.remarks.length > 30
+                            ? report.remarks.substring(0, 30) + "..."
+                            : report.remarks || "-"}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 md:py-3">
+                          <div className="flex gap-1 md:gap-2">
+                            <button
+                              onClick={() => handleView(report)}
+                              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-blue-500 transition-colors"
+                              title="View"
+                            >
+                              <i className="fas fa-eye text-xs md:text-sm"></i>
+                            </button>
+                            <button
+                              onClick={() => handleEdit(report)}
+                              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-amber-500 transition-colors"
+                              title="Edit"
+                            >
+                              <i className="fas fa-edit text-xs md:text-sm"></i>
+                            </button>
+                            <button
+                              onClick={() => handleDelete(report.id)}
+                              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500 transition-colors"
+                              title="Delete"
+                            >
+                              <i className="fas fa-trash text-xs md:text-sm"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           <Pagination
             currentPage={currentPage}
@@ -338,6 +411,7 @@ const TaskReports = () => {
               <button
                 onClick={() => {
                   handleViewModalClose();
+                  handleEdit(selectedReport);
                 }}
                 className="px-4 py-2 rounded-full font-semibold bg-amber-500 text-white hover:bg-amber-600 transition-all flex items-center gap-2 text-sm"
               >
@@ -347,6 +421,24 @@ const TaskReports = () => {
           </div>
         </div>
       )}
+      
+      {/* Add/Edit Task Report Modal */}
+      <TaskReportModal 
+        isOpen={reportModalOpen} 
+        onClose={() => setReportModalOpen(false)} 
+        editingReport={editingReport}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete Task Report"
+        message="Are you sure you want to delete this task report? This action cannot be undone."
+        confirmText="Delete"
+        loading={deleteLoading}
+      />
     </div>
   );
 };
