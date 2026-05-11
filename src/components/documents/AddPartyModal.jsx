@@ -1,92 +1,65 @@
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
 import { showToast } from '../common/Toast';
 import apiClient from '../../utils/apiClient';
-import { addParty } from '../../store/slices/documentsSlice';
 
 const AddPartyModal = ({ isOpen, onClose, onPartyAdded }) => {
-  const dispatch = useDispatch();
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',  // Changed from party_name to match API
+    name: '',
     company_name: '',
     contact_person: '',
     email: '',
     phone: '',
     address: '',
-    website: '',     // Added from API response
-    notes: ''        // Added from API response
+    website: '',
+    notes: ''
   });
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // const handleSubmit = async () => {
-  //   if (!formData.name || !formData.company_name) {
-  //     showToast('Party Name and Company Name are required', 'error');
-  //     return;
-  //   }
-
-  //   setIsCreating(true);
-    
-  //   try {
-  //     const result = await dispatch(addParty(formData));
-  //    console.log("full result:", JSON.stringify(result));
-  //    console.log("result.type:", result.type);
-  //    console.log("fulfilled type:", addParty.fulfilled.type);
-  //    console.log("is fulfilled:", addParty.fulfilled.match(result));
-
-  //     if (result.type === 'documents/addParty/fulfilled') {
-  //       const newParty = result.payload;
-  //       showToast('Party added successfully', 'success');
-  //       // Pass the party data back to parent component
-  //       onPartyAdded?.(newParty);
-  //       onClose();
-  //       // Reset form
-  //       setFormData({
-  //         name: '',
-  //         company_name: '',
-  //         contact_person: '',
-  //         email: '',
-  //         phone: '',
-  //         address: '',
-  //         website: '',
-  //         notes: ''
-  //       });
-  //     } else {
-  //       showToast(result.payload || 'Failed to add party', 'error');
-  //     }
-  //   } catch (error) {
-  //     console.log("CATCH ERROR:", error);
-  //     console.log("CATCH ERROR message:", error.message);
-  //     showToast('Failed to add party', 'error');
-    
-  //   } finally {
-  //     setIsCreating(false);
-  //   }
-  // }; 
   const handleSubmit = async () => {
-    if (!formData.name || !formData.company_name) {
-      showToast('Party Name and Company Name are required', 'error');
+    if (!formData.name) {
+      showToast('Party Name is required', 'error');
       return;
     }
-  
+
     setIsCreating(true);
-  
+
     try {
       const response = await apiClient.post("/admin/parties", formData);
       const newParty = response.data.data || response.data;
+      
+      // Log the response to debug
+      console.log("Party created successfully:", newParty);
+      
       showToast('Party added successfully', 'success');
-      onPartyAdded?.(newParty);
-      onClose();
+      
+      // Call the callback with the new party data
+      if (onPartyAdded && typeof onPartyAdded === 'function') {
+        onPartyAdded(newParty);
+      }
+      
+      // Reset form
       setFormData({
-        name: '', company_name: '', contact_person: '',
-        email: '', phone: '', address: '', website: '', notes: ''
+        name: '',
+        company_name: '',
+        contact_person: '',
+        email: '',
+        phone: '',
+        address: '',
+        website: '',
+        notes: ''
       });
+      
+      // Close modal
+      onClose();
+      
     } catch (error) {
-      console.log("Error:", error);
-      showToast(error.response?.data?.message || 'Failed to add party', 'error');
+      console.error("Error adding party:", error);
+      const errorMessage = error.response?.data?.message || 'Failed to add party';
+      showToast(errorMessage, 'error');
     } finally {
       setIsCreating(false);
     }
@@ -128,7 +101,7 @@ const AddPartyModal = ({ isOpen, onClose, onPartyAdded }) => {
           
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-              Company Name <span className="text-red-500">*</span>
+              Company Name
             </label>
             <input
               type="text"

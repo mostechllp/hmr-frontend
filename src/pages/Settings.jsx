@@ -3,12 +3,13 @@ import { useSelector } from 'react-redux';
 import Sidebar from '../components/common/Sidebar';
 import Header from '../components/common/Header';
 import { showToast } from '../components/common/Toast';
+import apiClient from '../utils/apiClient';
 // import { updateUserProfile, changePassword } from '../store/slices/authSlice';
 
 const Settings = () => {
-//   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const [loading, setLoading] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -18,14 +19,14 @@ const Settings = () => {
   const fileInputRef = useRef(null);
   
   const [profileData, setProfileData] = useState({
-    fullName: user?.name || 'HR Admin',
+    fullName: user?.employee?.name || user?.name || 'HR Admin',
     email: user?.email || 'hr@thesay.ae',
   });
   
   const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
+    current_password: '',  // Keep as current_password
+    password: '',          // Changed from new_password to password
+    password_confirmation: '', // Changed from new_password_confirmation to password_confirmation
   });
 
   useEffect(() => {
@@ -37,19 +38,29 @@ const Settings = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Update profile data when user changes
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        fullName: user?.employee?.name || user?.name || 'HR Admin',
+        email: user?.email || 'hr@thesay.ae',
+      });
+    }
+  }, [user]);
+
   const handleProfileChange = (e) => {
     setProfileData({ ...profileData, [e.target.id]: e.target.value });
   };
 
   const handlePasswordChange = (e) => {
-    setPasswordData({ ...passwordData, [e.target.id]: e.target.value });
+    setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
   };
 
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
-        showToast('Invalid file type. Please upload JPG, PNG, or GIF images.', 'error');
+      if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
+        showToast('Invalid file type. Please upload JPG, PNG, GIF, or WEBP images.', 'error');
         return;
       }
       if (file.size > 2 * 1024 * 1024) {
@@ -93,37 +104,74 @@ const Settings = () => {
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
-    if (!passwordData.currentPassword) {
+    
+    // Validation
+    if (!passwordData.current_password) {
       showToast('Please enter your current password', 'error');
       return;
     }
-    if (!passwordData.newPassword) {
+    if (!passwordData.password) {
       showToast('Please enter a new password', 'error');
       return;
     }
-    if (passwordData.newPassword.length < 6) {
+    if (passwordData.password.length < 6) {
       showToast('New password must be at least 6 characters long', 'error');
       return;
     }
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
+    if (passwordData.password !== passwordData.password_confirmation) {
       showToast('New passwords do not match', 'error');
       return;
     }
     
-    setLoading(true);
-    // const result = await dispatch(changePassword(passwordData));
-    setLoading(false);
+    setPasswordLoading(true);
     
-    // if (changePassword.fulfilled.match(result)) {
-    //   showToast('Password changed successfully!', 'success');
-    //   setPasswordData({
-    //     currentPassword: '',
-    //     newPassword: '',
-    //     confirmPassword: '',
-    //   });
-    // } else {
-    //   showToast('Current password is incorrect', 'error');
-    // }
+    try {
+      // Make POST request to change password endpoint
+      const response = await apiClient.post('/employee/change-password', {
+        current_password: passwordData.current_password,
+        password: passwordData.password,
+        password_confirmation: passwordData.password_confirmation,
+      });
+      
+      console.log('Password change response:', response.data);
+      
+      if (response.data.status === 'success' || response.status === 200) {
+        showToast('Password changed successfully!', 'success');
+        // Reset form
+        setPasswordData({
+          current_password: '',
+          password: '',
+          password_confirmation: '',
+        });
+      } else {
+        showToast(response.data.message || 'Failed to change password', 'error');
+      }
+    } catch (error) {
+      console.error('Password change error:', error);
+      console.error('Error response:', error.response?.data);
+      
+      // Handle different error scenarios
+      if (error.response?.status === 422) {
+        // Validation errors
+        const errors = error.response.data.errors;
+        if (errors) {
+          // Get the first error message
+          const firstError = Object.values(errors)[0];
+          const errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
+          showToast(errorMessage || 'Validation error', 'error');
+        } else {
+          showToast(error.response.data.message || 'Invalid input', 'error');
+        }
+      } else if (error.response?.status === 401) {
+        showToast('Current password is incorrect', 'error');
+      } else if (error.response?.status === 400) {
+        showToast(error.response.data.message || 'Bad request', 'error');
+      } else {
+        showToast(error.response?.data?.message || 'Failed to change password. Please try again.', 'error');
+      }
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   return (
@@ -160,7 +208,7 @@ const Settings = () => {
                 <div className="flex flex-col sm:flex-row gap-4 md:gap-6 mb-4 md:mb-6">
                   <div className="text-center">
                     <img
-                      src={logoPreview || "https://violet-leopard-500489.hostingersite.com/hr/public/storage/avatars/jnBiWzD1Lt4YMtHS4hK2CS0Pcbo3vSOZw7Xd6px4.jpg"}
+                      src={logoPreview || user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileData.fullName)}&color=ffffff&background=22c55e`}
                       alt="Profile"
                       className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-green-500 shadow-md mx-auto"
                     />
@@ -241,13 +289,13 @@ const Settings = () => {
                 <form onSubmit={handleChangePassword}>
                   <div className="mb-3 md:mb-4">
                     <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
-                      Current Password
+                      Current Password <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <input
                         type={showCurrentPassword ? 'text' : 'password'}
-                        id="currentPassword"
-                        value={passwordData.currentPassword}
+                        name="current_password"
+                        value={passwordData.current_password}
                         onChange={handlePasswordChange}
                         className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 pr-8 md:pr-10"
                         placeholder="Enter current password"
@@ -264,13 +312,13 @@ const Settings = () => {
                   
                   <div className="mb-3 md:mb-4">
                     <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
-                      New Password
+                      New Password <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <input
                         type={showNewPassword ? 'text' : 'password'}
-                        id="newPassword"
-                        value={passwordData.newPassword}
+                        name="password"
+                        value={passwordData.password}
                         onChange={handlePasswordChange}
                         className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 pr-8 md:pr-10"
                         placeholder="Enter new password (min. 6 characters)"
@@ -287,13 +335,13 @@ const Settings = () => {
                   
                   <div className="mb-4 md:mb-6">
                     <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
-                      Confirm New Password
+                      Confirm New Password <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <input
                         type={showConfirmPassword ? 'text' : 'password'}
-                        id="confirmPassword"
-                        value={passwordData.confirmPassword}
+                        name="password_confirmation"
+                        value={passwordData.password_confirmation}
                         onChange={handlePasswordChange}
                         className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 pr-8 md:pr-10"
                         placeholder="Confirm new password"
@@ -310,16 +358,24 @@ const Settings = () => {
 
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={passwordLoading}
                     className="w-full sm:w-auto px-4 md:px-6 py-2 md:py-2.5 rounded-full font-semibold bg-green-500 text-white hover:bg-green-600 transition-all flex items-center justify-center gap-2 text-sm md:text-base disabled:opacity-70"
                   >
-                    {loading ? (
+                    {passwordLoading ? (
                       <><i className="fas fa-spinner fa-spin"></i> <span>Updating...</span></>
                     ) : (
                       <><i className="fas fa-key text-xs md:text-sm"></i> <span>Update Password</span></>
                     )}
                   </button>
                 </form>
+
+                {/* Password Requirements Info */}
+                <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                    <i className="fas fa-info-circle text-green-500"></i>
+                    <span>Password must be at least 6 characters long and should not be easily guessable.</span>
+                  </p>
+                </div>
               </div>
             </div>
           </div>

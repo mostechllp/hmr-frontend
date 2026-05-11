@@ -291,19 +291,41 @@ export const fetchShareableUsers = createAsyncThunk(
 );
 
 // Party CRUD operations
+// Update the fetchParties thunk in your documentsSlice.js
+
 export const fetchParties = createAsyncThunk(
   "documents/fetchParties",
   async (_, { rejectWithValue }) => {
     try {
       const response = await apiClient.get("/admin/parties");
-      return response.data.data || response.data;
+      console.log("Fetch parties response:", response.data);
+      
+      // Handle paginated response: { status, message, data: { current_page, data: [...] } }
+      if (response.data?.data?.data) {
+        return response.data.data.data;
+      }
+      // Handle non-paginated response with data array directly
+      if (response.data?.data && Array.isArray(response.data.data)) {
+        return response.data.data;
+      }
+      // Handle direct array response
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+      // Handle response where data is at root level
+      if (response.data?.data && !Array.isArray(response.data.data)) {
+        return [];
+      }
+      return [];
     } catch (error) {
+      console.error("Fetch parties error:", error);
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch parties",
       );
     }
   },
 );
+
 
 export const addParty = createAsyncThunk(
   "documents/addParty",
