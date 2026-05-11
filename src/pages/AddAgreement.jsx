@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import Sidebar from "../components/common/Sidebar";
 import { showToast } from "../components/common/Toast";
+import CustomDatePicker from "../components/common/CustomDatePicker";
 import Header from "../components/common/Header";
 import {
   fetchDocumentFolders,
@@ -476,42 +477,7 @@ const AddAgreement = () => {
                               </div>
                             )}
 
-                            {/* Parties Section */}
-                            {parties.length > 0 && (
-                              <div className="border-t border-gray-200 dark:border-gray-700">
-                                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50">
-                                  <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">
-                                    Parties
-                                  </span>
-                                </div>
-                                {parties.map((party) => (
-                                  <div
-                                    key={party.id}
-                                    onClick={() => toggleShareItem(party.name)}
-                                    className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedShareWith.includes(
-                                        party.name,
-                                      )}
-                                      onChange={() => {}}
-                                      className="w-3.5 h-3.5 md:w-4 md:h-4 accent-green-500"
-                                    />
-                                    <div className="flex-1 min-w-0">
-                                      <span className="text-xs md:text-sm text-gray-700 dark:text-gray-300">
-                                        {party.name}
-                                      </span>
-                                      {party.company_name && (
-                                        <span className="hidden sm:inline text-[10px] md:text-xs text-gray-500 ml-1">
-                                          ({party.company_name})
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
+                           
                           </div>
                         )}
                       </div>
@@ -651,13 +617,11 @@ const AddAgreement = () => {
                           <i className="fas fa-calendar-times text-green-500 mr-1"></i>{" "}
                           Expiry Date
                         </label>
-                        <input
-                          type="date"
-                          id="expiryDate"
-                          value={formData.expiryDate}
-                          onChange={handleChange}
-                          className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-                        />
+                        <CustomDatePicker
+                            id="expiryDate"
+                            value={formData.expiryDate}
+                            onChange={handleChange}
+                          />
                       </div>
                     </div>
                   </div>

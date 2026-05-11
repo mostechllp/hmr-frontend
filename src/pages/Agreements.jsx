@@ -8,17 +8,183 @@ import EntriesSelector from '../components/common/EntriesSelector';
 import { showToast } from '../components/common/Toast';
 import Pagination from '../components/common/Paginations';
 import ConfirmModal from '../components/common/ConfirmModal';
-import { fetchDocuments, deleteDocument, clearError, fetchDocumentFolders } from '../store/slices/documentsSlice';
+import { fetchDocuments, deleteDocument, clearError, fetchDocumentFolders, updateDocument } from '../store/slices/documentsSlice';
 
+// ─── Inline Edit Modal ────────────────────────────────────────────────────────
+const EditModal = ({ isOpen, document, folders, onClose, onSave, loading }) => {
+  const [form, setForm] = useState({
+    name: '',
+    description: '',
+    folder: '',
+    expiry_date: '',
+  });
+
+  useEffect(() => {
+    if (document) {
+      setForm({
+        name: document.name || '',
+        description: document.description || '',
+        folder: document.folder || document.type || '',
+        expiry_date: document.expiry_date ? document.expiry_date.split('T')[0] : '',
+      });
+    }
+  }, [document]);
+
+  if (!isOpen || !document) return null;
+
+  const handleChange = (e) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(document.id, form);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Modal */}
+      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
+              <i className="fas fa-edit text-green-600 dark:text-green-400 text-sm"></i>
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-gray-800 dark:text-gray-100">Edit Agreement</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[260px]">{document.name}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 dark:text-gray-400 transition-colors"
+          >
+            <i className="fas fa-times text-sm"></i>
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          {/* Name */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+              Document Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+              required
+              placeholder="Enter document name"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+              Description
+            </label>
+            <textarea
+              name="description"
+              value={form.description}
+              onChange={handleChange}
+              rows={3}
+              placeholder="Enter description (optional)"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition resize-none"
+            />
+          </div>
+
+          {/* Folder */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+              Folder
+            </label>
+            <select
+              name="folder"
+              value={form.folder}
+              onChange={handleChange}
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+            >
+              <option value="">Select folder</option>
+              {folders && folders.length > 0
+                ? folders.map((f) => (
+                    <option key={f.name || f} value={f.name || f}>
+                      {f.name || f}
+                    </option>
+                  ))
+                : ['Agreements', 'HR', 'IT', 'Finance', 'Legal'].map((f) => (
+                    <option key={f} value={f.toLowerCase()}>
+                      {f}
+                    </option>
+                  ))}
+            </select>
+          </div>
+
+          {/* Expiry Date */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+              Expiry Date
+            </label>
+            <input
+              type="date"
+              name="expiry_date"
+              value={form.expiry_date}
+              onChange={handleChange}
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 text-sm font-semibold rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-4 py-2 text-sm font-semibold rounded-lg bg-green-500 hover:bg-green-600 text-white transition shadow-md disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <i className="fas fa-spinner fa-spin text-xs"></i>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-check text-xs"></i>
+                  Save Changes
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 const Agreements = () => {
   const dispatch = useDispatch();
   const { documents: documentsState = [], folders = [], error = null } = useSelector(
     (state) => state.documents || { documents: [], folders: [], loading: false, error: null }
   );
-  
-  // Ensure documents is always an array
+
   const documents = Array.isArray(documentsState) ? documentsState : [];
-  
+
   const [currentFolder, setCurrentFolder] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -29,10 +195,13 @@ const Agreements = () => {
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Edit modal state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editDocument, setEditDocument] = useState(null);
+  const [editLoading, setEditLoading] = useState(false);
+
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
@@ -50,14 +219,14 @@ const Agreements = () => {
     }
   }, [error, dispatch]);
 
-  // Build folder list from API or use defaults
+  // Build folder list
   const folderList = [
     { name: 'All Files', value: 'all', icon: 'fas fa-folder-open' },
-    ...(folders && folders.length > 0 
-      ? folders.map(folder => ({
+    ...(folders && folders.length > 0
+      ? folders.map((folder) => ({
           name: folder.name || folder,
           value: folder.name || folder,
-          icon: 'fas fa-folder'
+          icon: 'fas fa-folder',
         }))
       : [
           { name: 'Agreements', value: 'agreements', icon: 'fas fa-file-signature' },
@@ -65,26 +234,23 @@ const Agreements = () => {
           { name: 'IT', value: 'it', icon: 'fas fa-code' },
           { name: 'Finance', value: 'finance', icon: 'fas fa-chart-line' },
           { name: 'Legal', value: 'legal', icon: 'fas fa-gavel' },
-        ]
-    )
+        ]),
   ];
 
   const getFilteredDocuments = () => {
-    // Ensure documents is an array
-    const docsArray = Array.isArray(documents) ? documents : [];
-    let filtered = docsArray;
-    
+    let filtered = Array.isArray(documents) ? documents : [];
     if (currentFolder !== 'all') {
-      filtered = filtered.filter(doc => 
-        (doc.folder || doc.type || '').toLowerCase() === currentFolder.toLowerCase()
+      filtered = filtered.filter(
+        (doc) => (doc.folder || doc.type || '').toLowerCase() === currentFolder.toLowerCase()
       );
     }
     if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(doc =>
-        (doc.name || '').toLowerCase().includes(searchLower) ||
-        (doc.description || '').toLowerCase().includes(searchLower) ||
-        (doc.folder || '').toLowerCase().includes(searchLower)
+      const s = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (doc) =>
+          (doc.name || '').toLowerCase().includes(s) ||
+          (doc.description || '').toLowerCase().includes(s) ||
+          (doc.folder || '').toLowerCase().includes(s)
       );
     }
     return filtered;
@@ -96,6 +262,31 @@ const Agreements = () => {
   const start = (currentPage - 1) * perPage;
   const pageDocuments = filteredDocuments.slice(start, start + perPage);
 
+  // ── Handlers ────────────────────────────────────────────────────────────────
+
+  const handleEditClick = (doc) => {
+    setEditDocument(doc);
+    setEditOpen(true);
+  };
+
+  const handleEditSave = async (id, formData) => {
+    setEditLoading(true);
+    try {
+      const result = await dispatch(updateDocument({ id, data: formData }));
+      if (updateDocument.fulfilled.match(result)) {
+        showToast('Document updated successfully', 'success');
+        setEditOpen(false);
+        setEditDocument(null);
+        dispatch(fetchDocuments());
+      } else {
+        showToast(result.payload || 'Failed to update document', 'error');
+      }
+    } catch {
+      showToast('Failed to update document', 'error');
+    }
+    setEditLoading(false);
+  };
+
   const handleDeleteClick = (document) => {
     setSelectedDocument(document);
     setConfirmOpen(true);
@@ -103,10 +294,8 @@ const Agreements = () => {
 
   const handleConfirmDelete = async () => {
     if (!selectedDocument) return;
-    
     setDeleteLoading(true);
     const result = await dispatch(deleteDocument(selectedDocument.id));
-    
     if (deleteDocument.fulfilled.match(result)) {
       showToast(`${selectedDocument.name} deleted successfully`, 'success');
       setConfirmOpen(false);
@@ -115,36 +304,43 @@ const Agreements = () => {
     } else {
       showToast('Failed to delete document', 'error');
     }
-    
     setDeleteLoading(false);
   };
 
   const handleViewDocument = (filePath) => {
     if (filePath) {
-      // Construct full URL for file access
       const baseUrl = import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || window.location.origin;
-      const fileUrl = `${baseUrl}/storage/${filePath.replace(/^\/+/, '')}`;
-      window.open(fileUrl, '_blank');
+      const cleanPath = filePath.replace(/\\/g, '/').replace(/^\/+/, '');
+      window.open(`${baseUrl}/storage/${cleanPath}`, '_blank');
     } else {
       showToast('No document file available', 'info');
     }
   };
 
+  const handleDownloadDocument = (filePath, fileName) => {
+    if (!filePath) {
+      showToast('No document available', 'info');
+      return;
+    }
+    const cleanPath = filePath.replace(/\\/g, '/').replace(/^\/+/, '').replace(/^storage\//, '');
+    const baseUrl = import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || window.location.origin;
+    const link = document.createElement('a');
+    link.href = `${baseUrl}/storage/${cleanPath}`;
+    link.download = fileName || 'document';
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const formatDate = (dateStr) => {
     if (!dateStr) return 'No Expiry';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
+    return new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
   const getExpiryClass = (expiryDate) => {
     if (!expiryDate) return '';
-    const today = new Date();
-    const expiry = new Date(expiryDate);
-    const diffDays = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+    const diffDays = Math.ceil((new Date(expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
     if (diffDays < 0) return 'text-red-500 font-semibold';
     if (diffDays <= 30) return 'text-amber-500 font-semibold';
     return '';
@@ -152,33 +348,26 @@ const Agreements = () => {
 
   const getFolderClass = (folder) => {
     const classes = {
-      'agreements': 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
-      'hr': 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
-      'it': 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
-      'finance': 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
-      'legal': 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400',
+      agreements: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
+      hr: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
+      it: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
+      finance: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
+      legal: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400',
     };
     return classes[folder?.toLowerCase()] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400';
   };
 
   const total = documents.length;
-  
-  // Calculate expiry stats
   const today = new Date();
   const thirtyDaysFromNow = new Date();
   thirtyDaysFromNow.setDate(today.getDate() + 30);
-  
   let expiringSoon = 0;
   let expired = 0;
-  
-  documents.forEach(doc => {
+  documents.forEach((doc) => {
     if (doc.expiry_date) {
-      const expiryDate = new Date(doc.expiry_date);
-      if (expiryDate < today) {
-        expired++;
-      } else if (expiryDate <= thirtyDaysFromNow) {
-        expiringSoon++;
-      }
+      const exp = new Date(doc.expiry_date);
+      if (exp < today) expired++;
+      else if (exp <= thirtyDaysFromNow) expiringSoon++;
     }
   });
 
@@ -188,7 +377,7 @@ const Agreements = () => {
       <div className={`flex-1 min-w-0 w-full overflow-x-hidden ${!isMobile ? 'md:ml-[72px]' : ''}`}>
         <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
         <main className="content px-4 py-4 md:px-6 md:py-6 w-full overflow-x-hidden">
-          
+
           {/* Stats Cards */}
           <div className="stats-grid grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-5 mb-6">
             <div className="bg-white dark:bg-gray-800 rounded-xl p-3 md:p-5 border border-gray-200 dark:border-gray-700 transition-all hover:-translate-y-0.5 hover:shadow-soft">
@@ -200,7 +389,6 @@ const Agreements = () => {
               <div className="text-2xl md:text-3xl font-extrabold text-green-600 dark:text-green-400">{total}</div>
               <div className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">Total Documents</div>
             </div>
-
             <div className="bg-white dark:bg-gray-800 rounded-xl p-3 md:p-5 border border-gray-200 dark:border-gray-700 transition-all hover:-translate-y-0.5 hover:shadow-soft">
               <div className="flex justify-between items-start mb-2 md:mb-3">
                 <div className="w-10 h-10 md:w-12 md:h-12 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center">
@@ -210,7 +398,6 @@ const Agreements = () => {
               <div className="text-2xl md:text-3xl font-extrabold text-amber-600 dark:text-amber-400">{expiringSoon}</div>
               <div className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">Expiring Soon (30 days)</div>
             </div>
-
             <div className="bg-white dark:bg-gray-800 rounded-xl p-3 md:p-5 border border-gray-200 dark:border-gray-700 transition-all hover:-translate-y-0.5 hover:shadow-soft">
               <div className="flex justify-between items-start mb-2 md:mb-3">
                 <div className="w-10 h-10 md:w-12 md:h-12 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center">
@@ -222,7 +409,7 @@ const Agreements = () => {
             </div>
           </div>
 
-          {/* Header */}
+          {/* Page Header */}
           <div className="flex flex-wrap justify-between items-center mb-4 md:mb-6">
             <h2 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-gray-800 to-green-600 dark:from-gray-200 dark:to-green-400 bg-clip-text text-transparent">
               Agreements Management
@@ -235,10 +422,7 @@ const Agreements = () => {
               {folderList.map((folder) => (
                 <button
                   key={folder.value}
-                  onClick={() => {
-                    setCurrentFolder(folder.value);
-                    setCurrentPage(1);
-                  }}
+                  onClick={() => { setCurrentFolder(folder.value); setCurrentPage(1); }}
                   className={`px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all whitespace-nowrap ${
                     currentFolder === folder.value
                       ? 'bg-green-500 text-white shadow-md'
@@ -258,8 +442,8 @@ const Agreements = () => {
             <EntriesSelector value={perPage} onChange={setPerPage} />
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search documents..." />
-              <Link 
-                to="/agreements/add-agreement" 
+              <Link
+                to="/agreements/add-agreement"
                 className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg w-full sm:w-auto"
               >
                 <i className="fas fa-plus-circle"></i> Upload Agreement
@@ -297,7 +481,7 @@ const Agreements = () => {
                         </td>
                         <td className="px-3 md:px-4 py-2 md:py-3">
                           <span className={`px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-semibold ${getFolderClass(document.folder || document.type)} whitespace-nowrap`}>
-                          {document.folder_name || document.folder || document.type || '-'}
+                            {document.folder_name || document.folder || document.type || '-'}
                           </span>
                         </td>
                         <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400 max-w-[200px] truncate" title={document.description}>
@@ -307,12 +491,12 @@ const Agreements = () => {
                           <span className="inline-flex items-center gap-1 md:gap-1.5 bg-gray-100 dark:bg-gray-700 px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs whitespace-nowrap">
                             <i className="fas fa-share-alt text-gray-500 text-[8px] md:text-xs"></i>
                             <span>
-                            {document.shared_users?.length > 0
-                              ? document.shared_users.map(u => u.name).join(', ')
-                              : document.share_with?.length > 0
-                              ? document.share_with.join(', ')
-                              : '-'}
-                          </span>
+                              {document.shared_users?.length > 0
+                                ? document.shared_users.map((u) => u.name).join(', ')
+                                : document.share_with?.length > 0
+                                ? document.share_with.join(', ')
+                                : '-'}
+                            </span>
                           </span>
                         </td>
                         <td className={`px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm ${getExpiryClass(document.expiry_date)} whitespace-nowrap`}>
@@ -320,21 +504,29 @@ const Agreements = () => {
                         </td>
                         <td className="px-3 md:px-4 py-2 md:py-3">
                           <div className="flex gap-1 md:gap-2">
-                            <button 
+                            <button
                               onClick={() => handleViewDocument(document.file_path)}
                               className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-blue-500 transition-colors"
                               title="View"
                             >
                               <i className="fas fa-eye text-xs md:text-sm"></i>
                             </button>
-                            <Link 
-                              to={`/documents/edit-document/${document.id}`}
-                              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-amber-500 transition-colors"
+                            <button
+                              onClick={() => handleDownloadDocument(document.file_path, document.name)}
+                              className="p-1.5 rounded-lg hover:bg-teal-50 dark:hover:bg-teal-900/20 text-teal-500 transition-colors"
+                              title="Download"
+                            >
+                              <i className="fas fa-download text-xs md:text-sm"></i>
+                            </button>
+                            {/* ── EDIT BUTTON — opens inline modal ── */}
+                            <button
+                              onClick={() => handleEditClick(document)}
+                              className="p-1.5 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-500 transition-colors"
                               title="Edit"
                             >
                               <i className="fas fa-edit text-xs md:text-sm"></i>
-                            </Link>
-                            <button 
+                            </button>
+                            <button
                               onClick={() => handleDeleteClick(document)}
                               className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500 transition-colors"
                               title="Delete"
@@ -348,7 +540,7 @@ const Agreements = () => {
                   ) : (
                     <tr>
                       <td colSpan="7" className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                        No documents found. Click "Upload Document" to add one.
+                        No documents found. Click "Upload Agreement" to add one.
                       </td>
                     </tr>
                   )}
@@ -369,12 +561,20 @@ const Agreements = () => {
         </main>
       </div>
 
+      {/* ── Edit Modal ── */}
+      <EditModal
+        isOpen={editOpen}
+        document={editDocument}
+        folders={folders}
+        onClose={() => { setEditOpen(false); setEditDocument(null); }}
+        onSave={handleEditSave}
+        loading={editLoading}
+      />
+
+      {/* ── Delete Confirm Modal ── */}
       <ConfirmModal
         isOpen={confirmOpen}
-        onClose={() => {
-          setConfirmOpen(false);
-          setSelectedDocument(null);
-        }}
+        onClose={() => { setConfirmOpen(false); setSelectedDocument(null); }}
         onConfirm={handleConfirmDelete}
         title="Delete Document"
         message={`Are you sure you want to delete "${selectedDocument?.name}"? This action cannot be undone.`}

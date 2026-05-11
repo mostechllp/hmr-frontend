@@ -7,6 +7,7 @@ import EntriesSelector from "../components/common/EntriesSelector";
 import UploadAttendanceModal from "../components/attendance/UploadAttendanceModal";
 import { showToast } from "../components/common/Toast";
 import Pagination from "../components/common/Paginations";
+import CustomDatePicker from "../components/common/CustomDatePicker";
 import {
   fetchAttendanceRecords,
   uploadAttendanceFile,
@@ -36,6 +37,9 @@ const Attendances = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [companyFilter, setCompanyFilter] = useState("all");
   const [nameFilter, setNameFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("all_time");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
@@ -43,6 +47,91 @@ const Attendances = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [refreshLoading, setRefreshLoading] = useState(false);
   const [pollingInterval, setPollingInterval] = useState(null);
+
+  const formatDate = (date) => date.toISOString().split("T")[0];
+
+  const getDateRangeFromFilter = () => {
+    const today = new Date();
+    const currentDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+    switch (dateFilter) {
+      case "today": {
+        const date = formatDate(currentDay);
+        return { startDate: date, endDate: date };
+      }
+      case "yesterday": {
+        const yesterday = new Date(currentDay);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const date = formatDate(yesterday);
+        return { startDate: date, endDate: date };
+      }
+      case "last_week": {
+        const weekStart = new Date(currentDay);
+        weekStart.setDate(weekStart.getDate() - 6);
+        return { startDate: formatDate(weekStart), endDate: formatDate(currentDay) };
+      }
+      case "last_month": {
+        const firstDayLastMonth = new Date(
+          currentDay.getFullYear(),
+          currentDay.getMonth() - 1,
+          1,
+        );
+        const lastDayLastMonth = new Date(
+          currentDay.getFullYear(),
+          currentDay.getMonth(),
+          0,
+        );
+        return {
+          startDate: formatDate(firstDayLastMonth),
+          endDate: formatDate(lastDayLastMonth),
+        };
+      }
+      case "custom":
+        return { startDate: fromDate || undefined, endDate: toDate || undefined };
+      case "all_time":
+      default:
+        return { startDate: undefined, endDate: undefined };
+    }
+  };
+
+  const { startDate, endDate } = getDateRangeFromFilter();
+
+  const parseAttendanceDate = (dateValue) => {
+    if (!dateValue) return null;
+    const rawDate = String(dateValue).trim();
+    const directDate = new Date(rawDate);
+
+    if (!Number.isNaN(directDate.getTime())) {
+      return new Date(
+        directDate.getFullYear(),
+        directDate.getMonth(),
+        directDate.getDate(),
+      );
+    }
+
+    // Fallback for common dd-mm-yyyy or dd/mm/yyyy date formats.
+    const parts = rawDate.split(/[-/]/);
+    if (parts.length === 3) {
+      const [first, second, third] = parts;
+      const day = Number(first);
+      const month = Number(second);
+      const year = Number(third);
+
+      if (
+        Number.isInteger(day) &&
+        Number.isInteger(month) &&
+        Number.isInteger(year) &&
+        month >= 1 &&
+        month <= 12 &&
+        day >= 1 &&
+        day <= 31
+      ) {
+        return new Date(year, month - 1, day);
+      }
+    }
+
+    return null;
+  };
 
   useEffect(() => {
     const checkMobile = () => {
@@ -61,7 +150,9 @@ const Attendances = () => {
           page: currentPage, 
           per_page: perPage,
           company: companyFilter !== 'all' ? companyFilter : undefined,
-          search: searchTerm || undefined
+          search: searchTerm || undefined,
+          start_date: startDate,
+          end_date: endDate,
         })
       );
       await dispatch(fetchPunchInToday());
@@ -71,7 +162,7 @@ const Attendances = () => {
       await dispatch(fetchAbsentees());
     };
     fetchData();
-  }, [dispatch, currentPage, perPage, companyFilter, searchTerm]);
+  }, [dispatch, currentPage, perPage, companyFilter, searchTerm, startDate, endDate]);
 
   // Poll for upload status - persists across navigation
   useEffect(() => {
@@ -129,7 +220,9 @@ const Attendances = () => {
             page: currentPage, 
             per_page: perPage,
             company: companyFilter !== 'all' ? companyFilter : undefined,
-            search: searchTerm || undefined
+            search: searchTerm || undefined,
+            start_date: startDate,
+            end_date: endDate,
           })
         ),
         dispatch(fetchPunchInToday()),
@@ -146,9 +239,33 @@ const Attendances = () => {
     }
   };
 
-  // Get filtered records - now just returns the records from API
+  const isDateInRange = (recordDate) => {
+    const parsedRecordDate = parseAttendanceDate(recordDate);
+    if (!parsedRecordDate) return false;
+
+    const parsedStartDate = startDate ? parseAttendanceDate(startDate) : null;
+    const parsedEndDate = endDate ? parseAttendanceDate(endDate) : null;
+
+    if (parsedStartDate && parsedRecordDate < parsedStartDate) return false;
+    if (parsedEndDate && parsedRecordDate > parsedEndDate) return false;
+    return true;
+  };
+
+  // Keep a frontend fallback filter in case backend ignores date params.
   const getFilteredRecords = () => {
-    return records;
+    return records.filter((record) => {
+      const employeeName = (record.employeeName || "").toLowerCase();
+      const hasNameMatch = !nameFilter.trim()
+        ? true
+        : employeeName.includes(nameFilter.trim().toLowerCase());
+
+      const hasDateMatch =
+        dateFilter === "all_time"
+          ? true
+          : isDateInRange(record.date);
+
+      return hasNameMatch && hasDateMatch;
+    });
   };
 
   const filteredRecords = getFilteredRecords();
@@ -201,6 +318,37 @@ const Attendances = () => {
 
   const handleNameFilterChange = (e) => {
     setNameFilter(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleDateFilterChange = (e) => {
+    const nextValue = e.target.value;
+    setDateFilter(nextValue);
+    setCurrentPage(1);
+
+    if (nextValue !== "custom") {
+      setFromDate("");
+      setToDate("");
+    }
+  };
+
+  const handleCustomDateChange = (e) => {
+    const { id, value } = e.target;
+    if (id === "fromDate") {
+      setFromDate(value);
+      // Keep range valid if user picks a later From date.
+      if (toDate && value && parseAttendanceDate(toDate) < parseAttendanceDate(value)) {
+        setToDate("");
+      }
+    }
+    if (id === "toDate") {
+      // Ignore invalid To date before From date.
+      if (fromDate && value && parseAttendanceDate(value) < parseAttendanceDate(fromDate)) {
+        showToast("To date cannot be before From date", "warning");
+        return;
+      }
+      setToDate(value);
+    }
     setCurrentPage(1);
   };
 
@@ -353,7 +501,49 @@ const Attendances = () => {
           </div>
 
           {/* Filters */}
-          <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-5">
+          <div className="flex flex-col gap-3 mb-5">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-3">
+              <select
+                value={dateFilter}
+                onChange={handleDateFilterChange}
+                className="w-56 max-w-full shrink-0 px-3 md:px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs md:text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:border-green-500"
+              >
+                <option value="all_time">All Time</option>
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="last_week">Last Week</option>
+                <option value="last_month">Last Month</option>
+                <option value="custom">Custom</option>
+              </select>
+
+              {dateFilter === "custom" && (
+                <>
+                  <div className="w-full sm:w-52">
+                    <label className="block text-[11px] md:text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      From
+                    </label>
+                    <CustomDatePicker
+                      id="fromDate"
+                      value={fromDate}
+                      onChange={handleCustomDateChange}
+                    />
+                  </div>
+
+                  <div className="w-full sm:w-52">
+                    <label className="block text-[11px] md:text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      To
+                    </label>
+                    <CustomDatePicker
+                      id="toDate"
+                      value={toDate}
+                      onChange={handleCustomDateChange}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row flex-wrap gap-3">
             <select
               value={companyFilter}
               onChange={handleCompanyFilterChange}
@@ -384,6 +574,7 @@ const Attendances = () => {
               ></i>
               <span className="hidden sm:inline">Refresh</span>
             </button>
+            </div>
           </div>
 
           {/* Actions Bar */}
