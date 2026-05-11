@@ -8,14 +8,14 @@ export const fetchTaskReports = createAsyncThunk(
       const response = await apiClient.get("/admin/task-reports");
       // The API returns data in response.data.data.data (paginated structure)
       const rawData = response.data.data.data || [];
-      
+
       // Transform snake_case from API to camelCase for frontend consistency
       return rawData.map(item => ({
         id: item.id,
         employee_id: item.employee_id,
         date: item.date,
-        employee: item.employee 
-          ? `${item.employee.first_name || ""} ${item.employee.last_name || ""}`.trim() 
+        employee: item.employee
+          ? `${item.employee.first_name || ""} ${item.employee.last_name || ""}`.trim()
           : "N/A",
         tasksCompleted: item.tasks_completed || "",
         planForTomorrow: item.plan_tomorrow || "",
@@ -118,8 +118,8 @@ const taskReportSlice = createSlice({
           id: item.id,
           employee_id: item.employee_id,
           date: item.date,
-          employee: item.employee 
-            ? `${item.employee.first_name || ""} ${item.employee.last_name || ""}`.trim() 
+          employee: item.employee
+            ? `${item.employee.first_name || ""} ${item.employee.last_name || ""}`.trim()
             : "N/A",
           tasksCompleted: item.tasks_completed || "",
           planForTomorrow: item.plan_tomorrow || "",
@@ -141,8 +141,8 @@ const taskReportSlice = createSlice({
             id: item.id,
             employee_id: item.employee_id,
             date: item.date,
-            employee: item.employee 
-              ? `${item.employee.first_name || ""} ${item.employee.last_name || ""}`.trim() 
+            employee: item.employee
+              ? `${item.employee.first_name || ""} ${item.employee.last_name || ""}`.trim()
               : state.taskReports[index].employee,
             tasksCompleted: item.tasks_completed || "",
             planForTomorrow: item.plan_tomorrow || "",
@@ -159,4 +159,4 @@ const taskReportSlice = createSlice({
 });
 
 export const { clearError } = taskReportSlice.actions;
-export default taskReportSlice.reducer;
+export default taskReportSlice.reducer;

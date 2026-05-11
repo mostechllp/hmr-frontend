@@ -199,14 +199,7 @@ const TaskReports = () => {
             </div>
           )}
 
-          {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-xl mb-6 flex items-center gap-3 text-red-600 dark:text-red-400">
-              <i className="fas fa-exclamation-circle"></i>
-              <p className="text-sm font-medium">{error}</p>
-            </div>
-          )}
-
-          {!loading && !error && taskReports.length === 0 && (
+          {!loading && (error || taskReports.length === 0) && (
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center shadow-soft mb-6">
               <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
                 <i className="fas fa-clipboard-list text-gray-400 text-2xl"></i>

@@ -7,16 +7,16 @@ export const fetchAdminWFHRequests = createAsyncThunk(
   async (params = {}, { rejectWithValue }) => {
     try {
       const response = await apiClient.get("/admin/wfh-requests", { params });
-      
+
       // Handle Laravel-style pagination (data.data.data) or simple array (data.data)
       const rawData = response.data.data.data || response.data.data || [];
-      
+
       // Transform data for frontend consistency
       const transformedData = rawData.map(item => ({
         id: item.id,
         employee_id: item.employee_id,
-        employeeName: item.employee 
-          ? `${item.employee.first_name || ""} ${item.employee.last_name || ""}`.trim() 
+        employeeName: item.employee
+          ? `${item.employee.first_name || ""} ${item.employee.last_name || ""}`.trim()
           : (item.employee_name || "N/A"),
         date: item.date,
         reason: item.reason || "",
@@ -60,16 +60,24 @@ export const fetchWFHRequestById = createAsyncThunk(
 // Update WFH request status
 export const updateWFHRequestStatus = createAsyncThunk(
   "adminWfh/updateStatus",
-  async ({ id, status }, { rejectWithValue }) => {
+  async ({ id, status, processedBy }, { rejectWithValue }) => {
     try {
       // POST request according to the API image provided
-      const response = await apiClient.post(`/admin/wfh-requests/${id}/status`, { status });
-      
+      const response = await apiClient.post(`/admin/wfh-requests/${id}/status`, {
+        status,
+        processed_by: processedBy || "Admin"
+      });
+
       if (response.data?.status === "success") {
         return { id, status };
       }
       return rejectWithValue(response.data?.message || "Failed to update status");
     } catch (error) {
+      if (error.response?.status === 422 && error.response.data?.errors) {
+        const validationErrors = error.response.data.errors;
+        const firstErrorKey = Object.keys(validationErrors)[0];
+        return rejectWithValue(validationErrors[firstErrorKey][0]);
+      }
       return rejectWithValue(
         error.response?.data?.message || "Failed to update status"
       );
@@ -126,7 +134,7 @@ const adminWFHSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       // Fetch by ID
       .addCase(fetchWFHRequestById.pending, (state) => {
         state.loading = true;
@@ -140,7 +148,7 @@ const adminWFHSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       // Update status
       .addCase(updateWFHRequestStatus.pending, (state) => {
         state.loading = true;

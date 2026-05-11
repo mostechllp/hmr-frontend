@@ -43,11 +43,9 @@ const AdminWFH = () => {
   useEffect(() => {
     dispatch(fetchAdminWFHRequests({
       status: filter.status !== 'all' ? filter.status : undefined,
-      search: filter.search || undefined,
-      page: pagination.currentPage,
-      limit: pagination.perPage
+      search: filter.search || undefined
     }));
-  }, [dispatch, filter.status, filter.search, pagination.currentPage, pagination.perPage]);
+  }, [dispatch, filter.status, filter.search]);
 
   useEffect(() => {
     if (error) {
