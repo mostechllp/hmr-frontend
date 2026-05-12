@@ -31,10 +31,8 @@ export const updateUserProfile = createAsyncThunk(
       const lastName = nameParts.slice(1).join(" ") || "";
 
       const formData = new FormData();
-      formData.append("first_name", firstName);
-      formData.append("last_name", lastName);
+      formData.append("username", profileData.fullName); 
       formData.append("name", profileData.fullName); 
-      formData.append("username", profileData.fullName); // fullName now tracks username
       formData.append("email", profileData.email);
       
       if (profileData.profileImage) {
@@ -139,7 +137,7 @@ const authSlice = createSlice({
         const user = action.payload;
         state.user = {
           ...user,
-          name: user.employee?.name || (user.employee?.first_name ? `${user.employee.first_name} ${user.employee.last_name || ''}`.trim() : user.name),
+          name: user.username || user.employee?.name || (user.employee?.first_name ? `${user.employee.first_name} ${user.employee.last_name || ''}`.trim() : user.name),
           avatar: user.employee?.avatar 
             ? `${import.meta.env.VITE_API_URL?.replace("/api", "") || ""}/storage/${user.employee.avatar}`
             : (user.avatar || "https://violet-leopard-500489.hostingersite.com/hr/public/storage/avatars/jnBiWzD1Lt4YMtHS4hK2CS0Pcbo3vSOZw7Xd6px4.jpg"),

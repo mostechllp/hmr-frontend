@@ -20,7 +20,7 @@ const Settings = () => {
   const fileInputRef = useRef(null);
 
   const [profileData, setProfileData] = useState({
-    fullName: user?.employee?.name || user?.name || 'HR Admin',
+    fullName: user?.username || user?.employee?.name || user?.name || 'HR Admin',
     email: user?.email || 'hr@thesay.ae',
   });
 
@@ -43,7 +43,7 @@ const Settings = () => {
   useEffect(() => {
     if (user) {
       setProfileData({
-        fullName: user?.employee?.name || user?.name || 'HR Admin',
+        fullName: user?.username || user?.employee?.name || user?.name || 'HR Admin',
         email: user?.email || 'hr@thesay.ae',
       });
     }
