@@ -52,6 +52,8 @@ const Header = ({ onMenuClick }) => {
       return "Reports";
     } else if (path === "/settings") {
       return "Settings";
+    } else if (path === "/onboarding") {
+      return "Employee Onboarding";
     } else if (path.includes("/employees/add-employee")) {
       return "Add Employee";
     } else if (path.includes("/edit-employee")) {
@@ -80,6 +82,8 @@ const Header = ({ onMenuClick }) => {
       return "View analytics and reports";
     } else if (path === "/settings") {
       return "Configure system settings";
+    } else if (path === "/onboarding") {
+      return "AI-powered employee onboarding";
     } else {
       return "HR Management System";
     }

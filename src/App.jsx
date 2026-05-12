@@ -31,6 +31,7 @@ const Departments = lazy(() => import("./pages/Departments"))
 const TaskReports = lazy(() => import("./pages/TaskReports"));
 const Reports = lazy(() => import('./pages/Reports'));
 const Settings = lazy(() => import("./pages/Settings"));
+const Onboarding = lazy(() => import("./pages/onboarding/Onboarding"));
 
 const PrivateRoute = ({ children }) => {
   const { isAuthenticated, loading } = useSelector((state) => state.auth);
@@ -250,6 +251,14 @@ function App() {
             element={
               <PrivateRoute>
                 <Settings />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/onboarding"
+            element={
+              <PrivateRoute>
+                <Onboarding />
               </PrivateRoute>
             }
           />

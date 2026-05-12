@@ -33,6 +33,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   const navItems = [
     { path: "/dashboard", icon: "fas fa-chart-line", label: "Dashboard" },
     { path: "/employees", icon: "fas fa-users", label: "Employees" },
+    { path: "/onboarding", icon: "fas fa-user-plus", label: "Onboarding" },
     {
       path: "/organizations",
       icon: "fas fa-briefcase",
