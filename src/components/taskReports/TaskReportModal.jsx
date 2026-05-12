@@ -9,7 +9,7 @@ const TaskReportModal = ({ isOpen, onClose, editingReport }) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
-    employee: "",
+    employeeId: "",
     tasksCompleted: "",
     planForTomorrow: "",
     remarks: "",
@@ -20,7 +20,7 @@ const TaskReportModal = ({ isOpen, onClose, editingReport }) => {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
         date: editingReport.date,
-        employee: editingReport.employee,
+        employeeId: editingReport.employee_id || "",
         tasksCompleted: editingReport.tasksCompleted,
         planForTomorrow: editingReport.planForTomorrow,
         remarks: editingReport.remarks || "",
@@ -28,7 +28,7 @@ const TaskReportModal = ({ isOpen, onClose, editingReport }) => {
     } else {
       setFormData({
         date: new Date().toISOString().split('T')[0],
-        employee: "",
+        employeeId: "",
         tasksCompleted: "",
         planForTomorrow: "",
         remarks: "",
@@ -47,7 +47,7 @@ const TaskReportModal = ({ isOpen, onClose, editingReport }) => {
       showToast("Date is required", "error");
       return;
     }
-    if (!formData.employee) {
+    if (!formData.employeeId) {
       showToast("Please select an employee", "error");
       return;
     }
@@ -70,7 +70,7 @@ const TaskReportModal = ({ isOpen, onClose, editingReport }) => {
         })
       );
       if (updateTaskReport.fulfilled.match(result)) {
-        showToast(`Task report for ${formData.employee} updated successfully`, "success");
+        showToast(`Task report updated successfully`, "success");
         onClose();
       } else {
         showToast("Failed to update task report", "error");
@@ -78,7 +78,7 @@ const TaskReportModal = ({ isOpen, onClose, editingReport }) => {
     } else {
       const result = await dispatch(addTaskReport(formData));
       if (addTaskReport.fulfilled.match(result)) {
-        showToast(`Task report for ${formData.employee} added successfully`, "success");
+        showToast(`Task report added successfully`, "success");
         onClose();
       } else {
         showToast("Failed to add task report", "error");
@@ -88,10 +88,6 @@ const TaskReportModal = ({ isOpen, onClose, editingReport }) => {
     setLoading(false);
   };
 
-  // Get unique employee names from employees list or use default list
-  const employeeOptions = employees.length > 0 
-    ? employees.map(emp => emp.name)
-    : ["JITHIN", "FAWZY", "FAHEEM", "ASLAN", "ABHILASH", "AKSHAY", "VIJAY", "SUNEEL"];
 
   if (!isOpen) return null;
 
@@ -135,15 +131,15 @@ const TaskReportModal = ({ isOpen, onClose, editingReport }) => {
               Employee <span className="text-red-500">*</span>
             </label>
             <select
-              name="employee"
-              value={formData.employee}
+              name="employeeId"
+              value={formData.employeeId}
               onChange={handleChange}
               className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
               required
             >
               <option value="">Select Employee</option>
-              {employeeOptions.map((emp) => (
-                <option key={emp} value={emp}>{emp}</option>
+              {employees.map((emp) => (
+                <option key={emp.id} value={emp.id}>{emp.name}</option>
               ))}
             </select>
           </div>

@@ -1,9 +1,11 @@
 import React, { Suspense, lazy, useEffect } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";   
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useTheme } from "./hooks/useTheme";
 import RouteChangeLoader from "./components/common/RouteChangeLoader";
+import Loader from "./components/common/Loader"; // CRITICAL: Loader must be defined for PrivateRoute
 import { useSelector } from "react-redux";
 import GlobalUploadStatus from "./components/common/GlobalUploadStatus";
+import AdminWFH from "./pages/WFH";
 
 // Lazy load pages for better performance
 const Login = lazy(() => import("./pages/Login"));
@@ -28,15 +30,6 @@ const Designations = lazy(() => import("./pages/Designations"));
 const Departments = lazy(() => import("./pages/Departments"))
 const TaskReports = lazy(() => import("./pages/TaskReports"));
 const Reports = lazy(() => import('./pages/Reports'));
-const EmployeeDetailsReport = lazy(() => import('./components/reports/EmployeeDetailsReport'));
-const AttendanceReport = lazy(() => import('./components/reports/AttendanceReport'));
-const LeaveRequestReport = lazy(() => import('./components/reports/LeaveRequestsReports'));
-const PendingLeaveReport = lazy(() => import('./components/reports/PendingLeavesReport'));
-const EmployeeNearestExpiryReport = lazy(() => import('./components/reports/EmployeeNearestExpiryReport'));
-const EmployeeUpcomingRenewalReport = lazy(() => import('./components/reports/EmployeeUpcomingRenewalsReport'));
-const OrgNearestExpiryReport = lazy(() => import('./components/reports/CompanyNearestExpiryReport'));
-const OrgUpcomingRenewalReport = lazy(() => import('./components/reports/CompanyUpcomingRenewalsReport'));
-const AdminWFH = lazy(() => import('./pages/WFH'));
 const Settings = lazy(() => import("./pages/Settings"));
 
 const PrivateRoute = ({ children }) => {
@@ -62,74 +55,76 @@ function App() {
 
   return (
     <RouteChangeLoader>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/login" element={<Login />} />
-        <Route
-          path="/dashboard"
-          element={
-            <PrivateRoute>
-              <Dashboard />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/employees"
-          element={
-            <PrivateRoute>
-              <Employees />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/employees/add-employee"
-          element={
-            <PrivateRoute>
-              <AddEmployee />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/employees/edit/:id"
-          element={
-            <PrivateRoute>
-              <EditEmployee />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/employees/:id"
-          element={
-            <PrivateRoute>
-              <EmployeeDetails />
-            </PrivateRoute>
-          }
-        />
-        
-        <Route
-          path="/organizations"
-          element={
-            <PrivateRoute>
-              <Organizations />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/organizations/add-organization"
-          element={
-            <PrivateRoute>
-              <AddOrganization />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/organizations/edit-organization/:id"
-          element={
-            <PrivateRoute>
-              <EditOrganization />
-            </PrivateRoute>
-          }
-        />
+      {/* Suspense is required for React.lazy components to work correctly */}
+      <Suspense fallback={<Loader fullScreen />}>
+        <Routes>
+          <Route path="/" element={<Login />} />
+          <Route path="/login" element={<Login />} />
+          <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/employees"
+            element={
+              <PrivateRoute>
+                <Employees />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/employees/add-employee"
+            element={
+              <PrivateRoute>
+                <AddEmployee />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/employees/edit/:id"
+            element={
+              <PrivateRoute>
+                <EditEmployee />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/employees/:id"
+            element={
+              <PrivateRoute>
+                <EmployeeDetails />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/organizations"
+            element={
+              <PrivateRoute>
+                <Organizations />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/organizations/add-organization"
+            element={
+              <PrivateRoute>
+                <AddOrganization />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/organizations/edit-organization/:id"
+            element={
+              <PrivateRoute>
+                <EditOrganization />
+              </PrivateRoute>
+            }
+          />
           <Route
             path="/organizations/:organizationId/companies"
             element={
@@ -138,183 +133,128 @@ function App() {
               </PrivateRoute>
             }
           />
-        <Route
-          path="/organizations/:organizationId/add-company"
-          element={
-            <PrivateRoute>
-              <AddCompany />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/organizations/:organizationId/edit-company/:id"
-          element={
-            <PrivateRoute>
-              <EditCompany />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/agreements"
-          element={
-            <PrivateRoute>
-              <Agreements />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/agreements/add-agreement"
-          element={
-            <PrivateRoute>
-              <AddAgreement />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/agreements/add-document"
-          element={
-            <PrivateRoute>
-              <AddDocument />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/attendances"
-          element={
-            <PrivateRoute>
-              <Attendances />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/designations"
-          element={
-            <PrivateRoute>
-              <Designations />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/departments"
-          element={
-            <PrivateRoute>
-              <Departments />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/task-reports"
-          element={
-            <PrivateRoute>
-              <TaskReports />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/reports"
-          element={
-            <PrivateRoute>
-              <Reports />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/reports/employee-details"
-          element={
-            <PrivateRoute>
-              <EmployeeDetailsReport />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/reports/attendance-reports"
-          element={
-            <PrivateRoute>
-              <AttendanceReport />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/reports/leave-requests-reports"
-          element={
-            <PrivateRoute>
-              <LeaveRequestReport />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/reports/pending-leaves-reports"
-          element={
-            <PrivateRoute>
-              <PendingLeaveReport />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/reports/employee-near-expiry"
-          element={
-            <PrivateRoute>
-              <EmployeeNearestExpiryReport />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/reports/employee-upcoming-renewals"
-          element={
-            <PrivateRoute>
-              <EmployeeUpcomingRenewalReport />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/reports/organization-near-expiry"
-          element={
-            <PrivateRoute>
-              <OrgNearestExpiryReport />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/reports/organization-upcoming-renewals"
-          element={
-            <PrivateRoute>
-              <OrgUpcomingRenewalReport />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/leaves"
-          element={
-            <PrivateRoute>
-              <Leaves />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/leaves/leave-types"
-          element={
-            <PrivateRoute>
-              <LeaveTypeManagement />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/wfh"
-          element={
-            <PrivateRoute>
-              <AdminWFH />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <PrivateRoute>
-              <Settings />
-            </PrivateRoute>
-          }
-        />
-      </Routes>
+          <Route
+            path="/organizations/:organizationId/add-company"
+            element={
+              <PrivateRoute>
+                <AddCompany />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/organizations/:organizationId/edit-company/:id"
+            element={
+              <PrivateRoute>
+                <EditCompany />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/agreements"
+            element={
+              <PrivateRoute>
+                <Agreements />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/agreements/add-agreement"
+            element={
+              <PrivateRoute>
+                <AddAgreement />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/agreements/add-document"
+            element={
+              <PrivateRoute>
+                <AddDocument />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/attendances"
+            element={
+              <PrivateRoute>
+                <Attendances />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/designations"
+            element={
+              <PrivateRoute>
+                <Designations />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/departments"
+            element={
+              <PrivateRoute>
+                <Departments />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/task-reports"
+            element={
+              <PrivateRoute>
+                <TaskReports />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <PrivateRoute>
+                <Reports />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/leaves"
+            element={
+              <PrivateRoute>
+                <Leaves />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/leaves/leave-types"
+            element={
+              <PrivateRoute>
+                <LeaveTypeManagement />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/wfh"
+            element={
+              <PrivateRoute>
+                <AdminWFH />
+              </PrivateRoute>
+            }
+          />
+          {/* <Route
+            path="/reports"
+            element={
+              <PrivateRoute>
+                <Reports />
+              </PrivateRoute>
+            }
+          /> */}
+          <Route
+            path="/settings"
+            element={
+              <PrivateRoute>
+                <Settings />
+              </PrivateRoute>
+            }
+          />
+        </Routes>
+      </Suspense>
       <GlobalUploadStatus />
     </RouteChangeLoader>
   );
