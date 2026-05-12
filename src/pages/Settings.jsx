@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import Sidebar from '../components/common/Sidebar';
 import Header from '../components/common/Header';
 import { showToast } from '../components/common/Toast';
-// import { updateUserProfile, changePassword } from '../store/slices/authSlice';
+import { updateUserProfile, changePassword } from '../store/slices/authSlice';
 
 const Settings = () => {
-//   const dispatch = useDispatch();
+  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const [loading, setLoading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -16,12 +16,12 @@ const Settings = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const fileInputRef = useRef(null);
-  
+
   const [profileData, setProfileData] = useState({
-    fullName: user?.name || 'HR Admin',
+    fullName: user?.username || 'HR Admin',
     email: user?.email || 'hr@thesay.ae',
   });
-  
+
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -36,6 +36,16 @@ const Settings = () => {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        fullName: user.username || '',
+        email: user.email || '',
+        profileImage: null,
+      });
+    }
+  }, [user]);
 
   const handleProfileChange = (e) => {
     setProfileData({ ...profileData, [e.target.id]: e.target.value });
@@ -59,7 +69,7 @@ const Settings = () => {
       const reader = new FileReader();
       reader.onload = (event) => {
         setLogoPreview(event.target.result);
-        showToast('Profile image updated successfully!', 'success');
+        setProfileData(prev => ({ ...prev, profileImage: file }));
       };
       reader.readAsDataURL(file);
     }
@@ -79,16 +89,16 @@ const Settings = () => {
       showToast('Please enter a valid email address', 'error');
       return;
     }
-    
+
     setLoading(true);
-    // const result = await dispatch(updateUserProfile(profileData));
-    setLoading(false);
-    
-    // if (updateUserProfile.fulfilled.match(result)) {
-    //   showToast('Profile updated successfully!', 'success');
-    // } else {
-    //   showToast('Failed to update profile', 'error');
-    // }
+    try {
+      await dispatch(updateUserProfile(profileData)).unwrap();
+      showToast('Profile updated successfully!', 'success');
+    } catch (error) {
+      showToast(error || 'Failed to update profile', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChangePassword = async (e) => {
@@ -109,21 +119,21 @@ const Settings = () => {
       showToast('New passwords do not match', 'error');
       return;
     }
-    
+
     setLoading(true);
-    // const result = await dispatch(changePassword(passwordData));
-    setLoading(false);
-    
-    // if (changePassword.fulfilled.match(result)) {
-    //   showToast('Password changed successfully!', 'success');
-    //   setPasswordData({
-    //     currentPassword: '',
-    //     newPassword: '',
-    //     confirmPassword: '',
-    //   });
-    // } else {
-    //   showToast('Current password is incorrect', 'error');
-    // }
+    try {
+      await dispatch(changePassword(passwordData)).unwrap();
+      showToast('Password changed successfully!', 'success');
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+    } catch (error) {
+      showToast(error || 'Current password is incorrect', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -133,7 +143,7 @@ const Settings = () => {
         <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
         <main className="content px-4 py-4 md:px-6 md:py-6 w-full overflow-x-hidden">
           <div className="max-w-6xl mx-auto w-full">
-            
+
             {/* Header */}
             <div className="mb-4 md:mb-6">
               <h2 className="text-xl md:text-3xl font-bold bg-gradient-to-r from-gray-800 to-green-600 dark:from-gray-200 dark:to-green-400 bg-clip-text text-transparent">
@@ -146,7 +156,7 @@ const Settings = () => {
 
             {/* Two Column Layout - Responsive */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-              
+
               {/* Left Column - Profile Details */}
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 md:p-6 shadow-soft">
                 <div className="flex items-center gap-3 pb-3 md:pb-4 border-b border-gray-200 dark:border-gray-700 mb-4 md:mb-6">
@@ -160,7 +170,7 @@ const Settings = () => {
                 <div className="flex flex-col sm:flex-row gap-4 md:gap-6 mb-4 md:mb-6">
                   <div className="text-center">
                     <img
-                      src={logoPreview || "https://violet-leopard-500489.hostingersite.com/hr/public/storage/avatars/jnBiWzD1Lt4YMtHS4hK2CS0Pcbo3vSOZw7Xd6px4.jpg"}
+                      src={logoPreview || (user?.employee?.avatar ? `${import.meta.env.VITE_API_URL?.replace("/api", "") || ""}/storage/${user.employee.avatar}` : user?.avatar) || "https://violet-leopard-500489.hostingersite.com/hr/public/storage/avatars/jnBiWzD1Lt4YMtHS4hK2CS0Pcbo3vSOZw7Xd6px4.jpg"}
                       alt="Profile"
                       className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-green-500 shadow-md mx-auto"
                     />
@@ -170,7 +180,7 @@ const Settings = () => {
                       onClick={() => fileInputRef.current.click()}
                       className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-gray-100 dark:bg-gray-700 rounded-full text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
                     >
-                      <i className="fas fa-camera text-xs md:text-sm"></i> 
+                      <i className="fas fa-camera text-xs md:text-sm"></i>
                       <span>Choose Image</span>
                     </button>
                     <div className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 mt-2">
@@ -200,7 +210,7 @@ const Settings = () => {
                       placeholder="Enter your full name"
                     />
                   </div>
-                  
+
                   <div className="mb-4 md:mb-6">
                     <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                       Email Address
@@ -261,7 +271,7 @@ const Settings = () => {
                       </button>
                     </div>
                   </div>
-                  
+
                   <div className="mb-3 md:mb-4">
                     <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                       New Password
@@ -284,7 +294,7 @@ const Settings = () => {
                       </button>
                     </div>
                   </div>
-                  
+
                   <div className="mb-4 md:mb-6">
                     <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                       Confirm New Password
