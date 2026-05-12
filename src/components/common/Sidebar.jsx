@@ -11,6 +11,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   const { user } = useSelector((state) => state.auth);
   const navigate = useNavigate();
 
+  console.log("user: ", user)
+
   useEffect(() => {
     const checkMobile = () => {
       const mobile = window.innerWidth < 768;
@@ -56,6 +58,31 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     } catch (err) {
       console.error("Logout failed", err);
     }
+  };
+
+  // Get user's display name
+  const getUserName = () => {
+    if (user?.employee?.name) return user.employee.name;
+    if (user?.name) return user.name;
+    if (user?.username) return user.username;
+    return "HR Admin";
+  };
+
+  // Get user's avatar URL
+  const getUserAvatar = () => {
+    if (user?.avatar) return user.avatar;
+    // Generate avatar from name if not available
+    const name = getUserName();
+    const encodedName = encodeURIComponent(name);
+    return `https://ui-avatars.com/api/?name=${encodedName}&color=ffffff&background=22c55e`;
+  };
+
+  // Get user's role
+  const getUserRole = () => {
+    if (user?.type) return user.type.charAt(0).toUpperCase() + user.type.slice(1);
+    if (user?.role) return user.role;
+    if (user?.roles && user.roles.length > 0) return user.roles[0];
+    return "Administrator";
   };
 
   return (
@@ -125,8 +152,19 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         {/* User Section - Fixed at bottom */}
         <div className="flex-shrink-0 p-4 border-t border-white/10">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-9 h-9 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center font-bold text-white flex-shrink-0">
-              {user?.name?.charAt(0) || "HR"}
+            {/* Avatar Image */}
+            <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-r from-green-500 to-green-600">
+              <img
+                src={getUserAvatar()}
+                alt={getUserName()}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Fallback to initials if image fails to load
+                  e.target.style.display = "none";
+                  e.target.parentElement.innerHTML = getUserName().charAt(0).toUpperCase();
+                  e.target.parentElement.classList.add("flex", "items-center", "justify-center", "font-bold", "text-white");
+                }}
+              />
             </div>
             <div
               className={`transition-opacity duration-200 flex-1 min-w-0 ${
@@ -136,10 +174,10 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               }`}
             >
               <h4 className="text-sm font-semibold text-white truncate">
-                {user?.name || "HR Admin"}
+                {getUserName()}
               </h4>
               <p className="text-xs text-white/50 truncate">
-                {user?.role || "Administrator"}
+                {getUserRole()}
               </p>
               <button
                 onClick={handleLogout}

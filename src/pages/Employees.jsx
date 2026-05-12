@@ -8,9 +8,6 @@ import EntriesSelector from "../components/common/EntriesSelector";
 import { showToast } from "../components/common/Toast";
 import {
   fetchEmployees,
-  setCurrentPage,
-  setPerPage,
-  setFilters,
   deleteEmployee,
   updateEmployeeStatus,
 } from "../store/slices/employeeSlice";
@@ -19,12 +16,15 @@ import ConfirmModal from "../components/common/ConfirmModal";
 
 const Employees = () => {
   const dispatch = useDispatch();
-  const { employees, currentPage, perPage, filters } = useSelector(
-    (state) => state.employees,
+  const { employees = [], loading } = useSelector(
+    (state) => state.employees || { employees: [] },
   );
-  console.log("Employees: ", employees)
+  
+  // Local state for filtering and pagination (like Agreements component)
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   
@@ -44,16 +44,45 @@ const Employees = () => {
 
   useEffect(() => {
     dispatch(fetchEmployees());
-  }, [dispatch, currentPage, perPage, filters, statusFilter]);
+  }, [dispatch]);
+
+  // Filter employees based on status and search term
+  const getFilteredEmployees = () => {
+    let filtered = Array.isArray(employees) ? employees : [];
+    
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((emp) => emp.status === statusFilter);
+    }
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (emp) =>
+          (emp.name || "").toLowerCase().includes(searchLower) ||
+          (emp.designation || "").toLowerCase().includes(searchLower) ||
+          (emp.department || "").toLowerCase().includes(searchLower)
+      );
+    }
+    return filtered;
+  };
+
+  const filteredEmployees = getFilteredEmployees();
+  const totalFiltered = filteredEmployees.length;
+  const totalPages = Math.ceil(totalFiltered / perPage);
+  const start = (currentPage - 1) * perPage;
+  const pageEmployees = filteredEmployees.slice(start, start + perPage);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCurrentPage(1);
+  }, [statusFilter, searchTerm, perPage]);
 
   const handleSearch = (value) => {
     setSearchTerm(value);
-    dispatch(setFilters({ search: value }));
   };
 
   const handleStatusFilter = (status) => {
     setStatusFilter(status);
-    dispatch(setFilters({ status }));
   };
 
   const handleDeleteClick = (employee) => {
@@ -87,29 +116,9 @@ const Employees = () => {
     );
     if (updateEmployeeStatus.fulfilled.match(result)) {
       showToast(`Employee status updated to ${newStatus}`, "success");
+      dispatch(fetchEmployees()); // Refresh to get updated data
     }
   };
-
-  const getFilteredEmployees = () => {
-    let filtered = employees;
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((emp) => emp.status === statusFilter);
-    }
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (emp) =>
-          emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          emp.designation.toLowerCase().includes(searchTerm.toLowerCase()),
-      );
-    }
-    return filtered;
-  };
-
-  const filteredEmployees = getFilteredEmployees();
-  const totalFiltered = filteredEmployees.length;
-  const totalPages = Math.ceil(totalFiltered / perPage);
-  const start = (currentPage - 1) * perPage;
-  const pageEmployees = filteredEmployees.slice(start, start + perPage);
 
   const activeCount = employees.filter((e) => e.status === "Active").length;
   const inactiveCount = employees.filter((e) => e.status === "Inactive").length;
@@ -228,13 +237,16 @@ const Employees = () => {
           <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 mb-5">
             <EntriesSelector
               value={perPage}
-              onChange={(val) => dispatch(setPerPage(val))}
+              onChange={(val) => {
+                setPerPage(val);
+                setCurrentPage(1); // Reset to first page when changing entries per page
+              }}
             />
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <SearchBar
                 value={searchTerm}
                 onChange={handleSearch}
-                placeholder="Search by name..."
+                placeholder="Search by name, designation or department..."
               />
               <Link
                 to="/employees/add-employee"
@@ -275,95 +287,99 @@ const Employees = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {pageEmployees.map((emp, idx) => (
-                    <tr
-                      key={emp.id}
-                      className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                    >
-                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400 text-center">
-                        {start + idx + 1}
-                      </td>
-                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold text-gray-800 dark:text-gray-200">
-                        {emp.name}
-                      </td>
-                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                        {emp.designation}
-                      </td>
-                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                        {emp.department}
-                      </td>
-                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                        {emp.raw?.user?.company?.company_name || emp.company || '-'}
-                      </td>
-                      <td className="px-3 md:px-4 py-2 md:py-3">
-                        <label className="inline-flex items-center gap-1 md:gap-2 cursor-pointer">
-                          <div className="relative">
-                            <input
-                              type="checkbox"
-                              className="sr-only peer"
-                              checked={emp.status === "Active"}
-                              onChange={() =>
-                                handleStatusToggle(emp.id, emp.status)
-                              }
-                            />
-                            <div className="w-9 h-5 md:w-11 md:h-5 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-green-500 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                  {!loading && pageEmployees.length > 0 ? (
+                    pageEmployees.map((emp, idx) => (
+                      <tr
+                        key={emp.id}
+                        className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                      >
+                        <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400 text-center">
+                          {start + idx + 1}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold text-gray-800 dark:text-gray-200">
+                          {emp.name}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                          {emp.designation}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                          {emp.department}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                          {emp.raw?.user?.company?.company_name || emp.company || '-'}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 md:py-3">
+                          <label className="inline-flex items-center gap-1 md:gap-2 cursor-pointer">
+                            <div className="relative">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={emp.status === "Active"}
+                                onChange={() =>
+                                  handleStatusToggle(emp.id, emp.status)
+                                }
+                              />
+                              <div className="w-9 h-5 md:w-11 md:h-5 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-green-500 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                            </div>
+                            <span
+                              className={`text-[10px] md:text-xs font-semibold ${emp.status === "Active" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                            >
+                              {emp.status}
+                            </span>
+                          </label>
+                        </td>
+                        <td className="px-3 md:px-4 py-2 md:py-3">
+                          <div className="flex gap-1 md:gap-2">
+                            <Link
+                              to={`/employees/${emp.id}`}
+                              className="p-1.5 rounded-lg hover:bg-gray-100 text-blue-500 transition-colors"
+                              title="View Details"
+                            >
+                              <i className="fas fa-eye text-xs md:text-sm"></i>
+                            </Link>
+                            <Link
+                              to={`/employees/edit/${emp.id}`}
+                              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-amber-500 transition-colors"
+                              title="Edit"
+                            >
+                              <i className="fas fa-edit text-xs md:text-sm"></i>
+                            </Link>
+                            <button
+                              onClick={() => handleDeleteClick(emp)}
+                              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500 transition-colors"
+                              title="Delete"
+                            >
+                              <i className="fas fa-trash text-xs md:text-sm"></i>
+                            </button>
                           </div>
-                          <span
-                            className={`text-[10px] md:text-xs font-semibold ${emp.status === "Active" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
-                          >
-                            {emp.status}
-                          </span>
-                        </label>
-                      </td>
-                      <td className="px-3 md:px-4 py-2 md:py-3">
-                        <div className="flex gap-1 md:gap-2">
-                          <Link
-                            to={`/employees/${emp.id}`}
-                            className="p-1.5 rounded-lg hover:bg-gray-100 text-blue-500 transition-colors"
-                            title="View Details"
-                          >
-                            <i className="fas fa-eye text-xs md:text-sm"></i>
-                          </Link>
-                          <Link
-                            to={`/employees/edit/${emp.id}`}
-                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-amber-500 transition-colors"
-                            title="Edit"
-                          >
-                            <i className="fas fa-edit text-xs md:text-sm"></i>
-                          </Link>
-                          <button
-                            onClick={() => handleDeleteClick(emp)}
-                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500 transition-colors"
-                            title="Delete"
-                          >
-                            <i className="fas fa-trash text-xs md:text-sm"></i>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {pageEmployees.length === 0 && (
+                        </td>
+                       </tr>
+                    ))
+                  ) : (
                     <tr>
                       <td
                         colSpan="7"
                         className="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
                       >
-                        No employees found
+                        {loading ? "Loading employees..." : "No employees found"}
                       </td>
                     </tr>
                   )}
                 </tbody>
-              </table>
+               </table>
             </div>
           </div>
 
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={(page) => dispatch(setCurrentPage(page))}
-            totalItems={totalFiltered}
-            itemsPerPage={perPage}
-          />
+          {/* Pagination - Only show if there are items */}
+          {totalFiltered > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              totalItems={totalFiltered}
+              itemsPerPage={perPage}
+            />
+          )}
         </main>
       </div>
 
