@@ -38,6 +38,7 @@ const OrgNearestExpiryReport = lazy(() => import('./components/reports/CompanyNe
 const OrgUpcomingRenewalReport = lazy(() => import('./components/reports/CompanyUpcomingRenewalsReport'));
 const AdminWFH = lazy(() => import('./pages/WFH'));
 const Settings = lazy(() => import("./pages/Settings"));
+const RoleManagement = lazy(() => import("./pages/RoleManagement"));
 
 const PrivateRoute = ({ children }) => {
   const { isAuthenticated, loading } = useSelector((state) => state.auth);
@@ -303,6 +304,14 @@ function App() {
           element={
             <PrivateRoute>
               <AdminWFH />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/role-management"
+          element={
+            <PrivateRoute>
+              <RoleManagement />
             </PrivateRoute>
           }
         />

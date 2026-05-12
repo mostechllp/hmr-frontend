@@ -82,6 +82,8 @@ const Header = ({ onMenuClick }) => {
       return "WFH Requests";
     } else if (path === "/reports") {
       return "Reports";
+    } else if (path === "/role-management") {
+      return "Roles";
     } else if (path === "/settings") {
       return "Settings";
     } else if (path.includes("/employees/add-employee")) {
@@ -128,6 +130,8 @@ const Header = ({ onMenuClick }) => {
       return "Manage leave requests";
     } else if (path === "/reports") {
       return "View analytics and reports";
+    } else if (path === "/role-management") {
+      return "Assign roles and module permissions";
     } else if (path === "/settings") {
       return "Configure system settings";
     } else if (path.includes("/reports/")) {
@@ -223,21 +227,19 @@ const Header = ({ onMenuClick }) => {
           <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full p-1">
             <button
               onClick={() => toggleTheme("light")}
-              className={`w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center transition-all ${
-                theme === "light"
+              className={`w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center transition-all ${theme === "light"
                   ? "bg-white dark:bg-gray-800 shadow-md text-green-500"
                   : "text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
+                }`}
             >
               <i className="fas fa-sun text-xs md:text-sm"></i>
             </button>
             <button
               onClick={() => toggleTheme("dark")}
-              className={`w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center transition-all ${
-                theme === "dark"
+              className={`w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center transition-all ${theme === "dark"
                   ? "bg-white dark:bg-gray-800 shadow-md text-green-500"
                   : "text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
+                }`}
             >
               <i className="fas fa-moon text-xs md:text-sm"></i>
             </button>
@@ -280,11 +282,10 @@ const Header = ({ onMenuClick }) => {
                     notifications.map((notification) => (
                       <div
                         key={notification.id}
-                        className={`p-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer transition-colors ${
-                          !notification.read
+                        className={`p-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer transition-colors ${!notification.read
                             ? "bg-green-50 dark:bg-green-900/20"
                             : ""
-                        } hover:bg-gray-50 dark:hover:bg-gray-700`}
+                          } hover:bg-gray-50 dark:hover:bg-gray-700`}
                         onClick={() => handleMarkAsRead(notification.id)}
                       >
                         <div className="text-sm font-medium text-gray-800 dark:text-gray-200">

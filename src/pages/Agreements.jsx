@@ -8,32 +8,58 @@ import EntriesSelector from '../components/common/EntriesSelector';
 import { showToast } from '../components/common/Toast';
 import Pagination from '../components/common/Paginations';
 import ConfirmModal from '../components/common/ConfirmModal';
-import { fetchDocuments, deleteDocument, clearError, fetchDocumentFolders, updateDocument } from '../store/slices/documentsSlice';
-
+import { fetchDocuments, deleteDocument, clearError, fetchDocumentFolders, updateDocument, fetchShareableUsers, fetchParties } from '../store/slices/documentsSlice';
 // ─── Inline Edit Modal ────────────────────────────────────────────────────────
-const EditModal = ({ isOpen, document, folders, onClose, onSave, loading }) => {
+const EditModal = ({ isOpen, document, folders, shareableUsers, parties, onClose, onSave, loading }) => {
   const [form, setForm] = useState({
     name: '',
     description: '',
     folder: '',
     expiry_date: '',
+    party_id: '',
+    share_with: [], // array of user IDs
   });
 
   useEffect(() => {
     if (document) {
+      // Resolve current share_with IDs
+      const currentShareIds = (() => {
+        if (Array.isArray(document.shared_users) && document.shared_users.length > 0) {
+          return document.shared_users.map((u) => String(u.id)).filter(Boolean);
+        }
+        if (Array.isArray(document.share_with) && document.share_with.length > 0) {
+          return document.share_with
+            .map((item) => String(typeof item === 'object' ? item.id : item))
+            .filter(Boolean);
+        }
+        return [];
+      })();
+
       setForm({
         name: document.name || '',
         description: document.description || '',
-        folder: document.folder || document.type || '',
+        folder: document.folder_name || document.folder || document.type || '',
         expiry_date: document.expiry_date ? document.expiry_date.split('T')[0] : '',
+        party_id: String(document.party_id || ''),
+        share_with: currentShareIds,
       });
     }
   }, [document]);
 
   if (!isOpen || !document) return null;
 
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+
+  // Toggle a user in/out of share_with
+  const toggleShareUser = (userId) => {
+    const id = String(userId);
+    setForm((prev) => ({
+      ...prev,
+      share_with: prev.share_with.includes(id)
+        ? prev.share_with.filter((x) => x !== id)
+        : [...prev.share_with, id],
+    }));
   };
 
   const handleSubmit = (e) => {
@@ -43,16 +69,12 @@ const EditModal = ({ isOpen, document, folders, onClose, onSave, loading }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Modal */}
-      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg border border-gray-200 dark:border-gray-700 overflow-hidden max-h-[90vh] flex flex-col">
+        
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
               <i className="fas fa-edit text-green-600 dark:text-green-400 text-sm"></i>
@@ -62,112 +84,184 @@ const EditModal = ({ isOpen, document, folders, onClose, onSave, loading }) => {
               <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[260px]">{document.name}</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 dark:text-gray-400 transition-colors"
-          >
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 dark:text-gray-400 transition-colors">
             <i className="fas fa-times text-sm"></i>
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+        {/* Scrollable Form Body */}
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+
           {/* Name */}
           <div>
             <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
               Document Name <span className="text-red-500">*</span>
             </label>
             <input
-              type="text"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              required
-              placeholder="Enter document name"
+              type="text" name="name" value={form.name}
+              onChange={handleChange} required placeholder="Enter document name"
               className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
-              Description
-            </label>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Description</label>
             <textarea
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-              rows={3}
-              placeholder="Enter description (optional)"
+              name="description" value={form.description}
+              onChange={handleChange} rows={2} placeholder="Enter description (optional)"
               className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition resize-none"
             />
           </div>
 
           {/* Folder */}
           <div>
-            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
-              Folder
-            </label>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Folder</label>
             <select
-              name="folder"
-              value={form.folder}
-              onChange={handleChange}
+              name="folder" value={form.folder} onChange={handleChange}
               className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
             >
               <option value="">Select folder</option>
               {folders && folders.length > 0
-                ? folders.map((f) => (
-                    <option key={f.name || f} value={f.name || f}>
-                      {f.name || f}
-                    </option>
-                  ))
+                ? folders.map((f) => <option key={f.name || f} value={f.name || f}>{f.name || f}</option>)
                 : ['Agreements', 'HR', 'IT', 'Finance', 'Legal'].map((f) => (
-                    <option key={f} value={f.toLowerCase()}>
-                      {f}
-                    </option>
+                    <option key={f} value={f.toLowerCase()}>{f}</option>
                   ))}
             </select>
           </div>
 
           {/* Expiry Date */}
           <div>
-            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
-              Expiry Date
-            </label>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Expiry Date</label>
             <input
-              type="date"
-              name="expiry_date"
-              value={form.expiry_date}
+              type="date" name="expiry_date" value={form.expiry_date}
               onChange={handleChange}
               className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
             />
           </div>
 
+          {/* Party */}
+          {parties && parties.length > 0 && (
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                <i className="fas fa-building mr-1"></i> Party
+              </label>
+              <select
+                name="party_id"
+                value={form.party_id}
+                onChange={handleChange}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+              >
+                <option value="">No party</option>
+                {parties.map((p) => (
+                  <option key={p.id} value={String(p.id)}>
+                    {p.name || p.company_name || `Party #${p.id}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Share With */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+              <i className="fas fa-share-alt mr-1"></i> Share With
+              {form.share_with.length > 0 && (
+                <span className="ml-2 px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full text-[10px]">
+                  {form.share_with.length} selected
+                </span>
+              )}
+            </label>
+
+            {shareableUsers && shareableUsers.length > 0 ? (
+              <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+                {/* Selected users shown as chips */}
+                {form.share_with.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 p-2 bg-green-50 dark:bg-green-900/10 border-b border-gray-200 dark:border-gray-600">
+                    {form.share_with.map((uid) => {
+                      const user = shareableUsers.find((u) => String(u.id) === uid);
+                      return user ? (
+                        <span
+                          key={uid}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-[10px] font-medium"
+                        >
+                          {user.name}
+                          <button
+                            type="button"
+                            onClick={() => toggleShareUser(uid)}
+                            className="hover:text-red-500 transition-colors"
+                          >
+                            <i className="fas fa-times text-[8px]"></i>
+                          </button>
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
+                )}
+
+                {/* Scrollable user list */}
+                <div className="max-h-36 overflow-y-auto">
+                  {shareableUsers.map((user) => {
+                    const uid = String(user.id);
+                    const isSelected = form.share_with.includes(uid);
+                    return (
+                      <div
+                        key={user.id}
+                        onClick={() => toggleShareUser(uid)}
+                        className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-700 last:border-0 ${
+                          isSelected
+                            ? 'bg-green-50 dark:bg-green-900/20'
+                            : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        {/* Avatar */}
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                          isSelected
+                            ? 'bg-green-500 text-white'
+                            : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
+                        }`}>
+                          {(user.name || user.email || '?')[0].toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">{user.name}</div>
+                          {user.email && (
+                            <div className="text-[10px] text-gray-400 truncate">{user.email}</div>
+                          )}
+                        </div>
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${
+                          isSelected
+                            ? 'bg-green-500 border-green-500 text-white'
+                            : 'border-gray-300 dark:border-gray-500'
+                        }`}>
+                          {isSelected && <i className="fas fa-check text-[8px]"></i>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="px-3 py-2 text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                No users available to share with
+              </div>
+            )}
+          </div>
+
           {/* Actions */}
           <div className="flex gap-3 pt-2">
             <button
-              type="button"
-              onClick={onClose}
+              type="button" onClick={onClose}
               className="flex-1 px-4 py-2 text-sm font-semibold rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
             >
               Cancel
             </button>
             <button
-              type="submit"
-              disabled={loading}
+              type="submit" disabled={loading}
               className="flex-1 px-4 py-2 text-sm font-semibold rounded-lg bg-green-500 hover:bg-green-600 text-white transition shadow-md disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? (
-                <>
-                  <i className="fas fa-spinner fa-spin text-xs"></i>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <i className="fas fa-check text-xs"></i>
-                  Save Changes
-                </>
-              )}
+              {loading
+                ? <><i className="fas fa-spinner fa-spin text-xs"></i> Saving...</>
+                : <><i className="fas fa-check text-xs"></i> Save Changes</>}
             </button>
           </div>
         </form>
@@ -175,12 +269,12 @@ const EditModal = ({ isOpen, document, folders, onClose, onSave, loading }) => {
     </div>
   );
 };
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 const Agreements = () => {
   const dispatch = useDispatch();
-  const { documents: documentsState = [], folders = [], error = null } = useSelector(
-    (state) => state.documents || { documents: [], folders: [], loading: false, error: null }
+  // Update selector to also get shareableUsers and parties
+  const { documents: documentsState = [], folders = [], shareableUsers = [], parties = [], error = null } = useSelector(
+    (state) => state.documents || { documents: [], folders: [], shareableUsers: [], parties: [], loading: false, error: null }
   );
 
   const documents = Array.isArray(documentsState) ? documentsState : [];
@@ -210,6 +304,8 @@ const Agreements = () => {
   useEffect(() => {
     dispatch(fetchDocuments());
     dispatch(fetchDocumentFolders());
+    dispatch(fetchShareableUsers()); // ← add
+    dispatch(fetchParties());
   }, [dispatch]);
 
   useEffect(() => {
@@ -269,23 +365,45 @@ const Agreements = () => {
     setEditOpen(true);
   };
 
-  const handleEditSave = async (id, formData) => {
-    setEditLoading(true);
-    try {
-      const result = await dispatch(updateDocument({ id, data: formData }));
-      if (updateDocument.fulfilled.match(result)) {
-        showToast('Document updated successfully', 'success');
-        setEditOpen(false);
-        setEditDocument(null);
-        dispatch(fetchDocuments());
-      } else {
-        showToast(result.payload || 'Failed to update document', 'error');
-      }
-    } catch {
-      showToast('Failed to update document', 'error');
+ // In Agreements.jsx — EditModal usage, pass onSave with file
+ const handleEditSave = async (id, formValues) => {
+  setEditLoading(true);
+  try {
+    const rawFolder = formValues.folder || '';
+    const selectedFolder = folders.find(
+      (f) =>
+        (f.name || f) === rawFolder ||
+        String(f.name || f).toLowerCase() === String(rawFolder).toLowerCase(),
+    );
+
+    const folderId = selectedFolder?.id ?? editDocument?.folder_id;
+    const payload = {
+      name: formValues.name,
+      description: formValues.description ?? '',
+      folder_id: folderId,
+      expiry_date: formValues.expiry_date || '',
+      type: editDocument?.type || 'agreements',
+      share_with: formValues.share_with || [],      // ← from form now
+      party_id: formValues.party_id || '',           // ← from form now
+    };
+
+    const result = await dispatch(updateDocument({ id, formData: payload }));
+    if (updateDocument.fulfilled.match(result)) {
+      showToast('Document updated successfully', 'success');
+      setEditOpen(false);
+      setEditDocument(null);
+      dispatch(fetchDocuments());
+    } else {
+      showToast(
+        typeof result.payload === 'string' ? result.payload : 'Failed to update document',
+        'error',
+      );
     }
-    setEditLoading(false);
-  };
+  } catch {
+    showToast('Failed to update document', 'error');
+  }
+  setEditLoading(false);
+};
 
   const handleDeleteClick = (document) => {
     setSelectedDocument(document);
@@ -566,6 +684,8 @@ const Agreements = () => {
         isOpen={editOpen}
         document={editDocument}
         folders={folders}
+        shareableUsers={shareableUsers}  // ← add
+        parties={parties}
         onClose={() => { setEditOpen(false); setEditDocument(null); }}
         onSave={handleEditSave}
         loading={editLoading}

@@ -43,8 +43,12 @@ const transformDocumentForAPI = (formData, file) => {
   if (formData.description) {
     formDataToSend.append("description", formData.description);
   }
-  
-  formDataToSend.append("folder_id", formData.folder_id || "");
+
+  // Omit empty folder_id — Laravel treats "" as invalid for exists:folders,id
+  const folderId = formData.folder_id;
+  if (folderId !== undefined && folderId !== null && folderId !== "") {
+    formDataToSend.append("folder_id", folderId);
+  }
   
   if (formData.expiry_date) {
     formDataToSend.append("expiry_date", formData.expiry_date);
@@ -55,7 +59,7 @@ const transformDocumentForAPI = (formData, file) => {
     formDataToSend.append("party_id", formData.party_id);
   }
 
-  if (formData.share_with) {
+  if (formData.share_with?.length) {
     const shareArray = Array.isArray(formData.share_with)
       ? formData.share_with
       : formData.share_with.split(",");
@@ -67,7 +71,7 @@ const transformDocumentForAPI = (formData, file) => {
 
   if (file) {
     formDataToSend.append("file_path", file);
-  }
+  } 
 
   return formDataToSend;
 };
@@ -175,33 +179,36 @@ export const uploadDocument = createAsyncThunk(
       });
       return response.data.data || response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to upload document",
-      );
+      return rejectWithValue(formatDocumentApiError(error, "Failed to upload document"));
     }
   },
 );
 
-// Update document
+function formatDocumentApiError(error, fallback) {
+  const data = error.response?.data;
+  if (data?.errors && typeof data.errors === "object") {
+    const parts = Object.entries(data.errors).flatMap(([key, msgs]) => {
+      const list = Array.isArray(msgs) ? msgs : [msgs];
+      return list.map((m) => `${key}: ${m}`);
+    });
+    if (parts.length) return parts.join(" ");
+  }
+  return data?.message || fallback;
+}
+
+// Update document — route is PUT /api/admin/documents/{id}, but PHP often does not
+// parse multipart bodies on real PUT. Laravel-style POST + _method=PUT sends the
+// same fields the validator expects while the app still treats it as an update.
 export const updateDocument = createAsyncThunk(
   "documents/update",
   async ({ id, formData, file }, { rejectWithValue }) => {
     try {
       const dataToSend = transformDocumentForAPI(formData, file);
-      const response = await apiClient.post(
-        `/admin/documents/${id}?_method=PUT`,
-        dataToSend,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        },
-      );
+      dataToSend.append("_method", "PUT");
+      const response = await apiClient.post(`/admin/documents/${id}`, dataToSend);
       return response.data.data || response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to update document",
-      );
+      return rejectWithValue(formatDocumentApiError(error, "Failed to update document"));
     }
   },
 );
