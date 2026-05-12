@@ -8,18 +8,30 @@ export const fetchAdminWFHRequests = createAsyncThunk(
     try {
       const response = await apiClient.get("/admin/wfh-requests", { params });
       console.log("Admin WFH requests response:", response.data);
-      
+
       if (response.data?.status === "success") {
-        return response.data.data || [];
+        // The actual requests array is inside response.data.data.data
+        // Return both the array and pagination info
+        return {
+          data: response.data.data.data || [], // The WFH requests array
+          pagination: {
+            current_page: response.data.data.current_page,
+            last_page: response.data.data.last_page,
+            per_page: response.data.data.per_page,
+            total: response.data.data.total,
+          },
+        };
       }
-      return rejectWithValue(response.data?.message || "Failed to fetch WFH requests");
+      return rejectWithValue(
+        response.data?.message || "Failed to fetch WFH requests",
+      );
     } catch (error) {
       console.error("Fetch admin WFH error:", error);
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch WFH requests"
+        error.response?.data?.message || "Failed to fetch WFH requests",
       );
     }
-  }
+  },
 );
 
 // Fetch single WFH request
@@ -29,17 +41,19 @@ export const fetchWFHRequestById = createAsyncThunk(
     try {
       const response = await apiClient.get(`/admin/wfh-requests/${id}`);
       console.log("WFH request by ID response:", response.data);
-      
+
       if (response.data?.status === "success") {
         return response.data.data;
       }
-      return rejectWithValue(response.data?.message || "Failed to fetch WFH request");
+      return rejectWithValue(
+        response.data?.message || "Failed to fetch WFH request",
+      );
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch WFH request"
+        error.response?.data?.message || "Failed to fetch WFH request",
       );
     }
-  }
+  },
 );
 
 // Update WFH request status
@@ -47,32 +61,37 @@ export const updateWFHRequestStatus = createAsyncThunk(
   "adminWfh/updateStatus",
   async ({ id, status }, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post(`/admin/wfh-requests/${id}/status`, { status });
+      const response = await apiClient.post(
+        `/admin/wfh-requests/${id}/status`,
+        { status },
+      );
       console.log("Update WFH status response:", response.data);
-      
+
       if (response.data?.status === "success") {
         return { id, status };
       }
-      return rejectWithValue(response.data?.message || "Failed to update status");
+      return rejectWithValue(
+        response.data?.message || "Failed to update status",
+      );
     } catch (error) {
       console.error("Update WFH status error:", error);
       return rejectWithValue(
-        error.response?.data?.message || "Failed to update status"
+        error.response?.data?.message || "Failed to update status",
       );
     }
-  }
+  },
 );
 
 const initialState = {
   requests: [],
   currentRequest: null,
   filter: {
-    status: 'all',
-    search: '',
+    status: "all",
+    search: "",
   },
   pagination: {
     currentPage: 1,
-    perPage: 10,
+    perPage: 5,
   },
   loading: false,
   error: null,
@@ -80,12 +99,12 @@ const initialState = {
 };
 
 const adminWFHSlice = createSlice({
-  name: 'adminWfh',
+  name: "adminWfh",
   initialState,
   reducers: {
     setAdminWfhFilter: (state, action) => {
       state.filter.status = action.payload.status;
-      state.filter.search = action.payload.search || '';
+      state.filter.search = action.payload.search || "";
       state.pagination.currentPage = 1;
     },
     setAdminWfhPagination: (state, action) => {
@@ -105,14 +124,19 @@ const adminWFHSlice = createSlice({
       })
       .addCase(fetchAdminWFHRequests.fulfilled, (state, action) => {
         state.loading = false;
-        state.requests = action.payload;
-        state.totalCount = action.payload.length;
+        state.requests = action.payload?.data || [];
+        state.totalCount =
+          action.payload?.pagination?.total || state.requests.length;
+
+        if (action.payload?.pagination) {
+          state.pagination.currentPage = action.payload.pagination.current_page;
+        }
       })
       .addCase(fetchAdminWFHRequests.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       // Fetch by ID
       .addCase(fetchWFHRequestById.pending, (state) => {
         state.loading = true;
@@ -126,7 +150,7 @@ const adminWFHSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       // Update status
       .addCase(updateWFHRequestStatus.pending, (state) => {
         state.loading = true;
@@ -135,7 +159,7 @@ const adminWFHSlice = createSlice({
       .addCase(updateWFHRequestStatus.fulfilled, (state, action) => {
         state.loading = false;
         const { id, status } = action.payload;
-        const index = state.requests.findIndex(r => r.id === id);
+        const index = state.requests.findIndex((r) => r.id === id);
         if (index !== -1) {
           state.requests[index].status = status;
         }
@@ -147,5 +171,6 @@ const adminWFHSlice = createSlice({
   },
 });
 
-export const { setAdminWfhFilter, setAdminWfhPagination, clearAdminWfhError } = adminWFHSlice.actions;
+export const { setAdminWfhFilter, setAdminWfhPagination, clearAdminWfhError } =
+  adminWFHSlice.actions;
 export default adminWFHSlice.reducer;
