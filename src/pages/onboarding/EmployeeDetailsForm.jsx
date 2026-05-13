@@ -141,9 +141,10 @@ const EmployeeDetailsForm = () => {
             
             <button
               type="submit"
-              className="flex items-center gap-2 px-8 py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl shadow-lg shadow-primary-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="flex items-center gap-2 px-8 py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl shadow-lg shadow-primary-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
             >
-              Continue to Offer Letter
+              <span className="md:hidden">Continue</span>
+              <span className="hidden md:inline">Continue to Offer Letter</span>
               <FiChevronRight size={20} />
             </button>
           </div>

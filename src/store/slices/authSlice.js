@@ -34,15 +34,13 @@ export const updateUserProfile = createAsyncThunk(
       formData.append("first_name", firstName);
       formData.append("last_name", lastName);
       formData.append("name", profileData.fullName); 
-      formData.append("username", profileData.fullName); // fullName now tracks username
+      formData.append("username", profileData.fullName); 
       formData.append("email", profileData.email);
       
       if (profileData.profileImage) {
         formData.append("avatar", profileData.profileImage);
       }
       
-      // Use _method=PUT if backend requires it for FormData, 
-      // but the user said "POST method". I'll use POST as requested.
       const response = await apiClient.post("/employee/update-profile", formData);
       
       const updatedUser = response.data.data;

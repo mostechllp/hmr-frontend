@@ -118,27 +118,30 @@ const OnboardingReview = () => {
       </div>
 
       {/* Footer Actions */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-8 bg-white dark:bg-gray-800 rounded-3xl shadow-soft border border-gray-100 dark:border-gray-700">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-6 p-6 md:p-8 bg-white dark:bg-gray-800 rounded-3xl shadow-soft border border-gray-100 dark:border-gray-700">
         <button
           onClick={handleBack}
-          className="flex items-center gap-2 px-5 py-2.5 font-bold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+          className="flex items-center gap-2 px-5 py-2.5 font-bold text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-all hover:translate-x-[-4px]"
         >
           <FiChevronLeft size={20} />
           Go Back
         </button>
         
-        <div className="flex items-center gap-4 w-full md:w-auto">
+        <div className="flex items-center gap-3 md:gap-4 w-full sm:w-auto">
           <button
-            className="flex-1 md:flex-none px-6 py-3 font-bold text-gray-500 hover:text-gray-900 transition-colors"
+            className="flex-1 sm:flex-none px-5 md:px-8 py-3.5 font-bold text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl transition-all whitespace-nowrap text-sm md:text-base"
           >
-            Save as Draft
+            <span className="sm:hidden">Save Draft</span>
+            <span className="hidden sm:inline">Save as Draft</span>
           </button>
+          
           <button
             onClick={handleSubmit}
-            className="flex-1 md:flex-none flex items-center justify-center gap-3 px-10 py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-2xl shadow-xl shadow-primary-500/25 transition-all hover:scale-[1.03] active:scale-[0.97]"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 md:gap-3 px-6 md:px-10 py-3.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-2xl shadow-xl shadow-primary-500/25 transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap text-sm md:text-base"
           >
-            Submit Onboarding
-            <FiSend size={20} />
+            <span className="sm:hidden">Submit</span>
+            <span className="hidden sm:inline">Submit Onboarding</span>
+            <FiSend size={18} />
           </button>
         </div>
       </div>
