@@ -36,10 +36,10 @@ export const fetchAdminWFHRequests = createAsyncThunk(
       };
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch WFH requests"
+        error.response?.data?.message || "Failed to fetch WFH requests",
       );
     }
-  }
+  },
 );
 
 // Fetch single WFH request
@@ -51,10 +51,10 @@ export const fetchWFHRequestById = createAsyncThunk(
       return response.data.data;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch WFH request"
+        error.response?.data?.message || "Failed to fetch WFH request",
       );
     }
-  }
+  },
 );
 
 // Update WFH request status
@@ -71,7 +71,9 @@ export const updateWFHRequestStatus = createAsyncThunk(
       if (response.data?.status === "success") {
         return { id, status };
       }
-      return rejectWithValue(response.data?.message || "Failed to update status");
+      return rejectWithValue(
+        response.data?.message || "Failed to update status",
+      );
     } catch (error) {
       if (error.response?.status === 422 && error.response.data?.errors) {
         const validationErrors = error.response.data.errors;
@@ -79,18 +81,18 @@ export const updateWFHRequestStatus = createAsyncThunk(
         return rejectWithValue(validationErrors[firstErrorKey][0]);
       }
       return rejectWithValue(
-        error.response?.data?.message || "Failed to update status"
+        error.response?.data?.message || "Failed to update status",
       );
     }
-  }
+  },
 );
 
 const initialState = {
   requests: [],
   currentRequest: null,
   filter: {
-    status: 'all',
-    search: '',
+    status: "all",
+    search: "",
   },
   pagination: {
     currentPage: 1,
@@ -102,7 +104,7 @@ const initialState = {
 };
 
 const adminWFHSlice = createSlice({
-  name: 'adminWfh',
+  name: "adminWfh",
   initialState,
   reducers: {
     setAdminWfhFilter: (state, action) => {
@@ -157,7 +159,7 @@ const adminWFHSlice = createSlice({
       .addCase(updateWFHRequestStatus.fulfilled, (state, action) => {
         state.loading = false;
         const { id, status } = action.payload;
-        const index = state.requests.findIndex(r => r.id === id);
+        const index = state.requests.findIndex((r) => r.id === id);
         if (index !== -1) {
           state.requests[index].status = status;
         }

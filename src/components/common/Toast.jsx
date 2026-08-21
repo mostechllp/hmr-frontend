@@ -36,7 +36,18 @@ export const showToast = (message, type = 'success') => {
     toastRoot.render(null);
   };
 
-  toastRoot.render(<ToastComponent message={message} type={type} onClose={handleClose} />);
+  const displayMessage =
+    typeof message === 'string'
+      ? message
+      : message?.name || message?.message || JSON.stringify(message);
+
+  toastRoot.render(
+    <ToastComponent
+      message={displayMessage}
+      type={type}
+      onClose={handleClose}
+    />
+  );
 };
 
 export const Toast = () => null;
