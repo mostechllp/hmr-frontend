@@ -1,7 +1,6 @@
 const FoldersTable = ({
   pageDocs,
   start,
-  handleView,
   handleEdit,
   handleDeleteClick
 }) => {
@@ -17,25 +16,30 @@ const FoldersTable = ({
 
       <tbody>
         {pageDocs.map((folder, idx) => (
-          <tr key={folder.id} className="border-b">
-            <td className="px-4 py-3 text-xs">{start + idx + 1}</td>
-            <td className="px-4 py-3 text-xs font-semibold">
-              <span className="flex items-center gap-1 text-xs">
-                  <i className="fas fa-folder-open text-primary"></i>
-                  {folder.name}
+          <tr key={folder.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+            <td className="px-4 py-3 text-xs text-gray-600 dark:text-gray-400">{start + idx + 1}</td>
+            <td className="px-4 py-3">
+              <span className="flex items-center gap-2 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                <i className="fas fa-folder-open text-green-500 text-sm"></i>
+                {folder.name}
               </span>
             </td>
 
             <td className="px-4 py-3">
               <div className="flex gap-3">
-                <button onClick={() => handleView(folder)}>
-                  <i className="fas fa-eye text-blue-500 text-xs"></i>
+                <button 
+                  onClick={() => handleEdit(folder)}
+                  className="text-amber-500 hover:text-amber-600 transition-colors"
+                  title="Edit folder"
+                >
+                  <i className="fas fa-edit text-sm"></i>
                 </button>
-                <button onClick={() => handleEdit(folder)}>
-                  <i className="fas fa-edit text-amber-500 text-xs"></i>
-                </button>
-                <button onClick={() => handleDeleteClick(folder)}>
-                  <i className="fas fa-trash text-red-500 text-xs"></i>
+                <button 
+                  onClick={() => handleDeleteClick(folder)}
+                  className="text-red-500 hover:text-red-600 transition-colors"
+                  title="Delete folder"
+                >
+                  <i className="fas fa-trash text-sm"></i>
                 </button>
               </div>
             </td>
@@ -44,8 +48,9 @@ const FoldersTable = ({
 
         {pageDocs.length === 0 && (
           <tr>
-            <td colSpan="3" className="text-center py-6 text-gray-400">
-              No folders found
+            <td colSpan="3" className="text-center py-8 text-gray-400 dark:text-gray-500">
+              <i className="fas fa-folder-open text-3xl mb-2 block"></i>
+              <p>No folders found</p>
             </td>
           </tr>
         )}
