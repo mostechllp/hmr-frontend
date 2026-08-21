@@ -14,6 +14,7 @@ import { fetchDashboard } from "../store/slices/dashboardSlice";
 const Dashboard = () => {
   const dispatch = useDispatch();
   const { employees } = useSelector((state) => state.employees);
+  const {user} = useSelector(state => state.auth)
   const { stats, charts, recentData, loading } = useSelector(
     (state) => state.dashboard,
   );
@@ -51,7 +52,7 @@ const Dashboard = () => {
       >
         <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
         <main className="content px-4 py-4 md:px-6 md:py-6 max-w-[1600px] mx-auto w-full overflow-x-hidden">
-          {formattedStats && <WelcomeBanner stats={formattedStats} />}
+          {formattedStats && <WelcomeBanner stats={formattedStats} user={user}/>}
 
           {/* Stats Grid - 2 columns on mobile, 4 on desktop */}
           <div className="stats-grid grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5 mb-6">

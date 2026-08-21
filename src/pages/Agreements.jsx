@@ -297,7 +297,7 @@ const Agreements = () => {
                         </td>
                         <td className="px-3 md:px-4 py-2 md:py-3">
                           <span className={`px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-semibold ${getFolderClass(document.folder || document.type)} whitespace-nowrap`}>
-                            {document.folder || document.type || '-'}
+                          {document.folder_name || document.folder || document.type || '-'}
                           </span>
                         </td>
                         <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 dark:text-gray-400 max-w-[200px] truncate" title={document.description}>
@@ -306,7 +306,13 @@ const Agreements = () => {
                         <td className="px-3 md:px-4 py-2 md:py-3">
                           <span className="inline-flex items-center gap-1 md:gap-1.5 bg-gray-100 dark:bg-gray-700 px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs whitespace-nowrap">
                             <i className="fas fa-share-alt text-gray-500 text-[8px] md:text-xs"></i>
-                            <span>{document.share_with || '-'}</span>
+                            <span>
+                            {document.shared_users?.length > 0
+                              ? document.shared_users.map(u => u.name).join(', ')
+                              : document.share_with?.length > 0
+                              ? document.share_with.join(', ')
+                              : '-'}
+                          </span>
                           </span>
                         </td>
                         <td className={`px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm ${getExpiryClass(document.expiry_date)} whitespace-nowrap`}>

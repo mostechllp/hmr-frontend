@@ -39,6 +39,7 @@ const AddAgreement = () => {
   // Modal states
   const [showPartyModal, setShowPartyModal] = useState(false);
   const [showFolderModal, setShowFolderModal] = useState(false);
+  const [refreshParties, setRefreshParties] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -63,6 +64,16 @@ const AddAgreement = () => {
     dispatch(fetchParties());
   }, [dispatch]);
 
+  // Refresh parties when refreshParties flag changes
+  useEffect(() => {
+    if (refreshParties) {
+      dispatch(fetchParties()).then(() => {
+        setRefreshParties(false);
+      });
+      dispatch(fetchShareableUsers());
+    }
+  }, [refreshParties, dispatch]);
+
   useEffect(() => {
     if (error) {
       showToast(error, "error");
@@ -70,7 +81,17 @@ const AddAgreement = () => {
     }
   }, [error, dispatch]);
 
+  // Debug: Log parties when they change
+  useEffect(() => {
+    console.log("Parties updated:", parties);
+  }, [parties]);
+
   const handleChange = (e) => {
+    if (e.target.id === "party_id" && e.target.value === "__add_new__") {
+      setFormData({ ...formData, party_id: "" });
+      setShowPartyModal(true);
+      return;
+    }
     setFormData({ ...formData, [e.target.id]: e.target.value });
   };
 
@@ -144,14 +165,29 @@ const AddAgreement = () => {
     setSelectedShareWith(selectedShareWith.filter((i) => i !== item));
   };
 
-  const handlePartyAdded = (newParty) => {
-    setSelectedShareWith([...selectedShareWith, newParty.name]);
-    dispatch(fetchParties());
+  const handlePartyAdded = async (newParty) => {
+    console.log("Party added callback received:", newParty);
+
+    // Set refresh flag to trigger useEffect
+    setRefreshParties(true);
+
+    // If we have the new party, select it automatically after refresh
+    if (newParty && newParty.id) {
+      // Wait a bit for the refresh to complete
+      setTimeout(() => {
+        setFormData((prev) => ({ ...prev, party_id: String(newParty.id) }));
+        showToast(`Party "${newParty.name}" added and selected`, "success");
+      }, 500);
+    }
   };
 
-  const handleFolderAdded = (newFolder) => {
-    setFormData({ ...formData, folder: newFolder.name });
-    dispatch(fetchDocumentFolders()); // Refresh folders list
+  const handleFolderAdded = async (newFolder) => {
+    // Refresh folders list
+    await dispatch(fetchDocumentFolders());
+    if (newFolder && newFolder.name) {
+      setFormData({ ...formData, folder: newFolder.name });
+      showToast(`Folder "${newFolder.name}" added and selected`, "success");
+    }
   };
 
   useEffect(() => {
@@ -186,11 +222,25 @@ const AddAgreement = () => {
 
     setUploading(true);
 
+    const partiesList = Array.isArray(parties) ? parties : [];
+    const usersList = Array.isArray(shareableUsers) ? shareableUsers : [];
+
+    const selectedFolder = folders.find(
+      (f) => (f.name || f) === formData.folder,
+    );
+
+    const shareWithIds = selectedShareWith.map((selectedName) => {
+      const user = usersList.find((u) => (u.name || u.email) === selectedName);
+      const party = partiesList.find((p) => p.name === selectedName);
+      return user?.id || party?.id || selectedName;
+    });
+
     const documentData = {
       name: formData.name,
       description: formData.description,
-      share_with: selectedShareWith.join(","),
-      folder: formData.folder,
+      share_with: shareWithIds,
+      folder_id: selectedFolder?.id || formData.folder,
+      type: "agreements",
       party_id: formData.party_id,
       expiry_date: formData.expiryDate,
     };
@@ -198,6 +248,7 @@ const AddAgreement = () => {
     const result = await dispatch(
       uploadDocument({ formData: documentData, file: selectedFile }),
     );
+
     setUploading(false);
 
     if (uploadDocument.fulfilled.match(result)) {
@@ -330,7 +381,6 @@ const AddAgreement = () => {
                         required
                       />
                     </div>
-
                     <div>
                       <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                         <i className="fas fa-align-left text-green-500 mr-1"></i>{" "}
@@ -345,7 +395,6 @@ const AddAgreement = () => {
                         placeholder="Enter description about this document"
                       ></textarea>
                     </div>
-
                     <div>
                       <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                         <i className="fas fa-share-alt text-green-500 mr-1"></i>{" "}
@@ -409,7 +458,7 @@ const AddAgreement = () => {
                                       checked={selectedShareWith.includes(
                                         user.name || user.email,
                                       )}
-                                      onChange={() => { }}
+                                      onChange={() => {}}
                                       className="w-3.5 h-3.5 md:w-4 md:h-4 accent-green-500"
                                     />
                                     <div className="flex-1 min-w-0">
@@ -438,21 +487,20 @@ const AddAgreement = () => {
                                 {parties.map((party) => (
                                   <div
                                     key={party.id}
-                                    onClick={() => toggleShareItem(party.name)} // Changed from party_name to name
+                                    onClick={() => toggleShareItem(party.name)}
                                     className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                                   >
                                     <input
                                       type="checkbox"
                                       checked={selectedShareWith.includes(
                                         party.name,
-                                      )} // Changed from party_name to name
-                                      onChange={() => { }}
+                                      )}
+                                      onChange={() => {}}
                                       className="w-3.5 h-3.5 md:w-4 md:h-4 accent-green-500"
                                     />
                                     <div className="flex-1 min-w-0">
                                       <span className="text-xs md:text-sm text-gray-700 dark:text-gray-300">
-                                        {party.name}{" "}
-                                        {/* Changed from party_name to name */}
+                                        {party.name}
                                       </span>
                                       {party.company_name && (
                                         <span className="hidden sm:inline text-[10px] md:text-xs text-gray-500 ml-1">
@@ -464,26 +512,91 @@ const AddAgreement = () => {
                                 ))}
                               </div>
                             )}
-
-                            {/* Add Party Button */}
-                            <div className="border-t border-gray-200 dark:border-gray-700 mt-2 pt-2">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setShowDropdown(false);
-                                  setShowPartyModal(true);
-                                }}
-                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-green-600 dark:text-green-400 transition-colors"
-                              >
-                                <i className="fas fa-plus-circle"></i>
-                                <span className="text-sm">Add New Party</span>
-                              </button>
-                            </div>
                           </div>
                         )}
                       </div>
                     </div>
-
+                    {/* Party Field */}
+                    <div>
+                      <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
+                        <i className="fas fa-building text-green-500 mr-1"></i>{" "}
+                        Party
+                      </label>
+                      <div className="relative">
+                        <select
+                          id="party_id"
+                          value={formData.party_id}
+                          onChange={handleChange}
+                          className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm md:text-base text-gray-800 dark:text-gray-200 transition-all focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 appearance-none pr-10"
+                        >
+                          <option value="">Select Party (Optional)</option>
+                          {Array.isArray(parties) && parties.length > 0 ? (
+                            parties.map((party) => (
+                              <option key={party.id} value={party.id}>
+                                {party.name}{" "}
+                                {party.company_name
+                                  ? `(${party.company_name})`
+                                  : ""}
+                              </option>
+                            ))
+                          ) : (
+                            <option disabled>No parties available</option>
+                          )}
+                          <option value="__add_new__">+ Add New Party</option>
+                        </select>
+                      </div>
+                      {/* Selected Party Details */}
+                      {formData.party_id &&
+                        formData.party_id !== "__add_new__" &&
+                        (() => {
+                          const selectedParty = Array.isArray(parties)
+                            ? parties.find(
+                                (p) =>
+                                  String(p.id) === String(formData.party_id),
+                              )
+                            : null;
+                          return selectedParty ? (
+                            <div className="mt-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  <i className="fas fa-building text-green-500 text-sm"></i>
+                                  <div>
+                                    <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                      {selectedParty.name}
+                                    </div>
+                                    {selectedParty.company_name && (
+                                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        {selectedParty.company_name}
+                                      </div>
+                                    )}
+                                    {selectedParty.email && (
+                                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        <i className="fas fa-envelope mr-1"></i>
+                                        {selectedParty.email}
+                                      </div>
+                                    )}
+                                    {selectedParty.phone && (
+                                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        <i className="fas fa-phone mr-1"></i>
+                                        {selectedParty.phone}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setFormData({ ...formData, party_id: "" })
+                                  }
+                                  className="text-red-400 hover:text-red-600 transition-colors p-1"
+                                >
+                                  <i className="fas fa-times text-xs"></i>
+                                </button>
+                              </div>
+                            </div>
+                          ) : null;
+                        })()}
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
                       <div>
                         <label className="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
@@ -553,7 +666,7 @@ const AddAgreement = () => {
                 {/* Form Actions */}
                 <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 md:pt-6 border-t border-gray-200 dark:border-gray-700">
                   <Link
-                    to="/documents"
+                    to="/agreements"
                     className="px-4 md:px-6 py-2 md:py-2.5 rounded-full font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all flex items-center justify-center gap-2 text-sm md:text-base"
                   >
                     <i className="fas fa-times text-xs md:text-sm"></i>
@@ -586,7 +699,9 @@ const AddAgreement = () => {
       {/* Modals */}
       <AddPartyModal
         isOpen={showPartyModal}
-        onClose={() => setShowPartyModal(false)}
+        onClose={() => {
+          setShowPartyModal(false);
+        }}
         onPartyAdded={handlePartyAdded}
       />
 

@@ -49,17 +49,17 @@ const Companies = () => {
 
   const getFullLogoUrl = (logoPath) => {
     if (!logoPath) return null;
-    
+
     // If it's already a full URL, return it
     if (logoPath.startsWith('http://') || logoPath.startsWith('https://')) {
       return logoPath;
     }
-    
+
     const baseUrl = getBaseUrl();
-    
+
     // Remove any leading slashes
     const cleanPath = logoPath.replace(/^\/+/, '');
-    
+
     // Construct the full URL
     // The API stores logos in storage/app/public/logos/companies/...
     // The public URL should be /storage/logos/companies/...
@@ -69,13 +69,13 @@ const Companies = () => {
     } else {
       fullUrl = `${baseUrl}/storage/${cleanPath}`;
     }
-    
+
     console.log('Logo URL constructed:', {
       original: logoPath,
       baseUrl,
       fullUrl
     });
-    
+
     return fullUrl;
   };
 
@@ -133,7 +133,7 @@ const Companies = () => {
     setSelectedCompany(company);
     setConfirmOpen(true);
   };
-  
+
   const handleConfirmDelete = async () => {
     if (!selectedCompany) return;
 
@@ -294,7 +294,7 @@ const Companies = () => {
                     {pageCompanies.map((company) => {
                       const hasValidLogo = company.logo && !failedImages[company.id];
                       const logoUrl = hasValidLogo ? getFullLogoUrl(company.logo) : null;
-                      
+
                       return (
                         <tr
                           key={company.id}

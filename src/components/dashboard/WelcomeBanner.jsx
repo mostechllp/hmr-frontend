@@ -1,4 +1,4 @@
-const WelcomeBanner = ({ stats }) => {
+const WelcomeBanner = ({ stats, user }) => {
   if (!stats) return null;
   const currentHour = new Date().getHours();
   const greeting = currentHour < 12 ? 'Good morning' : currentHour < 18 ? 'Good afternoon' : 'Good evening';
@@ -7,7 +7,7 @@ const WelcomeBanner = ({ stats }) => {
     <div className="welcome-banner bg-gradient-to-r from-green-600 to-green-500 rounded-xl p-5 md:p-8 mb-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="welcome-text">
-          <h2 className="text-xl md:text-2xl font-bold text-white">{greeting}, HR! 👋</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-white">{greeting}, {user?.employee?.name}! 👋</h2>
           <p className="text-green-50 text-sm mt-1">Here's what's happening today.</p>
         </div>
         

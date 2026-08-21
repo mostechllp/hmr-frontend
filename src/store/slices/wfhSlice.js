@@ -7,14 +7,34 @@ export const fetchAdminWFHRequests = createAsyncThunk(
   async (params = {}, { rejectWithValue }) => {
     try {
       const response = await apiClient.get("/admin/wfh-requests", { params });
-      console.log("Admin WFH requests response:", response.data);
-      
-      if (response.data?.status === "success") {
-        return response.data.data || [];
-      }
-      return rejectWithValue(response.data?.message || "Failed to fetch WFH requests");
+
+      // Handle Laravel-style pagination (data.data.data) or simple array (data.data)
+      const rawData = response.data.data.data || response.data.data || [];
+
+      // Transform data for frontend consistency
+      const transformedData = rawData.map(item => ({
+        id: item.id,
+        employee_id: item.employee_id,
+        employeeName: item.employee
+          ? `${item.employee.first_name || ""} ${item.employee.last_name || ""}`.trim()
+          : (item.employee_name || "N/A"),
+        date: item.date,
+        reason: item.reason || "",
+        notes: item.notes || "",
+        status: item.status || "pending",
+        createdAt: item.created_at,
+        updatedAt: item.updated_at,
+        // Keep raw employee object if needed for modal details
+        employee: item.employee
+      }));
+
+      return {
+        data: transformedData,
+        total: response.data.data.total || transformedData.length,
+        currentPage: response.data.data.current_page || 1,
+        perPage: response.data.data.per_page || transformedData.length
+      };
     } catch (error) {
-      console.error("Fetch admin WFH error:", error);
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch WFH requests"
       );
@@ -28,12 +48,7 @@ export const fetchWFHRequestById = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const response = await apiClient.get(`/admin/wfh-requests/${id}`);
-      console.log("WFH request by ID response:", response.data);
-      
-      if (response.data?.status === "success") {
-        return response.data.data;
-      }
-      return rejectWithValue(response.data?.message || "Failed to fetch WFH request");
+      return response.data.data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch WFH request"
@@ -45,17 +60,24 @@ export const fetchWFHRequestById = createAsyncThunk(
 // Update WFH request status
 export const updateWFHRequestStatus = createAsyncThunk(
   "adminWfh/updateStatus",
-  async ({ id, status }, { rejectWithValue }) => {
+  async ({ id, status, processedBy }, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post(`/admin/wfh-requests/${id}/status`, { status });
-      console.log("Update WFH status response:", response.data);
-      
+      // POST request according to the API image provided
+      const response = await apiClient.post(`/admin/wfh-requests/${id}/status`, {
+        status,
+        processed_by: processedBy || "Admin"
+      });
+
       if (response.data?.status === "success") {
         return { id, status };
       }
       return rejectWithValue(response.data?.message || "Failed to update status");
     } catch (error) {
-      console.error("Update WFH status error:", error);
+      if (error.response?.status === 422 && error.response.data?.errors) {
+        const validationErrors = error.response.data.errors;
+        const firstErrorKey = Object.keys(validationErrors)[0];
+        return rejectWithValue(validationErrors[firstErrorKey][0]);
+      }
       return rejectWithValue(
         error.response?.data?.message || "Failed to update status"
       );
@@ -73,10 +95,10 @@ const initialState = {
   pagination: {
     currentPage: 1,
     perPage: 10,
+    total: 0
   },
   loading: false,
   error: null,
-  totalCount: 0,
 };
 
 const adminWFHSlice = createSlice({
@@ -84,13 +106,11 @@ const adminWFHSlice = createSlice({
   initialState,
   reducers: {
     setAdminWfhFilter: (state, action) => {
-      state.filter.status = action.payload.status;
-      state.filter.search = action.payload.search || '';
+      state.filter = { ...state.filter, ...action.payload };
       state.pagination.currentPage = 1;
     },
     setAdminWfhPagination: (state, action) => {
-      state.pagination.currentPage = action.payload.currentPage;
-      state.pagination.perPage = action.payload.perPage;
+      state.pagination = { ...state.pagination, ...action.payload };
     },
     clearAdminWfhError: (state) => {
       state.error = null;
@@ -105,14 +125,16 @@ const adminWFHSlice = createSlice({
       })
       .addCase(fetchAdminWFHRequests.fulfilled, (state, action) => {
         state.loading = false;
-        state.requests = action.payload;
-        state.totalCount = action.payload.length;
+        state.requests = action.payload.data;
+        state.pagination.total = action.payload.total;
+        state.pagination.currentPage = action.payload.currentPage;
+        state.pagination.perPage = action.payload.perPage;
       })
       .addCase(fetchAdminWFHRequests.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       // Fetch by ID
       .addCase(fetchWFHRequestById.pending, (state) => {
         state.loading = true;
@@ -126,7 +148,7 @@ const adminWFHSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       // Update status
       .addCase(updateWFHRequestStatus.pending, (state) => {
         state.loading = true;
@@ -138,6 +160,9 @@ const adminWFHSlice = createSlice({
         const index = state.requests.findIndex(r => r.id === id);
         if (index !== -1) {
           state.requests[index].status = status;
+        }
+        if (state.currentRequest && state.currentRequest.id === id) {
+          state.currentRequest.status = status;
         }
       })
       .addCase(updateWFHRequestStatus.rejected, (state, action) => {

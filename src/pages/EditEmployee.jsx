@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { useForm, Controller } from "react-hook-form";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import Sidebar from "../components/common/Sidebar";
 import Header from "../components/common/Header";
 import { showToast } from "../components/common/Toast";
@@ -9,7 +11,6 @@ import {
   fetchEmployeeById,
   updateEmployee,
 } from "../store/slices/employeeSlice";
-import { fetchOrganizations } from "../store/slices/organizationSlice";
 import { fetchCompanies } from "../store/slices/companySlice";
 import { fetchDesignations } from "../store/slices/designationSlice";
 import { fetchDepartments } from "../store/slices/departmentSlice";
@@ -24,15 +25,18 @@ const EditEmployee = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [formInitialized, setFormInitialized] = useState(false);
+  const [stepErrors, setStepErrors] = useState({});
 
   // Document file states
   const [documents, setDocuments] = useState({
+    passport_size_photo: null,
     passport_1st_page: null,
     passport_2nd_page: null,
     passport_outer_page: null,
     passport_id_page: null,
     visa_page: null,
     labor_card: null,
+    labor_contract: null,
     eid_1st_page: null,
     eid_2nd_page: null,
     educational_1st_page: null,
@@ -48,14 +52,13 @@ const EditEmployee = () => {
   const { currentEmployee, loading: employeeLoading } = useSelector(
     (state) => state.employees || {},
   );
-  const { organizations = [] } = useSelector(
-    (state) => state.organizations || {},
-  );
   const { companies = [] } = useSelector((state) => state.companies || {});
   const { designations = [] } = useSelector(
     (state) => state.designations || {},
   );
   const { departments = [] } = useSelector((state) => state.departments || {});
+  const dropdownsReady =
+    companies.length > 0 && designations.length > 0 && departments.length > 0;
 
   // Initialize useForm
   const {
@@ -63,6 +66,7 @@ const EditEmployee = () => {
     handleSubmit,
     watch,
     setValue,
+    getValues,
     formState: { errors },
     trigger,
   } = useForm({
@@ -70,7 +74,6 @@ const EditEmployee = () => {
       // Step 1: Basic Info
       first_name: "",
       last_name: "",
-      organization_id: "",
       company_id: "",
       designation_id: "",
       department_id: "",
@@ -80,6 +83,8 @@ const EditEmployee = () => {
       joining_date: "",
       dob: "",
       gender: "male",
+      nationality: "",
+      marital_status: "",
       special_days: "",
       status: "active",
       username: "",
@@ -97,6 +102,7 @@ const EditEmployee = () => {
 
       // Step 3: Visa & Labor
       visa_number: "",
+      visa_type: "",
       visa_issued_date: "",
       visa_expiry_date: "",
       labor_number: "",
@@ -122,7 +128,6 @@ const EditEmployee = () => {
     mode: "onChange",
   });
 
-  const watchOrganizationId = watch("organization_id");
   const passportIssued = watch("passport_issued_date");
   const passportExpiry = watch("passport_expiry_date");
   const visaIssued = watch("visa_issued_date");
@@ -134,7 +139,7 @@ const EditEmployee = () => {
 
   // Fetch initial data
   useEffect(() => {
-    dispatch(fetchOrganizations());
+    dispatch(fetchCompanies());
     dispatch(fetchDesignations());
     dispatch(fetchDepartments());
   }, [dispatch]);
@@ -148,13 +153,6 @@ const EditEmployee = () => {
     }
   }, [dispatch, id, formInitialized]);
 
-  // Fetch companies when organization changes
-  useEffect(() => {
-    if (watchOrganizationId) {
-      dispatch(fetchCompanies(watchOrganizationId));
-    }
-  }, [watchOrganizationId, dispatch]);
-
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -167,18 +165,45 @@ const EditEmployee = () => {
   // Set form values when employee data is loaded
   // Set form values when employee data is loaded - only once
   useEffect(() => {
-    if (currentEmployee && !formInitialized) {
+    if (currentEmployee && dropdownsReady && !formInitialized) {
       console.log("Initializing form with employee data:", currentEmployee);
 
       // Basic Info
       setValue("first_name", currentEmployee.first_name || "");
       setValue("last_name", currentEmployee.last_name || "");
-      setValue("organization_id", currentEmployee.organization_id || "");
-      setValue("company_id", currentEmployee.company_id || "");
-      setValue("designation_id", currentEmployee.designation_id || "");
-      setValue("department_id", currentEmployee.department_id || "");
+      const resolvedCompanyId =
+        currentEmployee.company_id ??
+        currentEmployee.company?.id ??
+        currentEmployee.user?.company?.id;
+      const resolvedDesignationId =
+        currentEmployee.designation_id ??
+        currentEmployee.designation?.id ??
+        currentEmployee.user?.designation?.id;
+      const resolvedDepartmentId =
+        currentEmployee.department_id ??
+        currentEmployee.department?.id ??
+        currentEmployee.user?.department?.id;
+
+      setValue(
+        "company_id",
+        resolvedCompanyId === undefined || resolvedCompanyId === null
+          ? ""
+          : Number(resolvedCompanyId),
+      );
+      setValue(
+        "designation_id",
+        resolvedDesignationId === undefined || resolvedDesignationId === null
+          ? ""
+          : Number(resolvedDesignationId),
+      );
+      setValue(
+        "department_id",
+        resolvedDepartmentId === undefined || resolvedDepartmentId === null
+          ? ""
+          : Number(resolvedDepartmentId),
+      );
       setValue("employee_id", currentEmployee.employee_id || "");
-      setValue("type", currentEmployee.type || "employee");
+      setValue("type", currentEmployee.type || currentEmployee.user?.type || "employee");
       setValue(
         "total_leaves_allocated",
         currentEmployee.total_leaves_allocated || 30,
@@ -186,9 +211,11 @@ const EditEmployee = () => {
       setValue("joining_date", currentEmployee.joining_date || "");
       setValue("dob", currentEmployee.dob || "");
       setValue("gender", currentEmployee.gender || "male");
+      setValue("nationality", currentEmployee.nationality || "");
+      setValue("marital_status", currentEmployee.marital_status || "");
       setValue("special_days", currentEmployee.special_days || "");
-      setValue("status", currentEmployee.status || "active");
-      setValue("username", currentEmployee.username || "");
+      setValue("status", currentEmployee.status || currentEmployee.user?.status || "active");
+      setValue("username", currentEmployee.username || currentEmployee.user?.username || "");
 
       // Passport details
       setValue("passport_full_name", currentEmployee.passport_full_name || "");
@@ -212,6 +239,7 @@ const EditEmployee = () => {
 
       // Visa & Labor
       setValue("visa_number", currentEmployee.visa_number || "");
+      setValue("visa_type", currentEmployee.visa_type || "");
       setValue("visa_issued_date", currentEmployee.visa_issued_date || "");
       setValue("visa_expiry_date", currentEmployee.visa_expiry_date || "");
       setValue("labor_number", currentEmployee.labor_number || "");
@@ -242,12 +270,14 @@ const EditEmployee = () => {
       // Set existing documents
       const docs = {};
       const docFields = [
+        "passport_size_photo",
         "passport_1st_page",
         "passport_2nd_page",
         "passport_outer_page",
         "passport_id_page",
         "visa_page",
         "labor_card",
+        "labor_contract",
         "eid_1st_page",
         "eid_2nd_page",
         "educational_1st_page",
@@ -264,7 +294,7 @@ const EditEmployee = () => {
 
       setFormInitialized(true);
     }
-  }, [currentEmployee, setValue, formInitialized]);
+  }, [currentEmployee, setValue, formInitialized, dropdownsReady]);
 
   const steps = [
     { number: 1, title: "Basic Info", icon: "fas fa-user-circle" },
@@ -294,8 +324,91 @@ const EditEmployee = () => {
     { value: "active", label: "Active" },
     { value: "inactive", label: "Inactive" },
   ];
+  const nationalityOptions = [
+    "Indian",
+    "Nepali",
+    "Bangladeshi",
+    "Pakistani",
+    "Sri Lankan",
+    "Filipino",
+    "Other",
+  ];
+  const maritalStatusOptions = ["Single", "Married", "Divorced", "Widowed"];
+  const visaTypeOptions = ["Company Visa", "Family Visa", "Other Visa"];
+
+  const getStepFields = (stepIndex) => {
+    switch (stepIndex) {
+      case 0:
+        return [
+          "first_name",
+          "employee_id",
+          "username",
+          "company_id",
+          "designation_id",
+          "department_id",
+          "type",
+          "total_leaves_allocated",
+        ];
+      case 1:
+        return ["passport_issued_date", "passport_expiry_date"];
+      case 2:
+        return [
+          "visa_issued_date",
+          "visa_expiry_date",
+          "labor_issued_date",
+          "labor_expiry_date",
+        ];
+      case 3:
+        return ["eid_issued_date", "eid_expiry_date"];
+      case 4:
+        return ["company_email", "personal_email"];
+      default:
+        return [];
+    }
+  };
+
+  const parseDateValue = (value) => {
+    if (!value) return null;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+
+  const DateInput = ({ field, hasError, placeholder = "Select date" }) => (
+    <DatePicker
+      selected={parseDateValue(field.value)}
+      onChange={(date) => {
+        if (!date) {
+          field.onChange("");
+          return;
+        }
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        field.onChange(`${year}-${month}-${day}`);
+      }}
+      dateFormat="yyyy-MM-dd"
+      placeholderText={placeholder}
+      showMonthDropdown
+      showYearDropdown
+      dropdownMode="select"
+      yearDropdownItemNumber={100}
+      scrollableYearDropdown
+      autoComplete="off"
+      className={`w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border rounded-lg text-sm md:text-base text-gray-800 transition-all focus:outline-none focus:ring-2 ${
+        hasError
+          ? "border-red-500"
+          : "border-gray-200 focus:border-green-500 focus:ring-green-500/20"
+      }`}
+    />
+  );
 
   const documentFields = [
+    {
+      key: "passport_size_photo",
+      label: "Passport Size Photo",
+      icon: "fas fa-camera",
+      accept: "image/png,image/jpeg,image/jpg,image/gif",
+    },
     {
       key: "passport_1st_page",
       label: "Passport 1st Page",
@@ -330,6 +443,12 @@ const EditEmployee = () => {
       key: "labor_card",
       label: "Labor Card",
       icon: "fas fa-id-card",
+      accept: "image/*,.pdf",
+    },
+    {
+      key: "labor_contract",
+      label: "Attach Labor Contract",
+      icon: "fas fa-file-signature",
       accept: "image/*,.pdf",
     },
     {
@@ -374,8 +493,9 @@ const EditEmployee = () => {
       },
     },
     employee_id: { required: "Employee ID is required" },
-    organization_id: { required: "Organization is required" },
     company_id: { required: "Company is required" },
+    designation_id: { required: "Designation is required" },
+    department_id: { required: "Department is required" },
     type: { required: "User type is required" },
     company_email: {
       required: "Company email is required",
@@ -433,9 +553,10 @@ const EditEmployee = () => {
   const handleFileChange = (fieldKey, file) => {
     if (file) {
       const fileSize = file.size / 1024 / 1024;
-      if (fileSize > 5) {
+      const maxFileSize = fieldKey === "passport_size_photo" ? 2 : 5;
+      if (fileSize > maxFileSize) {
         showToast(
-          `${documentFields.find((f) => f.key === fieldKey)?.label} must be less than 5MB`,
+          `${documentFields.find((f) => f.key === fieldKey)?.label} must be less than ${maxFileSize}MB`,
           "error",
         );
         return;
@@ -465,56 +586,37 @@ const EditEmployee = () => {
     setExistingDocuments({ ...existingDocuments, [fieldKey]: null });
   };
 
-  // Update the handleNext function - remove the problematic validation for step 4
   const handleNext = async () => {
-    let fieldsToValidate = [];
-
-    switch (currentStep) {
-      case 0:
-        fieldsToValidate = [
-          "first_name",
-          "employee_id",
-          "username",
-          "organization_id",
-          "company_id",
-          "type",
-          "total_leaves_allocated",
-        ];
-        break;
-      case 1:
-        fieldsToValidate = ["passport_issued_date", "passport_expiry_date"];
-        break;
-      case 2:
-        fieldsToValidate = [
-          "visa_issued_date",
-          "visa_expiry_date",
-          "labor_issued_date",
-          "labor_expiry_date",
-        ];
-        break;
-      case 3:
-        fieldsToValidate = ["eid_issued_date", "eid_expiry_date"];
-        break;
-      case 4:
-        // For Contact tab, only validate these fields
-        fieldsToValidate = ["company_email", "personal_email"]; // Removed 'type' from validation
-        break;
-      default:
-        fieldsToValidate = [];
-    }
-
-    // Only validate if there are fields to validate
-    let isValid = true;
-    if (fieldsToValidate.length > 0) {
-      isValid = await trigger(fieldsToValidate);
-    }
+    const fieldsToValidate = getStepFields(currentStep);
+    const isValid = fieldsToValidate.length > 0 ? await trigger(fieldsToValidate) : true;
 
     if (isValid) {
+      setStepErrors((prev) => ({ ...prev, [currentStep]: false }));
       setCurrentStep(currentStep + 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
+      setStepErrors((prev) => ({ ...prev, [currentStep]: true }));
       showToast("Please fix the errors before proceeding", "error");
     }
+  };
+
+  const handleStepClick = async (targetStep) => {
+    if (targetStep <= currentStep) {
+      setCurrentStep(targetStep);
+      return;
+    }
+
+    const fieldsToValidate = getStepFields(currentStep);
+    const isValid = fieldsToValidate.length > 0 ? await trigger(fieldsToValidate) : true;
+
+    if (!isValid) {
+      setStepErrors((prev) => ({ ...prev, [currentStep]: true }));
+      showToast("Please fix required fields before changing section", "error");
+      return;
+    }
+
+    setStepErrors((prev) => ({ ...prev, [currentStep]: false }));
+    setCurrentStep(targetStep);
   };
 
   const handlePrevious = () => {
@@ -533,12 +635,62 @@ const EditEmployee = () => {
   const onSubmit = async (data) => {
     setLoading(true);
 
+    const allValues = { ...getValues(), ...data };
+
+    const normalizedData = {
+      ...allValues,
+      first_name: allValues.first_name || currentEmployee?.first_name || "",
+      designation_id:
+        allValues.designation_id ??
+        currentEmployee?.designation_id ??
+        currentEmployee?.designation?.id ??
+        currentEmployee?.user?.designation?.id ??
+        "",
+      department_id:
+        allValues.department_id ??
+        currentEmployee?.department_id ??
+        currentEmployee?.department?.id ??
+        currentEmployee?.user?.department?.id ??
+        "",
+      company_id:
+        allValues.company_id ??
+        currentEmployee?.company_id ??
+        currentEmployee?.company?.id ??
+        currentEmployee?.user?.company?.id ??
+        "",
+      username:
+        allValues.username ||
+        currentEmployee?.username ||
+        currentEmployee?.user?.username ||
+        "",
+      type:
+        allValues.type ||
+        currentEmployee?.type ||
+        currentEmployee?.user?.type ||
+        "employee",
+    };
+
+    if (
+      !normalizedData.first_name ||
+      !normalizedData.designation_id ||
+      !normalizedData.department_id
+    ) {
+      setLoading(false);
+      showToast(
+        "First Name, Designation, and Department are required before update.",
+        "error",
+      );
+      setCurrentStep(0);
+      setStepErrors((prev) => ({ ...prev, 0: true }));
+      return;
+    }
+
     const formDataToSend = new FormData();
 
     // Add all text fields
-    Object.keys(data).forEach((key) => {
-      if (data[key] !== null && data[key] !== "") {
-        formDataToSend.append(key, data[key]);
+    Object.keys(normalizedData).forEach((key) => {
+      if (normalizedData[key] !== null && normalizedData[key] !== "") {
+        formDataToSend.append(key, normalizedData[key]);
       }
     });
 
@@ -557,18 +709,24 @@ const EditEmployee = () => {
     });
 
     // Convert IDs to integers
-    formDataToSend.set("organization_id", parseInt(data.organization_id));
-    formDataToSend.set("company_id", parseInt(data.company_id));
-    if (data.designation_id)
-      formDataToSend.set("designation_id", parseInt(data.designation_id));
-    if (data.department_id)
-      formDataToSend.set("department_id", parseInt(data.department_id));
+    formDataToSend.set("first_name", normalizedData.first_name);
+    formDataToSend.set("company_id", parseInt(normalizedData.company_id));
+    const selectedCompany = companies.find(
+      (company) => company.id === parseInt(normalizedData.company_id),
+    );
+    if (selectedCompany?.organization_id) {
+      formDataToSend.set("organization_id", parseInt(selectedCompany.organization_id));
+    }
+    if (normalizedData.designation_id)
+      formDataToSend.set("designation_id", parseInt(normalizedData.designation_id));
+    if (normalizedData.department_id)
+      formDataToSend.set("department_id", parseInt(normalizedData.department_id));
     formDataToSend.set(
       "total_leaves_allocated",
-      parseInt(data.total_leaves_allocated),
+      parseInt(normalizedData.total_leaves_allocated),
     );
-    if (data.dependents)
-      formDataToSend.set("dependents", parseInt(data.dependents));
+    if (normalizedData.dependents !== undefined && normalizedData.dependents !== "")
+      formDataToSend.set("dependents", parseInt(normalizedData.dependents));
 
     // Add _method field for PUT request
     formDataToSend.append("_method", "PUT");
@@ -605,7 +763,7 @@ const EditEmployee = () => {
     }
   };
 
-  if (initialLoading || employeeLoading) {
+  if (initialLoading || employeeLoading || !dropdownsReady) {
     return (
       <div className="app flex min-h-screen bg-gray-50 overflow-x-hidden">
         <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
@@ -683,38 +841,6 @@ const EditEmployee = () => {
               <div>
                 <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
                   <i className="fas fa-building text-green-500 mr-1"></i>{" "}
-                  Organization *
-                </label>
-                <Controller
-                  name="organization_id"
-                  control={control}
-                  rules={validationRules.organization_id}
-                  render={({ field }) => (
-                    <>
-                      <select
-                        {...field}
-                        className={`w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border rounded-lg text-sm md:text-base text-gray-800 transition-all focus:outline-none focus:ring-2 ${errors.organization_id ? "border-red-500" : "border-gray-200 focus:border-green-500"}`}
-                      >
-                        <option value="">Select Organization</option>
-                        {organizations.map((org) => (
-                          <option key={org.id} value={org.id}>
-                            {org.name}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.organization_id && (
-                        <p className="mt-1 text-xs text-red-500">
-                          {errors.organization_id.message}
-                        </p>
-                      )}
-                    </>
-                  )}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
-                  <i className="fas fa-building text-green-500 mr-1"></i>{" "}
                   Company *
                 </label>
                 <Controller
@@ -725,8 +851,11 @@ const EditEmployee = () => {
                     <>
                       <select
                         {...field}
-                        disabled={!watchOrganizationId}
-                        className={`w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border rounded-lg text-sm md:text-base text-gray-800 transition-all focus:outline-none focus:ring-2 ${!watchOrganizationId ? "opacity-50 cursor-not-allowed" : ""} ${errors.company_id ? "border-red-500" : "border-gray-200 focus:border-green-500"}`}
+                        value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(e.target.value ? Number(e.target.value) : "")
+                        }
+                        className={`w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border rounded-lg text-sm md:text-base text-gray-800 transition-all focus:outline-none focus:ring-2 ${errors.company_id ? "border-red-500" : "border-gray-200 focus:border-green-500"}`}
                       >
                         <option value="">Select Company</option>
                         {companies.map((company) => (
@@ -753,18 +882,30 @@ const EditEmployee = () => {
                 <Controller
                   name="designation_id"
                   control={control}
+                  rules={validationRules.designation_id}
                   render={({ field }) => (
-                    <select
-                      {...field}
-                      className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm md:text-base text-gray-800 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-                    >
-                      <option value="">Select Designation</option>
-                      {designations.map((desig) => (
-                        <option key={desig.id} value={desig.id}>
-                          {desig.name}
-                        </option>
-                      ))}
-                    </select>
+                    <>
+                      <select
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(e.target.value ? Number(e.target.value) : "")
+                        }
+                        className={`w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border rounded-lg text-sm md:text-base text-gray-800 focus:outline-none focus:ring-2 ${errors.designation_id ? "border-red-500" : "border-gray-200 focus:border-green-500 focus:ring-green-500/20"}`}
+                      >
+                        <option value="">Select Designation</option>
+                        {designations.map((desig) => (
+                          <option key={desig.id} value={desig.id}>
+                            {desig.name}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.designation_id && (
+                        <p className="mt-1 text-xs text-red-500">
+                          {errors.designation_id.message}
+                        </p>
+                      )}
+                    </>
                   )}
                 />
               </div>
@@ -777,18 +918,30 @@ const EditEmployee = () => {
                 <Controller
                   name="department_id"
                   control={control}
+                  rules={validationRules.department_id}
                   render={({ field }) => (
-                    <select
-                      {...field}
-                      className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm md:text-base text-gray-800 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-                    >
-                      <option value="">Select Department</option>
-                      {departments.map((dept) => (
-                        <option key={dept.id} value={dept.id}>
-                          {dept.name}
-                        </option>
-                      ))}
-                    </select>
+                    <>
+                      <select
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(e.target.value ? Number(e.target.value) : "")
+                        }
+                        className={`w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border rounded-lg text-sm md:text-base text-gray-800 focus:outline-none focus:ring-2 ${errors.department_id ? "border-red-500" : "border-gray-200 focus:border-green-500 focus:ring-green-500/20"}`}
+                      >
+                        <option value="">Select Department</option>
+                        {departments.map((dept) => (
+                          <option key={dept.id} value={dept.id}>
+                            {dept.name}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.department_id && (
+                        <p className="mt-1 text-xs text-red-500">
+                          {errors.department_id.message}
+                        </p>
+                      )}
+                    </>
                   )}
                 />
               </div>
@@ -865,6 +1018,54 @@ const EditEmployee = () => {
                       {statusOptions.map((status) => (
                         <option key={status.value} value={status.value}>
                           {status.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
+                  <i className="fas fa-globe-asia text-green-500 mr-1"></i>{" "}
+                  Nationality
+                </label>
+                <Controller
+                  name="nationality"
+                  control={control}
+                  render={({ field }) => (
+                    <select
+                      {...field}
+                      className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm md:text-base text-gray-800 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                    >
+                      <option value="">Select Nationality</option>
+                      {nationalityOptions.map((nationality) => (
+                        <option key={nationality} value={nationality}>
+                          {nationality}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
+                  <i className="fas fa-user-friends text-green-500 mr-1"></i>{" "}
+                  Marital Status
+                </label>
+                <Controller
+                  name="marital_status"
+                  control={control}
+                  render={({ field }) => (
+                    <select
+                      {...field}
+                      className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm md:text-base text-gray-800 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                    >
+                      <option value="">Select Marital Status</option>
+                      {maritalStatusOptions.map((status) => (
+                        <option key={status} value={status}>
+                          {status}
                         </option>
                       ))}
                     </select>
@@ -954,11 +1155,7 @@ const EditEmployee = () => {
                   name="dob"
                   control={control}
                   render={({ field }) => (
-                    <input
-                      {...field}
-                      type="date"
-                      className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm md:text-base text-gray-800 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-                    />
+                    <DateInput field={field} />
                   )}
                 />
               </div>
@@ -998,13 +1195,98 @@ const EditEmployee = () => {
                   name="joining_date"
                   control={control}
                   render={({ field }) => (
-                    <input
-                      {...field}
-                      type="date"
-                      className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm md:text-base text-gray-800 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-                    />
+                    <DateInput field={field} />
                   )}
                 />
+              </div>
+
+              <div className="md:col-span-2">
+                <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/30">
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    <i className="fas fa-camera text-green-500 mr-2"></i>
+                    Passport Size Photo
+                    <span className="text-xs text-gray-400 ml-2">(Optional)</span>
+                  </label>
+                  <div className="flex items-start gap-4 flex-wrap">
+                    <input
+                      type="file"
+                      id="passport_size_photo_edit"
+                      accept="image/png,image/jpeg,image/jpg,image/gif"
+                      onChange={(e) => handleFileChange("passport_size_photo", e.target.files[0])}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        document.getElementById("passport_size_photo_edit").click()
+                      }
+                      className="h-40 w-32 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 hover:border-green-400 transition-colors flex items-center justify-center overflow-hidden"
+                    >
+                      {documentPreviews.passport_size_photo ? (
+                        <img
+                          src={documentPreviews.passport_size_photo}
+                          alt="Passport size"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : existingDocuments.passport_size_photo &&
+                        !removedDocuments.passport_size_photo ? (
+                        <img
+                          src={getDocumentUrl(existingDocuments.passport_size_photo)}
+                          alt="Passport size"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="text-center text-gray-400">
+                          <i className="far fa-user text-3xl mb-2"></i>
+                          <p className="text-lg leading-none">Photo</p>
+                        </div>
+                      )}
+                    </button>
+                    <div className="flex-1 min-w-[220px]">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          document.getElementById("passport_size_photo_edit").click()
+                        }
+                        className="px-4 py-2 bg-white border border-green-200 text-green-600 rounded-full text-sm font-semibold hover:bg-green-50 transition-colors flex items-center gap-2"
+                      >
+                        <i className="fas fa-upload"></i> Upload Photo
+                      </button>
+                      <p className="text-sm text-gray-500 mt-2 truncate">
+                        {documents.passport_size_photo
+                          ? documents.passport_size_photo.name || "Photo selected"
+                          : existingDocuments.passport_size_photo &&
+                              !removedDocuments.passport_size_photo
+                            ? "Current photo available"
+                            : "No photo chosen"}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-2">
+                        <i className="fas fa-info-circle mr-1"></i> Accepted: JPG, PNG, GIF.
+                        Max 2MB. Recommended size: 35mm x 45mm (passport size).
+                      </p>
+                      {(documents.passport_size_photo ||
+                        (existingDocuments.passport_size_photo &&
+                          !removedDocuments.passport_size_photo)) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDocuments({ ...documents, passport_size_photo: null });
+                            setDocumentPreviews({
+                              ...documentPreviews,
+                              passport_size_photo: null,
+                            });
+                            if (existingDocuments.passport_size_photo) {
+                              handleRemoveExistingDocument("passport_size_photo");
+                            }
+                          }}
+                          className="mt-2 text-xs text-red-500 hover:text-red-600 flex items-center gap-1"
+                        >
+                          <i className="fas fa-trash"></i> Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1060,6 +1342,25 @@ const EditEmployee = () => {
 
               <div>
                 <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
+                  <i className="fas fa-globe text-green-500 mr-1"></i> Issued
+                  From
+                </label>
+                <Controller
+                  name="passport_issued_from"
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      type="text"
+                      className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm md:text-base text-gray-800 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                      placeholder="Enter issuing country/city"
+                    />
+                  )}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
                   <i className="fas fa-calendar-plus text-green-500 mr-1"></i>{" "}
                   Issued Date
                 </label>
@@ -1076,11 +1377,7 @@ const EditEmployee = () => {
                   }}
                   render={({ field }) => (
                     <>
-                      <input
-                        {...field}
-                        type="date"
-                        className={`w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border rounded-lg text-sm md:text-base text-gray-800 transition-all focus:outline-none focus:ring-2 ${errors.passport_issued_date ? "border-red-500" : "border-gray-200 focus:border-green-500"}`}
-                      />
+                      <DateInput field={field} hasError={!!errors.passport_issued_date} />
                       {errors.passport_issued_date && (
                         <p className="mt-1 text-xs text-red-500">
                           {errors.passport_issued_date.message}
@@ -1109,17 +1406,32 @@ const EditEmployee = () => {
                   }}
                   render={({ field }) => (
                     <>
-                      <input
-                        {...field}
-                        type="date"
-                        className={`w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border rounded-lg text-sm md:text-base text-gray-800 transition-all focus:outline-none focus:ring-2 ${errors.passport_expiry_date ? "border-red-500" : "border-gray-200 focus:border-green-500"}`}
-                      />
+                      <DateInput field={field} hasError={!!errors.passport_expiry_date} />
                       {errors.passport_expiry_date && (
                         <p className="mt-1 text-xs text-red-500">
                           {errors.passport_expiry_date.message}
                         </p>
                       )}
                     </>
+                  )}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
+                  <i className="fas fa-map-pin text-green-500 mr-1"></i> Place
+                  of Birth
+                </label>
+                <Controller
+                  name="place_of_birth"
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      type="text"
+                      className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm md:text-base text-gray-800 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                      placeholder="Enter place of birth"
+                    />
                   )}
                 />
               </div>
@@ -1180,44 +1492,6 @@ const EditEmployee = () => {
                   )}
                 />
               </div>
-
-              <div>
-                <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
-                  <i className="fas fa-globe text-green-500 mr-1"></i> Issued
-                  From
-                </label>
-                <Controller
-                  name="passport_issued_from"
-                  control={control}
-                  render={({ field }) => (
-                    <input
-                      {...field}
-                      type="text"
-                      className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm md:text-base text-gray-800 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-                      placeholder="Enter issuing country/city"
-                    />
-                  )}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
-                  <i className="fas fa-map-pin text-green-500 mr-1"></i> Place
-                  of Birth
-                </label>
-                <Controller
-                  name="place_of_birth"
-                  control={control}
-                  render={({ field }) => (
-                    <input
-                      {...field}
-                      type="text"
-                      className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm md:text-base text-gray-800 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-                      placeholder="Enter place of birth"
-                    />
-                  )}
-                />
-              </div>
             </div>
           </div>
         );
@@ -1231,167 +1505,184 @@ const EditEmployee = () => {
                 Visa & Labor Details
               </h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-              <div>
-                <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
-                  <i className="fas fa-id-card text-green-500 mr-1"></i> Visa
-                  Number
-                </label>
-                <Controller
-                  name="visa_number"
-                  control={control}
-                  render={({ field }) => (
-                    <input
-                      {...field}
-                      type="text"
-                      className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm md:text-base text-gray-800 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-                      placeholder="Enter Visa Number"
+            <div className="space-y-6">
+              <div className="border border-gray-200 rounded-lg p-4 md:p-5">
+                <h4 className="text-sm font-semibold text-gray-700 mb-4 flex items-center">
+                  <i className="fas fa-passport text-green-500 mr-2"></i>
+                  Visa Details
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+                  <div className="md:col-span-2">
+                    <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
+                      <i className="fas fa-list text-green-500 mr-1"></i> Select Type of Visa
+                    </label>
+                    <Controller
+                      name="visa_type"
+                      control={control}
+                      render={({ field }) => (
+                        <select
+                          {...field}
+                          className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm md:text-base text-gray-800 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                        >
+                          <option value="">Select Type of Visa</option>
+                          {visaTypeOptions.map((visaType) => (
+                            <option key={visaType} value={visaType}>
+                              {visaType}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     />
-                  )}
-                />
-              </div>
+                  </div>
 
-              <div>
-                <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
-                  <i className="fas fa-calendar-plus text-green-500 mr-1"></i>{" "}
-                  Visa Issued Date
-                </label>
-                <Controller
-                  name="visa_issued_date"
-                  control={control}
-                  rules={{
-                    validate: (value) =>
-                      validateIssueDate(value, visaExpiry, "Visa issued date"),
-                  }}
-                  render={({ field }) => (
-                    <>
-                      <input
-                        {...field}
-                        type="date"
-                        className={`w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border rounded-lg text-sm md:text-base text-gray-800 transition-all focus:outline-none focus:ring-2 ${errors.visa_issued_date ? "border-red-500" : "border-gray-200 focus:border-green-500"}`}
-                      />
-                      {errors.visa_issued_date && (
-                        <p className="mt-1 text-xs text-red-500">
-                          {errors.visa_issued_date.message}
-                        </p>
+                  <div>
+                    <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
+                      <i className="fas fa-id-card text-green-500 mr-1"></i> Visa Number
+                    </label>
+                    <Controller
+                      name="visa_number"
+                      control={control}
+                      render={({ field }) => (
+                        <input
+                          {...field}
+                          type="text"
+                          className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm md:text-base text-gray-800 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                          placeholder="Enter Visa Number"
+                        />
                       )}
-                    </>
-                  )}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
-                  <i className="fas fa-calendar-times text-green-500 mr-1"></i>{" "}
-                  Visa Expiry Date
-                </label>
-                <Controller
-                  name="visa_expiry_date"
-                  control={control}
-                  rules={{
-                    validate: (value) =>
-                      validateExpiryDate(value, visaIssued, "Visa expiry date"),
-                  }}
-                  render={({ field }) => (
-                    <>
-                      <input
-                        {...field}
-                        type="date"
-                        className={`w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border rounded-lg text-sm md:text-base text-gray-800 transition-all focus:outline-none focus:ring-2 ${errors.visa_expiry_date ? "border-red-500" : "border-gray-200 focus:border-green-500"}`}
-                      />
-                      {errors.visa_expiry_date && (
-                        <p className="mt-1 text-xs text-red-500">
-                          {errors.visa_expiry_date.message}
-                        </p>
-                      )}
-                    </>
-                  )}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
-                  <i className="fas fa-briefcase text-green-500 mr-1"></i> Labor
-                  Number
-                </label>
-                <Controller
-                  name="labor_number"
-                  control={control}
-                  render={({ field }) => (
-                    <input
-                      {...field}
-                      type="text"
-                      className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm md:text-base text-gray-800 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-                      placeholder="Enter Labor Number"
                     />
-                  )}
-                />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
+                      <i className="fas fa-calendar-plus text-green-500 mr-1"></i> Visa Issued Date
+                    </label>
+                    <Controller
+                      name="visa_issued_date"
+                      control={control}
+                      rules={{
+                        validate: (value) =>
+                          validateIssueDate(value, visaExpiry, "Visa issued date"),
+                      }}
+                      render={({ field }) => (
+                        <>
+                          <DateInput field={field} hasError={!!errors.visa_issued_date} />
+                          {errors.visa_issued_date && (
+                            <p className="mt-1 text-xs text-red-500">
+                              {errors.visa_issued_date.message}
+                            </p>
+                          )}
+                        </>
+                      )}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
+                      <i className="fas fa-calendar-times text-green-500 mr-1"></i> Visa Expiry Date
+                    </label>
+                    <Controller
+                      name="visa_expiry_date"
+                      control={control}
+                      rules={{
+                        validate: (value) =>
+                          validateExpiryDate(value, visaIssued, "Visa expiry date"),
+                      }}
+                      render={({ field }) => (
+                        <>
+                          <DateInput field={field} hasError={!!errors.visa_expiry_date} />
+                          {errors.visa_expiry_date && (
+                            <p className="mt-1 text-xs text-red-500">
+                              {errors.visa_expiry_date.message}
+                            </p>
+                          )}
+                        </>
+                      )}
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
-                  <i className="fas fa-calendar-plus text-green-500 mr-1"></i>{" "}
-                  Labor Issued Date
-                </label>
-                <Controller
-                  name="labor_issued_date"
-                  control={control}
-                  rules={{
-                    validate: (value) =>
-                      validateIssueDate(
-                        value,
-                        laborExpiry,
-                        "Labor issued date",
-                      ),
-                  }}
-                  render={({ field }) => (
-                    <>
-                      <input
-                        {...field}
-                        type="date"
-                        className={`w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border rounded-lg text-sm md:text-base text-gray-800 transition-all focus:outline-none focus:ring-2 ${errors.labor_issued_date ? "border-red-500" : "border-gray-200 focus:border-green-500"}`}
-                      />
-                      {errors.labor_issued_date && (
-                        <p className="mt-1 text-xs text-red-500">
-                          {errors.labor_issued_date.message}
-                        </p>
+              <div className="border border-gray-200 rounded-lg p-4 md:p-5">
+                <h4 className="text-sm font-semibold text-gray-700 mb-4 flex items-center">
+                  <i className="fas fa-briefcase text-green-500 mr-2"></i>
+                  Labor Details
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+                  <div>
+                    <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
+                      <i className="fas fa-briefcase text-green-500 mr-1"></i> Labor Number
+                    </label>
+                    <Controller
+                      name="labor_number"
+                      control={control}
+                      render={({ field }) => (
+                        <input
+                          {...field}
+                          type="text"
+                          className="w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm md:text-base text-gray-800 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                          placeholder="Enter Labor Number"
+                        />
                       )}
-                    </>
-                  )}
-                />
-              </div>
+                    />
+                  </div>
 
-              <div>
-                <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
-                  <i className="fas fa-calendar-times text-green-500 mr-1"></i>{" "}
-                  Labor Expiry Date
-                </label>
-                <Controller
-                  name="labor_expiry_date"
-                  control={control}
-                  rules={{
-                    validate: (value) =>
-                      validateExpiryDate(
-                        value,
-                        laborIssued,
-                        "Labor expiry date",
-                      ),
-                  }}
-                  render={({ field }) => (
-                    <>
-                      <input
-                        {...field}
-                        type="date"
-                        className={`w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border rounded-lg text-sm md:text-base text-gray-800 transition-all focus:outline-none focus:ring-2 ${errors.labor_expiry_date ? "border-red-500" : "border-gray-200 focus:border-green-500"}`}
-                      />
-                      {errors.labor_expiry_date && (
-                        <p className="mt-1 text-xs text-red-500">
-                          {errors.labor_expiry_date.message}
-                        </p>
+                  <div>
+                    <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
+                      <i className="fas fa-calendar-plus text-green-500 mr-1"></i> Labor Issued Date
+                    </label>
+                    <Controller
+                      name="labor_issued_date"
+                      control={control}
+                      rules={{
+                        validate: (value) =>
+                          validateIssueDate(
+                            value,
+                            laborExpiry,
+                            "Labor issued date",
+                          ),
+                      }}
+                      render={({ field }) => (
+                        <>
+                          <DateInput field={field} hasError={!!errors.labor_issued_date} />
+                          {errors.labor_issued_date && (
+                            <p className="mt-1 text-xs text-red-500">
+                              {errors.labor_issued_date.message}
+                            </p>
+                          )}
+                        </>
                       )}
-                    </>
-                  )}
-                />
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">
+                      <i className="fas fa-calendar-times text-green-500 mr-1"></i> Labor Expiry Date
+                    </label>
+                    <Controller
+                      name="labor_expiry_date"
+                      control={control}
+                      rules={{
+                        validate: (value) =>
+                          validateExpiryDate(
+                            value,
+                            laborIssued,
+                            "Labor expiry date",
+                          ),
+                      }}
+                      render={({ field }) => (
+                        <>
+                          <DateInput field={field} hasError={!!errors.labor_expiry_date} />
+                          {errors.labor_expiry_date && (
+                            <p className="mt-1 text-xs text-red-500">
+                              {errors.labor_expiry_date.message}
+                            </p>
+                          )}
+                        </>
+                      )}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1440,11 +1731,7 @@ const EditEmployee = () => {
                   }}
                   render={({ field }) => (
                     <>
-                      <input
-                        {...field}
-                        type="date"
-                        className={`w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border rounded-lg text-sm md:text-base text-gray-800 transition-all focus:outline-none focus:ring-2 ${errors.eid_issued_date ? "border-red-500" : "border-gray-200 focus:border-green-500"}`}
-                      />
+                      <DateInput field={field} hasError={!!errors.eid_issued_date} />
                       {errors.eid_issued_date && (
                         <p className="mt-1 text-xs text-red-500">
                           {errors.eid_issued_date.message}
@@ -1469,11 +1756,7 @@ const EditEmployee = () => {
                   }}
                   render={({ field }) => (
                     <>
-                      <input
-                        {...field}
-                        type="date"
-                        className={`w-full px-3 md:px-4 py-2 md:py-3 bg-gray-50 border rounded-lg text-sm md:text-base text-gray-800 transition-all focus:outline-none focus:ring-2 ${errors.eid_expiry_date ? "border-red-500" : "border-gray-200 focus:border-green-500"}`}
-                      />
+                      <DateInput field={field} hasError={!!errors.eid_expiry_date} />
                       {errors.eid_expiry_date && (
                         <p className="mt-1 text-xs text-red-500">
                           {errors.eid_expiry_date.message}
@@ -1867,10 +2150,12 @@ const EditEmployee = () => {
                   <button
                     type="button"
                     key={step.number}
-                    onClick={() => setCurrentStep(index)}
+                    onClick={() => handleStepClick(index)}
                     className={`px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-semibold transition-all whitespace-nowrap ${
                       currentStep === index
                         ? "bg-green-500 text-white shadow-md"
+                        : stepErrors[index]
+                          ? "bg-red-50 text-red-600 border border-red-300"
                         : index < currentStep
                           ? "text-green-500"
                           : "text-gray-500 bg-gray-100"
@@ -1881,6 +2166,9 @@ const EditEmployee = () => {
                       {step.number}. {step.title}
                     </span>
                     <span className="sm:hidden">{step.number}</span>
+                    {stepErrors[index] && (
+                      <i className="fas fa-exclamation-circle ml-1 text-xs"></i>
+                    )}
                   </button>
                 ))}
               </div>
@@ -1889,6 +2177,14 @@ const EditEmployee = () => {
             {/* Form Container */}
             <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 lg:p-8 shadow-soft">
               <form onSubmit={handleSubmit(onSubmit)}>
+                {stepErrors[currentStep] && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 mb-4">
+                    <p className="text-xs md:text-sm text-red-600">
+                      <i className="fas fa-exclamation-circle mr-1"></i>
+                      Please complete required fields in this section.
+                    </p>
+                  </div>
+                )}
                 {renderStepContent()}
 
                 {/* Navigation Buttons */}

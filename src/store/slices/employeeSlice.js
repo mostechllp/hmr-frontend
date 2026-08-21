@@ -16,40 +16,60 @@ export const fetchEmployees = createAsyncThunk(
 );
 
 // In your employeeSlice.js, update the addEmployee thunk
+// export const addEmployee = createAsyncThunk(
+//   "employees/add",
+//   async (employeeData, { rejectWithValue }) => {
+//     try {
+//       console.log("Sending employee data:", employeeData);
+
+//       const response = await apiClient.post("/admin/employees", employeeData);
+//       console.log("Employee add response:", response.data);
+
+//       return response.data.data;
+//     } catch (error) {
+//       console.error("Employee add error - Full error:", error);
+//       console.error(
+//         "Employee add error - Response data:",
+//         error.response?.data,
+//       );
+//       console.error(
+//         "Employee add error - Validation errors:",
+//         error.response?.data?.errors,
+//       );
+
+//       // Return the full error object with validation details
+//       if (error.response?.data?.errors) {
+//         return rejectWithValue({
+//           message: error.response.data.message,
+//           errors: error.response.data.errors,
+//         });
+//       }
+
+//       const errorMessage =
+//         error.response?.data?.message || "Failed to add employee";
+//       return rejectWithValue(errorMessage);
+//     }
+//   },
+// );
 export const addEmployee = createAsyncThunk(
   "employees/add",
   async (employeeData, { rejectWithValue }) => {
     try {
-      console.log("Sending employee data:", employeeData);
-
       const response = await apiClient.post("/admin/employees", employeeData);
       console.log("Employee add response:", response.data);
-
       return response.data.data;
     } catch (error) {
-      console.error("Employee add error - Full error:", error);
-      console.error(
-        "Employee add error - Response data:",
-        error.response?.data,
-      );
-      console.error(
-        "Employee add error - Validation errors:",
-        error.response?.data?.errors,
-      );
-
-      // Return the full error object with validation details
       if (error.response?.data?.errors) {
         return rejectWithValue({
           message: error.response.data.message,
           errors: error.response.data.errors,
         });
       }
-
-      const errorMessage =
-        error.response?.data?.message || "Failed to add employee";
-      return rejectWithValue(errorMessage);
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to add employee"
+      );
     }
-  },
+  }
 );
 
 export const deleteEmployee = createAsyncThunk(
