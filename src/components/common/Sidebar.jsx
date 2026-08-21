@@ -11,8 +11,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   const { user } = useSelector((state) => state.auth);
   const navigate = useNavigate();
 
-  console.log("user: ", user)
-
   useEffect(() => {
     const checkMobile = () => {
       const mobile = window.innerWidth < 768;
@@ -46,7 +44,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { path: "/designations", icon: "fas fa-tags", label: "Designations" },
     { path: "/departments", icon: "fas fa-building", label: "Departments" },
     { path: "/task-reports", icon: "fas fa-tasks", label: "Task Reports" },
-    {path: "/wfh", icon: "fas fa-home", label: "WFH Requests"},
+    { path: "/wfh", icon: "fas fa-home", label: "WFH Requests" },
     { path: "/reports", icon: "fas fa-chart-line", label: "Reports" },
     { path: "/settings", icon: "fas fa-gear", label: "Settings" },
   ];
@@ -58,31 +56,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     } catch (err) {
       console.error("Logout failed", err);
     }
-  };
-
-  // Get user's display name
-  const getUserName = () => {
-    if (user?.employee?.name) return user.employee.name;
-    if (user?.name) return user.name;
-    if (user?.username) return user.username;
-    return "HR Admin";
-  };
-
-  // Get user's avatar URL
-  const getUserAvatar = () => {
-    if (user?.avatar) return user.avatar;
-    // Generate avatar from name if not available
-    const name = getUserName();
-    const encodedName = encodeURIComponent(name);
-    return `https://ui-avatars.com/api/?name=${encodedName}&color=ffffff&background=22c55e`;
-  };
-
-  // Get user's role
-  const getUserRole = () => {
-    if (user?.type) return user.type.charAt(0).toUpperCase() + user.type.slice(1);
-    if (user?.role) return user.role;
-    if (user?.roles && user.roles.length > 0) return user.roles[0];
-    return "Administrator";
   };
 
   return (
@@ -100,10 +73,9 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         className={`
           fixed top-0 left-0 h-full bg-gray-900 z-50 transition-all duration-300
           flex flex-col
-          ${
-            isMobile
-              ? `${isOpen ? "translate-x-0" : "-translate-x-full"} w-64`
-              : "w-[72px] hover:w-64 group"
+          ${isMobile
+            ? `${isOpen ? "translate-x-0" : "-translate-x-full"} w-64`
+            : "w-[72px] hover:w-64 group"
           }
         `}
         onMouseEnter={() => !isMobile && setIsOpen(true)}
@@ -114,9 +86,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           <img
             src="https://violet-leopard-500489.hostingersite.com/hr/public/assets/images/hr-logo2.jpg"
             alt="HMR Logo"
-            className={`object-contain rounded-lg bg-white p-1 transition-all duration-300 ${
-              !isMobile && !isOpen ? "w-10 h-10" : "w-12 h-12"
-            }`}
+            className={`object-contain rounded-lg bg-white p-1 transition-all duration-300 ${!isMobile && !isOpen ? "w-10 h-10" : "w-12 h-12"
+              }`}
           />
         </div>
 
@@ -128,20 +99,18 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               to={item.path}
               onClick={() => isMobile && setIsOpen(false)}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-5 py-3 mx-2 rounded-xl transition-all duration-200 cursor-pointer whitespace-nowrap overflow-hidden ${
-                  isActive
-                    ? "bg-green-500/20 text-white"
-                    : "text-gray-400 hover:text-white hover:bg-white/10"
+                `flex items-center gap-3 px-5 py-3 mx-2 rounded-xl transition-all duration-200 cursor-pointer whitespace-nowrap overflow-hidden ${isActive
+                  ? "bg-green-500/20 text-white"
+                  : "text-gray-400 hover:text-white hover:bg-white/10"
                 }`
               }
             >
               <i className={`${item.icon} w-6 text-lg flex-shrink-0`}></i>
               <span
-                className={`transition-opacity duration-200 ${
-                  !isMobile && !isOpen
+                className={`transition-opacity duration-200 ${!isMobile && !isOpen
                     ? "opacity-0 group-hover:opacity-100"
                     : "opacity-100"
-                }`}
+                  }`}
               >
                 {item.label}
               </span>
@@ -152,32 +121,20 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         {/* User Section - Fixed at bottom */}
         <div className="flex-shrink-0 p-4 border-t border-white/10">
           <div className="flex items-center gap-3 overflow-hidden">
-            {/* Avatar Image */}
-            <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-r from-green-500 to-green-600">
-              <img
-                src={getUserAvatar()}
-                alt={getUserName()}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  // Fallback to initials if image fails to load
-                  e.target.style.display = "none";
-                  e.target.parentElement.innerHTML = getUserName().charAt(0).toUpperCase();
-                  e.target.parentElement.classList.add("flex", "items-center", "justify-center", "font-bold", "text-white");
-                }}
-              />
+            <div className="w-9 h-9 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center font-bold text-white flex-shrink-0">
+              {user?.name?.charAt(0) || "HR"}
             </div>
             <div
-              className={`transition-opacity duration-200 flex-1 min-w-0 ${
-                !isMobile && !isOpen
+              className={`transition-opacity duration-200 flex-1 min-w-0 ${!isMobile && !isOpen
                   ? "opacity-0 group-hover:opacity-100"
                   : "opacity-100"
-              }`}
+                }`}
             >
               <h4 className="text-sm font-semibold text-white truncate">
-                {getUserName()}
+                {user?.name || "HR Admin"}
               </h4>
               <p className="text-xs text-white/50 truncate">
-                {getUserRole()}
+                {user?.role || "Administrator"}
               </p>
               <button
                 onClick={handleLogout}
